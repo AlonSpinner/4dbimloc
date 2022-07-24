@@ -1,0 +1,6 @@
+README.md
+setup.py
+bim4loc.egg-info/PKG-INFO
+bim4loc.egg-info/SOURCES.txt
+bim4loc.egg-info/dependency_links.txt
+bim4loc.egg-info/top_level.txt

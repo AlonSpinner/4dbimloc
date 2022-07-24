@@ -1,6 +1,0 @@
-README.md
-setup.py
-TemporalParticleFilter.egg-info/PKG-INFO
-TemporalParticleFilter.egg-info/SOURCES.txt
-TemporalParticleFilter.egg-info/dependency_links.txt
-TemporalParticleFilter.egg-info/top_level.txt
