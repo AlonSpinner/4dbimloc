@@ -3,7 +3,7 @@ import numpy as np
 from bim4loc.binaries.paths import IFC_SIMPLE_PATH, DRONE_PATH
 import open3d as o3d
 from bim4loc.geometry import pose2
-from bim4loc.ifc2o3d import converter
+from bim4loc.ifc import converter
 import time
 
 #based on http://www.open3d.org/docs/release/tutorial/visualization/non_blocking_visualization.html

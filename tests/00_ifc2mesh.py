@@ -1,9 +1,10 @@
-from bim4loc.binaries.paths import IFC_SIMPLE_PATH, DRONE_PATH
+from bim4loc.binaries.paths import IFC_SIMPLE_PATH, DRONE_PATH, IFC_TEST_PATH
 import open3d as o3d
 from bim4loc.geometry import pose2
-from bim4loc.ifc2o3d import converter
+from bim4loc.ifc import converter
 
-meshes = converter(IFC_SIMPLE_PATH)
+objects = converter(IFC_TEST_PATH)
+meshes = [o.mesh for o in objects]
 
 frame = o3d.geometry.TriangleMesh.create_coordinate_frame()
 
