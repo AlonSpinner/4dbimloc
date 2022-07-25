@@ -9,16 +9,18 @@ import bim4loc.random_models.one_dim as random1d
 class ifcObject:
     guid : str
     schedule : random1d.distribution1D
-    mesh : o3d.cuda.pybind.geometry.TriangleMesh
+    geometry : o3d.cuda.pybind.geometry.TriangleMesh
     color : np.ndarray(3)
+    completion_time : float = schedule.sample()
 
-    def update_mesh_by_time(self, time):
-        self.mesh.transform(self.schedule.cdf(time))
-        return self.mesh
+    def opacity(self, time: float) -> float:
+        return self.schedule.cdf(time)
+    def complete(self, time : float) -> bool:
+        return time > self.completion_time
 
 def description2schedule(description : str) -> random1d.distribution1D:
     if description:
-        lst = description.split(' ')
+        lst = description.split(" ")
         if lst[0] == "gaussian":
             return random1d.gaussian(mu = float(lst[1]), sigma = float(lst[2]))
         
@@ -60,7 +62,7 @@ def converter(ifc_path) -> list[ifcObject]:
             objects.append(ifcObject(
                                 guid = element.GlobalId,
                                 schedule = description2schedule(element.Description),
-                                mesh = mesh,
+                                geometry = mesh,
                                 color = color
                                 ))
 
