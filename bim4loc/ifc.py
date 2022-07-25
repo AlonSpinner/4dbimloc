@@ -11,8 +11,10 @@ class ifcObject:
     schedule : random1d.distribution1D
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
     color : np.ndarray(3)
-    completion_time : float = schedule.sample()
-
+    completion_time : float = 0.0
+    
+    def random_completion_time(self) -> None:
+        self.completion_time = self.schedule.sample()
     def opacity(self, time: float) -> float:
         return self.schedule.cdf(time)
     def complete(self, time : float) -> bool:

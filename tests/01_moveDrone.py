@@ -17,8 +17,9 @@ drone.transform(x.T3d(z = 1.5))
 
 o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 vis = o3d.visualization.Visualizer()
-
 vis.create_window()
+vis.get_render_option().mesh_show_wireframe = True
+
 [vis.add_geometry(o.geometry) for o in objects]
 vis.add_geometry(frame)
 vis.add_geometry(drone)
@@ -30,7 +31,7 @@ for a in actions:
     drone.rotate(a.R3d(),x.t3d())
     drone.translate(a.t3d())
 
-    # vis.update_geometry(drone)
+    vis.update_geometry(drone)
     vis.poll_events()
     vis.update_renderer()
 

@@ -27,6 +27,6 @@ for o in objects:
 
 vis.poll_events()
 vis.update_renderer()
-
+vis.run()
 time.sleep(50)
 vis.close_window()
