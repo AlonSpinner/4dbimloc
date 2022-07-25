@@ -26,6 +26,7 @@ vis.add_geometry(drone)
 
 actions = [pose2(1,0,np.pi/10)] * 10
 
+
 # vis.run() # allows to set viewpoint and interact with the scene
 for a in actions:
     drone.rotate(a.R3d(),x.t3d())
