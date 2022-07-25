@@ -15,7 +15,7 @@ drone.paint_uniform_color([1,0,0])
 x = pose2(3,3,0)
 drone.transform(x.T3d(z = 1.5))
 
-o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
+# o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 vis = o3d.visualization.Visualizer()
 vis.create_window()
 vis.get_render_option().mesh_show_wireframe = True

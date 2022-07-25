@@ -18,6 +18,14 @@ vis = o3d.visualization.Visualizer()
 vis.create_window()
 vis.get_render_option().mesh_show_wireframe = True
 
+#TRYING TO DO ORTHOGRAPHIC CAMERA
+# K = vis.get_view_control().convert_to_pinhole_camera_parameters().intrinsic
+# width = int(K.intrinsic_matrix[0,2] * 2)
+# height = int(K.intrinsic_matrix[1,2] * 2)
+# fx, fy = 1000000000.0, 1000000000.0
+# cx, cy = 0.0, 0.0
+# K.set_intrinsics(width,height,fx,fy,cx,cy)
+
 for o in objects:
     mat = rendering.MaterialRecord()
     # mat.base_coor = o.color
