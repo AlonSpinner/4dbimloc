@@ -7,10 +7,10 @@ import bim4loc.random_models.one_dim as random1d
 
 @dataclass(frozen = False)
 class ifcObject:
-    guid : str
-    schedule : random1d.distribution1D
+    name : str #name
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
-    color : np.ndarray(3)
+    material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
+    schedule : random1d.distribution1D
     completion_time : float = 0.0
     
     def random_completion_time(self) -> None:
@@ -36,6 +36,9 @@ def description2schedule(description : str) -> random1d.distribution1D:
         return random1d.distribution1D() #empty
 
 def converter(ifc_path) -> list[ifcObject]:
+    '''
+    converts ifc file to a list of ifcObjects
+    '''
     ifc = ifcopenshell.open(ifc_path)
 
     products = ifc.by_type("IfcProduct")
@@ -49,7 +52,7 @@ def converter(ifc_path) -> list[ifcObject]:
         if product.Representation: #has shape
             shape = ifcopenshell.geom.create_shape(settings, inst=product)
             m = shape.geometry.materials
-            color = np.array(m[0].diffuse)
+            base_color = np.array(m[0].diffuse)
             element = ifc.by_guid(shape.guid)
                       
             verts = shape.geometry.verts # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
@@ -59,13 +62,17 @@ def converter(ifc_path) -> list[ifcObject]:
             faces = o3d.utility.Vector3iVector(np.array(faces).reshape((-1,3)))
             
             mesh = o3d.geometry.TriangleMesh(vertices  = verts, triangles = faces)
-            mesh.paint_uniform_color(color)
+            mesh.compute_triangle_normals()
+            
+            mat = o3d.visualization.rendering.MaterialRecord()
+            mat.shader = "defaultLitTransparency"
+            mat.base_color = np.hstack([base_color, 1.0])
 
             objects.append(ifcObject(
-                                guid = element.GlobalId,
-                                schedule = description2schedule(element.Description),
+                                name = element.GlobalId,
                                 geometry = mesh,
-                                color = color
+                                material = mat,
+                                schedule = description2schedule(element.Description),                                
                                 ))
 
     return objects

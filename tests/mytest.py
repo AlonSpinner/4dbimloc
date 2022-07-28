@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_SIMPLE_PATH, DRONE_PATH, IFC_TEST_PATH
+from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, DRONE_PATH
 import open3d as o3d
 import open3d.visualization.rendering as rendering
 from bim4loc.geometry import pose2
@@ -10,21 +10,23 @@ import threading
 import time
 
 
-class visApp():
+class visApp(threading.Thread):
 
     def __init__(self):
+        super(visApp,self).__init__()
+
         self.is_done = False
+        self.start()
     
     def run(self):
-        app = o3d.visualization.gui.Application.instance
-        app.initialize()
+        self.app = o3d.visualization.gui.Application.instance
+        self.app.initialize()
 
         self.vis = o3d.visualization.O3DVisualizer('vis')
         self.vis.set_on_close(self.on_main_window_closing)
 
-        app.add_window(self.vis)
-        
-        app.run()
+        self.app.add_window(self.vis)   
+        self.app.run()
 
 
     def on_main_window_closing(self):
@@ -32,15 +34,12 @@ class visApp():
         return True  # False would cancel the close
 
     def add_geo(self,o : ifcObject):
-        mat = o3d.visualization.rendering.MaterialRecord()
-        mat.shader = "defaultLitTransparency"
-        mat.base_color = np.array([1,0,0,0.5])
-        o.geometry.compute_triangle_normals()
-        self.vis.add_geometry(o.guid, o.geometry, mat)
+        # mat.shader = "defaultLitTransparency"
+        self.vis.add_geometry(o.name, o.geometry, o.material)
 
-objects = converter(IFC_TEST_PATH)
+objects = converter(IFC_ONLY_WALLS_PATH)
 app = visApp()
-threading.Thread(target = app.run).start()
+# threading.Thread(target = app.run).start()
 time.sleep(0.5)
 
 for o in objects:
