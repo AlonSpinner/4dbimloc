@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from math import erf
 from typing import Tuple
 
-class distribution1D:
+class Distribution1D:
     def sample(n : int) -> np.ndarray:
         pass
     def pdf(x : np.ndarray) -> np.ndarray:
@@ -13,7 +13,7 @@ class distribution1D:
     def plot() -> Tuple[plt.Figure, plt.Axes]:
         pass
 
-class gaussian(distribution1D):
+class Gaussian(Distribution1D):
     def __init__(self,mu : float,sigma : float) -> None:
         self.mu : float = mu
         self.sigma : float = sigma
@@ -44,7 +44,7 @@ class gaussian(distribution1D):
         axes[1].set_title('pdf(t)')
         return fig,axes
 
-class gaussianT(distribution1D):
+class GaussianT(Distribution1D):
 #https://en.wikipedia.org/wiki/Truncated_normal_distribution
     def __init__(self,mu,sigma,a,b):
         self.mu : float = mu
@@ -106,7 +106,7 @@ class gaussianT(distribution1D):
         axes[1].set_title('pdf(t)')
         return fig,axes
 
-class uniform(distribution1D):
+class Uniform(Distribution1D):
     def __init__(self,a : float, b : float) -> None:
         self.a : float = a
         self.b : float = b

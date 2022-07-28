@@ -3,6 +3,7 @@ import ifcopenshell, ifcopenshell.geom
 import numpy as np
 import open3d as o3d
 import bim4loc.random_models.one_dim as random1d
+from importlib import import_module, __import__
 
 
 @dataclass(frozen = False)
@@ -10,7 +11,7 @@ class ifcObject:
     name : str #name
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
     material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
-    schedule : random1d.distribution1D
+    schedule : random1d.Distribution1D
     completion_time : float = 0.0
     
     def random_completion_time(self) -> None:
@@ -20,20 +21,20 @@ class ifcObject:
     def complete(self, time : float) -> bool:
         return time > self.completion_time
 
-def description2schedule(description : str) -> random1d.distribution1D:
+def description2schedule(description : str) -> random1d.Distribution1D:
     if description:
-        lst = description.split(" ")
-        if lst[0] == "gaussian":
-            return random1d.gaussian(mu = float(lst[1]), sigma = float(lst[2]))
-        
-        elif lst[0] == "uniform":
-            return random1d.uniform(a = float(lst[1]), b = float(lst[2]))
-
-        elif lst[0] == "gaussianT":
-            return random1d.gaussianT(mu = lst[1], sigma = float(lst[2]), a = float(lst[3]), b = float(lst[4]))
-        
+        try:
+            lst = description.split(" ")
+            _dname = lst[0]
+            _dparams = [int(num) for num in lst[1:]]
+            _class = getattr(import_module(random1d.__name__),_dname)
+            instance = _class.__new__(_class)
+            instance.__init__(*_dparams)
+            return instance
+        except:
+            print(f'description does not fit any programmed schedule time distribution in {random1d.__name__}')
     else:
-        return random1d.distribution1D() #empty
+        return random1d.Distribution1D() #empty
 
 def converter(ifc_path) -> list[ifcObject]:
     '''
