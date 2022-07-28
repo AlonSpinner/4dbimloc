@@ -5,12 +5,14 @@ import open3d as o3d
 import bim4loc.random_models.one_dim as random1d
 from importlib import import_module, __import__
 
-
 @dataclass(frozen = False)
-class ifcObject:
+class o3dObject:
     name : str #name
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
     material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
+
+@dataclass()
+class ifcObject(o3dObject):
     schedule : random1d.Distribution1D
     completion_time : float = 0.0
     
@@ -20,6 +22,11 @@ class ifcObject:
         return self.schedule.cdf(time)
     def complete(self, time : float) -> bool:
         return time > self.completion_time
+
+#----------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+
 
 def description2schedule(description : str) -> random1d.Distribution1D:
     if description:
@@ -36,7 +43,7 @@ def description2schedule(description : str) -> random1d.Distribution1D:
     else:
         return random1d.Distribution1D() #empty
 
-def converter(ifc_path) -> list[ifcObject]:
+def ifc_converter(ifc_path) -> list[ifcObject]:
     '''
     converts ifc file to a list of ifcObjects
     '''

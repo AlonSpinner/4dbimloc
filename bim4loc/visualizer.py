@@ -1,6 +1,6 @@
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
-from bim4loc.ifc import ifcObject
+from bim4loc.solid_objects import o3dObject
 import threading
 import time
 
@@ -24,7 +24,7 @@ class VisApp(threading.Thread):
         self._app.add_window(self._vis)
         self._app.run()
 
-    def add_object(self, object : ifcObject):
+    def add_object(self, object : o3dObject):
         self._vis.add_geometry(object.name, object.geometry, object.material)
 
 if __name__ == "__main__":
