@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
+from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_TEST_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.ifc import converter
 import time
