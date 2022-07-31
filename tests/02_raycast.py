@@ -23,7 +23,6 @@ for o in objects:
     visApp.add_object(o)
 visApp.reset_camera_to_default()
 visApp.add_object(drone.object)
-# visApp.add_object(pcd_scan)
 time.sleep(1)
 
 for a in actions:

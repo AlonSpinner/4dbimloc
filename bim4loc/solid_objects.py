@@ -38,13 +38,11 @@ class PcdObject(o3dObject):
         mat = rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
         mat.point_size = 5.0
-        mat.base_color = [1.0, 0.7, 0.0, 1.0]
+        mat.base_color = [1.0, 0.8, 0.0, 1.0]
         self.material = mat
 
     def update(self, pcd : np.ndarray) -> None:
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
-
-
 
 class DynamicObject(o3dObject):
     base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
