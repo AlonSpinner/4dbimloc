@@ -3,6 +3,7 @@ import open3d.visualization.gui as gui
 from bim4loc.solid_objects import o3dObject
 import threading
 import time
+from typing import Literal
 
 class VisApp(threading.Thread):
 
@@ -30,15 +31,25 @@ class VisApp(threading.Thread):
     def reset_camera_to_default(self):
         self._vis.reset_camera_to_default()
 
-    def show_axes(self):
-        self._vis.show_axes = True
+    def show_axes(self, show : bool = True):
+        self._vis.show_axes = show
         self._vis.post_redraw()
 
-    def show_ground_plane(self, show : bool, ground_plane : str  = 'XY'):
-        self._vis.ground_plane = visualization.rendering.Scene.GroundPlane(1)
-        if show:
-            self._vis.show_ground = True
+    def show_skybox(self, show : bool = True):
+        self._vis.show_skybox(show)
+        self._vis.post_redraw()
+
+    def show_ground_plane(self, show : bool, ground_plane : Literal['XY','XZ','YZ']  = 'XY'):
+        if ground_plane == 'XY':
+            self._vis.ground_plane = visualization.rendering.Scene.GroundPlane(1)
+        elif ground_plane == 'XZ':
+            self._vis.ground_plane = visualization.rendering.Scene.GroundPlane(0)
+        elif ground_plane == 'YZ':
+            self._vis.ground_plane = visualization.rendering.Scene.GroundPlane(2)
         
+        if show:
+            self._vis.show_ground = True  
+
         self._vis.post_redraw()
     
     def update_object(self, object : o3dObject):
