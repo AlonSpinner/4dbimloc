@@ -40,9 +40,9 @@ class DynamicObject(o3dObject):
         if pose is not None:
             self.update_geometry(pose)
 
-    def update_geometry(self, pose : pose2, z = 0) -> None:
-        self.geometry = deepcopy(self.base_geometry).transform(pose.T3d(z = z))
-        self.pose = pose
+    def update_geometry(self, pose2 : pose2, z = 0) -> None:
+        self.geometry = deepcopy(self.base_geometry).transform(pose2.T3d(z = z))
+        self.pose2 = pose2
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
