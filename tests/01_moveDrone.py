@@ -5,6 +5,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, DRONE_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solid_objects import ifc_converter, o3dObject
 import time
+from copy import deepcopy
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
@@ -13,6 +14,7 @@ for o in objects:
     visApp.add_object(o)
 
 visApp.reset_camera_to_default()
+visApp.show_axes()
 time.sleep(1)
 
 
@@ -24,15 +26,20 @@ mat.shader = "defaultLit"
 mat.base_color = [1.0 , 0 , 0 , 1.0]
 
 drone = o3dObject(name = 'drone', geometry = drone_geo, material = mat)
+base_drone_geo = deepcopy(drone_geo)
 visApp.add_object(drone)
 
 actions = [pose2(1,0,np.pi/10)] * 10
 for a in actions:
-    drone.geometry.rotate(a.R3d(),x.t3d())
-    drone.geometry.translate(a.t3d())
+    x = x + a
+
+    drone_geo = deepcopy(base_drone_geo)
+    drone_geo.transform(x.T3d())
+    drone.geometry = drone_geo
+
     visApp.update_object(drone)
 
-    x = x + a
+
     print(x)
     time.sleep(0.2)
 

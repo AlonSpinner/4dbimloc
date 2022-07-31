@@ -9,3 +9,5 @@ for o in objects:
     visApp.add_object(o)
 
 visApp.reset_camera_to_default()
+visApp.show_axes()
+visApp.show_ground_plane(True)

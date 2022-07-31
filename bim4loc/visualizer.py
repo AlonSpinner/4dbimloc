@@ -29,14 +29,22 @@ class VisApp(threading.Thread):
         
     def reset_camera_to_default(self):
         self._vis.reset_camera_to_default()
+
+    def show_axes(self):
+        self._vis.show_axes = True
+        self._vis.post_redraw()
+
+    def show_ground_plane(self, show : bool, ground_plane : str  = 'XY'):
+        self._vis.ground_plane = visualization.rendering.Scene.GroundPlane(1)
+        if show:
+            self._vis.show_ground = True
+        
+        self._vis.post_redraw()
     
     def update_object(self, object : o3dObject):
-        s = time.time()
         self._vis.remove_geometry(object.name)
         self._vis.add_geometry(object.name, object.geometry, object.material)
         self._vis.post_redraw()
-        e = time.time()
-        print(e - s)
 
 if __name__ == "__main__":
     visApp = VisApp()
