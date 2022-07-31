@@ -15,7 +15,7 @@ for o in objects:
     visApp.add_object(o)
 visApp.reset_camera_to_default()
 
-drone = Drone(pose2 = pose2(3,3,0), z = 1.5)
+drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
 visApp.add_object(drone.object)
 
 straight = pose2(0.5,0,0)
