@@ -10,6 +10,8 @@ class Drone:
         mat = o3d.visualization.rendering.MaterialRecord()
         mat.shader = "defaultLit"
         mat.base_color = [1.0 , 0.0 , 0.0 , 1.0]
+        mat.base_roughness = 0.2
+        mat.base_metallic = 1.0
         base_drone_geo = o3d.io.read_triangle_mesh(DRONE_PATH)
         self.object = DynamicObject(name = 'drone', 
                                     geometry = base_drone_geo, 
@@ -30,9 +32,9 @@ class Drone:
     def scan(self, m : Map):
         z = m.forward_measurement_model(self.pose2, self.lidar_angles)
         
-        thetas = (self.pose2.theta + self.lidar_angles).reshape(-1,1)
-        p = np.hstack((self.pose2.x + z * np.cos(thetas), 
-                       self.pose2.y + z * np.sin(thetas),
+        world_thetas = (self.pose2.theta + self.lidar_angles).reshape(-1,1)
+        world_p = np.hstack((self.pose2.x + z * np.cos(world_thetas), 
+                       self.pose2.y + z * np.sin(world_thetas),
                        self.hover_height * np.ones_like(z)))
-        return z, p
+        return z, world_p
 
