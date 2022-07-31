@@ -1,8 +1,8 @@
-from asyncio import base_events
 from dataclasses import dataclass
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
 import open3d as o3d
+from open3d.visualization import rendering
 import bim4loc.random_models.one_dim as random1d
 from bim4loc.geometry import pose2
 from importlib import import_module
@@ -25,6 +25,26 @@ class IfcObject(o3dObject):
         return self.schedule.cdf(time)
     def complete(self, time : float) -> bool:
         return time > self.completion_time
+
+class PcdObject(o3dObject):
+    def __init__(self, pcd : np.ndarray = None):
+        self.name = 'pcd'
+
+        if pcd is None:
+            self.geometry = o3d.geometry.PointCloud()
+        else:
+            self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
+
+        mat = rendering.MaterialRecord()
+        mat.shader = "defaultUnlit"
+        mat.point_size = 5.0
+        mat.base_color = [1.0, 0.7, 0.0, 1.0]
+        self.material = mat
+
+    def update(self, pcd : np.ndarray) -> None:
+        self.geometry.points = o3d.utility.Vector3dVector(pcd)
+
+
 
 class DynamicObject(o3dObject):
     base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
@@ -93,7 +113,7 @@ def ifc_converter(ifc_path) -> list[IfcObject]:
             mesh = o3d.geometry.TriangleMesh(vertices  = verts, triangles = faces)
             mesh.compute_triangle_normals()
             
-            mat = o3d.visualization.rendering.MaterialRecord()
+            mat = rendering.MaterialRecord()
             mat.shader = "defaultLitTransparency"
             mat.base_color = np.hstack([base_color, 1.0])
 
