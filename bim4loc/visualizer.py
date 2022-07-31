@@ -26,6 +26,17 @@ class VisApp(threading.Thread):
 
     def add_object(self, object : o3dObject):
         self._vis.add_geometry(object.name, object.geometry, object.material)
+        
+    def reset_camera_to_default(self):
+        self._vis.reset_camera_to_default()
+    
+    def update_object(self, object : o3dObject):
+        s = time.time()
+        self._vis.remove_geometry(object.name)
+        self._vis.add_geometry(object.name, object.geometry, object.material)
+        self._vis.post_redraw()
+        e = time.time()
+        print(e - s)
 
 if __name__ == "__main__":
     visApp = VisApp()

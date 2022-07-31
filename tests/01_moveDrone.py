@@ -12,6 +12,9 @@ visApp = VisApp()
 for o in objects:
     visApp.add_object(o)
 
+visApp.reset_camera_to_default()
+time.sleep(1)
+
 
 drone_geo = o3d.io.read_triangle_mesh(DRONE_PATH)
 x = pose2(3,3,0)
@@ -24,17 +27,14 @@ drone = o3dObject(name = 'drone', geometry = drone_geo, material = mat)
 visApp.add_object(drone)
 
 actions = [pose2(1,0,np.pi/10)] * 10
+for a in actions:
+    drone.geometry.rotate(a.R3d(),x.t3d())
+    drone.geometry.translate(a.t3d())
+    visApp.update_object(drone)
 
-# for a in actions:
-#     drone.rotate(a.R3d(),x.t3d())
-#     drone.translate(a.t3d())
-
-#     vis.update_geometry(drone)
-#     vis.poll_events()
-#     vis.update_renderer()
-
-#     x = x + a
-#     time.sleep(0.1)
+    x = x + a
+    print(x)
+    time.sleep(0.2)
 
 # time.sleep(50.0)
 # vis.destroy_window()
