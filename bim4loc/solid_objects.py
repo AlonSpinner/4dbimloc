@@ -1,9 +1,12 @@
+from asyncio import base_events
 from dataclasses import dataclass
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
 import open3d as o3d
 import bim4loc.random_models.one_dim as random1d
-from importlib import import_module, __import__
+from bim4loc.geometry import pose2
+from importlib import import_module
+from copy import deepcopy
 
 @dataclass(frozen = False)
 class o3dObject:
@@ -12,7 +15,7 @@ class o3dObject:
     material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
 
 @dataclass()
-class ifcObject(o3dObject):
+class IfcObject(o3dObject):
     schedule : random1d.Distribution1D
     completion_time : float = 0.0
     
@@ -22,6 +25,24 @@ class ifcObject(o3dObject):
         return self.schedule.cdf(time)
     def complete(self, time : float) -> bool:
         return time > self.completion_time
+
+class DynamicObject(o3dObject):
+    base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
+    pose : pose2 = pose2(0,0,0)
+    
+    def __init__(self, name, geometry, material, pose = None):
+        self.name = name
+        self.geometry = geometry
+        self.material = material
+        self.base_geometry = geometry
+        self.pose = pose
+
+        if pose is not None:
+            self.update_geometry(pose)
+
+    def update_geometry(self, pose : pose2, z = 0) -> None:
+        self.geometry = deepcopy(self.base_geometry).transform(pose.T3d(z = z))
+        self.pose = pose
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
@@ -43,7 +64,7 @@ def description2schedule(description : str) -> random1d.Distribution1D:
     else:
         return random1d.Distribution1D() #empty
 
-def ifc_converter(ifc_path) -> list[ifcObject]:
+def ifc_converter(ifc_path) -> list[IfcObject]:
     '''
     converts ifc file to a list of ifcObjects
     '''
@@ -76,7 +97,7 @@ def ifc_converter(ifc_path) -> list[ifcObject]:
             mat.shader = "defaultLitTransparency"
             mat.base_color = np.hstack([base_color, 1.0])
 
-            objects.append(ifcObject(
+            objects.append(IfcObject(
                                 name = element.GlobalId,
                                 geometry = mesh,
                                 material = mat,

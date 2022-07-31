@@ -21,6 +21,9 @@ class VisApp(threading.Thread):
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
+        self.show_axes(True)
+        self.show_ground_plane(True)
+        self.show_skybox(False)
 
         self._app.add_window(self._vis)
         self._app.run()
@@ -49,7 +52,6 @@ class VisApp(threading.Thread):
         
         if show:
             self._vis.show_ground = True  
-
         self._vis.post_redraw()
     
     def update_object(self, object : o3dObject):
