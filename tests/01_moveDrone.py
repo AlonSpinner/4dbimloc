@@ -1,7 +1,6 @@
 import numpy as np
-import open3d as o3d
 from bim4loc.geometry import pose2
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, DRONE_PATH
+from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solid_objects import ifc_converter
 from bim4loc.agents import Drone
@@ -24,7 +23,7 @@ turn_right = pose2(0,0,-np.pi/8)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 for a in actions:
-    drone.move(a)
+    drone.move(a, 1e-9 * np.eye(3))
     visApp.update_object(drone.object)
 
     time.sleep(0.1)

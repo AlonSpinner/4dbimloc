@@ -1,13 +1,17 @@
 import numpy as np
-from particleFilter.geometry import pose2
-from particleFilter.maps import Map
-from particleFilter.gaussians import gauss_likelihood, gauss_fit
+from bim4loc.geometry import pose2
+from bim4loc.maps import Map
+from bim4loc.agents import Drone
+from bim4loc.random_models.multi_dim import gauss_likelihood, gauss_fit
+
 import time
 
 START_TIME = time.time()
 
-class pf_vanila_SE2:
-    def __init__(self,m : Map ,initial_states : list[pose2]):
+class vanila_SE2:
+    def __init__(self, agent : Drone, m : Map ,initial_states : list[pose2]):
+        self.agent : Drone = agent
+
         self.N_PARTICLES : int = len(initial_states) #amount of particles
         self.STATE_SIZE : int = 3
         
@@ -19,22 +23,22 @@ class pf_vanila_SE2:
         self.SPREAD_THRESHOLD = 1.0 #bigger - higher threshold
 
         self.verbose = True
-        return
 
-    def step(self,z,z_cov,
-                    u,u_cov):
+    def step(self, z : np.ndarray ,z_cov : np.ndarray,
+                    u : pose2 ,u_cov : np.ndarray):
         
         #update particles
         for i in range(self.N_PARTICLES):
             
             #create proposal distribution
-            noise = np.random.multivariate_normal(np.zeros((self.STATE_SIZE)),u_cov)
-            noise = pose2(noise[0],noise[1],noise[2])
-            self.particles[i] = self.particles[i] + (u + noise)
+            whiten_u = pose2(*np.random.multivariate_normal(u.local(),u_cov))
+            self.particles[i] = self.particles[i] + whiten_u
             
             #create target distribution
-            zhat = self.m.forward_measurement_model(self.particles[i])
-            self.weights[i] *= gauss_likelihood(z,zhat,z_cov, pseudo = True)
+            zhat = self.m.forward_measurement_model(self.particles[i], angles = self.agent.lidar_angles)
+
+
+            self.weights[i] *= gauss_likelihood(z, zhat, z_cov, pseudo = True)
 
         #normalize
         sm = self.weights.sum()
