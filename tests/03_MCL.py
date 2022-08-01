@@ -28,7 +28,6 @@ for i in range(100):
             np.random.uniform(min_bounds[2], max_bounds[2]))
         )
 
-
 pf = vanila_SE2(drone, model , inital_poses)
 
 visApp = VisApp()

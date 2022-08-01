@@ -23,7 +23,7 @@ class Map:
             z[z > max_range] = max_range
             return z.reshape(-1,1)
 
-        def bounds(self) -> Union(np.ndarray, np.ndarray):
+        def bounds(self) -> Union[np.ndarray, np.ndarray]:
             all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self._objects])
             all_points = o3d.utility.Vector3dVector(all_points)
             aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(all_points)

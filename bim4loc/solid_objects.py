@@ -1,3 +1,4 @@
+from antigravity import geohash
 from dataclasses import dataclass
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
@@ -61,6 +62,18 @@ class DynamicObject(o3dObject):
     def update_geometry(self, pose2 : pose2, z = 0) -> None:
         self.geometry = deepcopy(self.base_geometry).transform(pose2.T3d(z = z))
         self.pose2 = pose2
+
+class Arrow(DynamicObject):
+    def __init__(self, name, pose = None):
+        self.name = name
+        self.geometry = o3d.geometry.TriangleMesh.create_arrow(0.1, 0.15, 0.5, 0.4)
+        self.geometry.rotate(o3d.geometry.Geometry3D.get_rotation_matrix_from_xyz(np.array([0,np.pi/2,0])))
+        mat = rendering.MaterialRecord()
+        mat.shader = "defaultUnlit"
+        mat.base_color = [0.0, 0.0, 1.0, 1.0]
+        self.material = mat
+        self.base_geometry = self.geometry
+        self.pose = pose
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
