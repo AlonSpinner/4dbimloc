@@ -1,4 +1,3 @@
-from antigravity import geohash
 from dataclasses import dataclass
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
