@@ -5,28 +5,23 @@ import threading
 import time
 from typing import Literal
 
-class VisApp(threading.Thread):
+class VisApp():
 
     def __init__(self) -> None:
-        super(VisApp,self).__init__()
+        threading.Thread(target = self.run).start() #executes the run method in a different thread
         
-        # print('seting up visualization app')
-        self.start()
-
         #without this, we will have a bug where self._vis wont be created
         #reducing time also causes the bug
         time.sleep(0.5)
-        # print('finished setting up visualization app')
 
     def run(self) -> None:
         self._app = gui.Application.instance
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
-
         self.show_ground_plane(True)
         self.show_skybox(False)
-
+        
         self._app.add_window(self._vis)
         self._app.run()
 
@@ -36,8 +31,8 @@ class VisApp(threading.Thread):
             vis.add_geometry(object.name, object.geometry, object.material)
             vis.post_redraw()
 
-        self._app.post_to_main_thread(self._vis,
-            lambda: _add_object(self._vis, object))
+        self._app.post_to_main_thread(self._vis, lambda: _add_object(self._vis, object))
+        time.sleep(0.001)
 
     def update_object(self, object : o3dObject) -> None:
         if not self._vis.scene.has_geometry(object.name):
@@ -49,20 +44,24 @@ class VisApp(threading.Thread):
             self._vis.add_geometry(object.name, object.geometry, object.material)
             self._vis.post_redraw()
         
-        self._app.post_to_main_thread(self._vis,
-            lambda: _update_object(self._vis, object))
+        self._app.post_to_main_thread(self._vis, lambda: _update_object(self._vis, object))
+        time.sleep(0.001)
     
     def redraw(self):
-        self._vis.post_redraw()
+        self._app.post_to_main_thread(self._vis, self._vis.post_redraw)
+        time.sleep(0.001)
 
     def reset_camera_to_default(self):
-        self._vis.reset_camera_to_default()
+        self._app.post_to_main_thread(self._vis, self._vis.reset_camera_to_default)
+        time.sleep(0.001)
 
     def show_axes(self, show : bool = True) -> None:
         self._vis.show_axes = show
+        self.redraw()
 
     def show_skybox(self, show : bool = True) -> None:
         self._vis.show_skybox(show)
+        self.redraw()
 
     def show_ground_plane(self, show : bool, ground_plane : Literal['XY','XZ','YZ']  = 'XY') -> None:
         if ground_plane == 'XY':
@@ -74,15 +73,8 @@ class VisApp(threading.Thread):
         
         if show:
             self._vis.show_ground = True  
-
-class VisApp_Controller():
-    def __init__(self):
-
-        pass
-        gui.Application.instance.run()
-
-
-
+        
+        self.redraw()
 
 if __name__ == "__main__":
     visApp = VisApp()

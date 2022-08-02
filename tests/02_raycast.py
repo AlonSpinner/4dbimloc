@@ -18,9 +18,9 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 visApp = VisApp()
 for o in objects:
-    visApp.add_object(o); time.sleep(0.001)
+    visApp.add_object(o)
 visApp.show_axes(True)
-visApp.reset_camera_to_default(); time.sleep(0.5)
+visApp.reset_camera_to_default()
 visApp.add_object(drone.object)
 pcd_scan = PcdObject()
 visApp.add_object(pcd_scan)

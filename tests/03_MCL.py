@@ -8,9 +8,8 @@ from bim4loc.maps import Map
 from bim4loc.filters import vanila_SE2
 import time
 
-import open3d
-vlevel = open3d.utility.VerbosityLevel(3)
-open3d.utility.set_verbosity_level(vlevel)
+# import open3d as o3d
+# o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
@@ -39,9 +38,9 @@ pf = vanila_SE2(drone, model , inital_poses)
 
 visApp = VisApp()
 for o in objects:
-    visApp.add_object(o); time.sleep(0.001)
+    visApp.add_object(o)
 visApp.show_axes(True)
-visApp.reset_camera_to_default(); time.sleep(0.5)
+visApp.reset_camera_to_default()
 for a in arrows:
     visApp.add_object(a)
 visApp.add_object(drone.object)
@@ -56,9 +55,8 @@ for a in actions:
     
     pcd_scan.update(p)
     visApp.update_object(drone.object)
-    time.sleep(0.01)
     visApp.update_object(pcd_scan)
 
-    time.sleep(0.1)
+    time.sleep(0.2)
 
 print('finished')

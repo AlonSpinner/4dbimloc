@@ -13,7 +13,6 @@ for o in objects:
     visApp.add_object(o); time.sleep(0.001)
 visApp.show_axes(True)
 visApp.reset_camera_to_default()
-time.sleep(0.5)
 
 drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
 arrow = Arrow(name = 'arrow', alpha = 1.0, pose =  drone.pose2)
