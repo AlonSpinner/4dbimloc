@@ -21,7 +21,8 @@ class VisApp(threading.Thread):
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
-
+        self.show_ground_plane(True)
+        self.show_skybox(False)
 
         self._app.add_window(self._vis)
         self._app.run()
@@ -38,13 +39,6 @@ class VisApp(threading.Thread):
         self._vis.remove_geometry(object.name)
         self._vis.add_geometry(object.name, object.geometry, object.material)
         self._vis.post_redraw()
-        
-    def default_settings(self):
-        self.show_ground_plane(True)
-        self.show_skybox(False)
-        self.show_axes(True)
-        self.reset_camera_to_default()
-        self.redraw()
     
     def redraw(self):
         self._vis.post_redraw()

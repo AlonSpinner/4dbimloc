@@ -8,4 +8,7 @@ visApp = VisApp()
 for o in objects:
     visApp.add_object(o)
 
-visApp.default_settings()
+visApp.show_axes(True)
+visApp.reset_camera_to_default()
+
+
