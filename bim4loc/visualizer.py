@@ -31,7 +31,7 @@ class VisApp(threading.Thread):
         self._app.run()
 
     def add_object(self, object : o3dObject) -> None:
-        
+
         def _add_object(vis, object : o3dObject) -> None:
             vis.add_geometry(object.name, object.geometry, object.material)
             vis.post_redraw()
@@ -39,14 +39,18 @@ class VisApp(threading.Thread):
         self._app.post_to_main_thread(self._vis,
             lambda: _add_object(self._vis, object))
 
-    def _update_object(self, object : o3dObject) -> None:
+    def update_object(self, object : o3dObject) -> None:
         if not self._vis.scene.has_geometry(object.name):
-            self.add_object(object)
+            print(f'geometry {object.name} does not exist in scene')
             return
 
-        self._vis.remove_geometry(object.name)
-        self._vis.add_geometry(object.name, object.geometry, object.material)
-        self._vis.post_redraw()
+        def _update_object(vis, object: o3dObject) -> None:
+            self._vis.remove_geometry(object.name)
+            self._vis.add_geometry(object.name, object.geometry, object.material)
+            self._vis.post_redraw()
+        
+        self._app.post_to_main_thread(self._vis,
+            lambda: _update_object(self._vis, object))
     
     def redraw(self):
         self._vis.post_redraw()

@@ -39,7 +39,7 @@ pf = vanila_SE2(drone, model , inital_poses)
 
 visApp = VisApp()
 for o in objects:
-    visApp.add_object(o)
+    visApp.add_object(o); time.sleep(0.001)
 visApp.show_axes(True)
 visApp.reset_camera_to_default(); time.sleep(0.5)
 for a in arrows:
