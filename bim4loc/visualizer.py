@@ -57,7 +57,7 @@ class VisApp():
         time.sleep(0.001)
 
     def show_axes(self, show : bool = True) -> None:
-        self._vis.show_axes = show
+        self._vis.show_axes = show #axes size are proportional to the scene size
         self.redraw()
 
     def show_skybox(self, show : bool = True) -> None:

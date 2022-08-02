@@ -52,7 +52,6 @@ for a in actions:
     drone.move(a, 1e-9 * np.eye(3))
     z, p = drone.scan(world, std = 0.1)
     
-    
     pcd_scan.update(p)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)

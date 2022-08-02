@@ -1,5 +1,77 @@
 import numpy as np
 
+class pose2z:
+
+    size = 4 #state size
+
+    def __init__(self, x, y, theta, z) -> None:
+        #we hold the storage form
+        self.x : float = x
+        self.y : float = y
+        self.theta : float = theta
+        self.z : float = z
+
+    def identity() -> 'pose2z':
+        return pose2z(0,0,0,0)
+
+    def Exp(self) -> np.ndarray:
+        h = np.array([0,0,0,1])
+        return np.hstack(np.vstack((self.R(), self.t())),h)
+
+    def Log(self) -> np.ndarray: #'storage' space
+        return np.array([[self.x, self.y, self.theta, self.z]])
+
+    def compose(self, g : 'pose2z') -> 'pose2z':
+        #returns the composition of self and x.
+        T =  self.Exp @ g.Exp
+        x = T[0,3]; y = T[1,3]; z = T[2,3]
+        theta = np.arctan2(T[1,0], T[0,0])
+        return pose2z(x ,y ,theta, z)
+
+    def inverse(self) -> 'pose2z':
+        #returns the inverse of self.
+        invR = self.R().T
+        invt = -invR @ self.t()
+        x = np.asscalar(invt[0]); y = np.asscalar(invt[1]); z = np.asscalar(invt[2])
+        theta = np.arctan2(invR[1,0], invR[0,0])
+        return pose2z(x, y, theta, z)
+
+    def between(self, g : 'pose2z') -> 'pose2z':
+        return self.compose(self.inverse(),g)
+
+    def transform_to(self, p : np.ndarray) -> np.ndarray:
+        return self.Exp() @ p
+
+    def transform_from(self, p : np.ndarray) -> np.ndarray:
+        return self.inverse().Exp() @ p
+
+    def localCoordinates(self, x : 'pose2z') -> 'pose2z':
+        return self.between(x).Log()
+
+    def retract(self, v : np.ndarray) -> 'pose2z':
+        return self.compose(pose2z(*v))
+
+    def __mul__(self, x : 'pose2z') -> 'pose2z':
+        return self.compose(x)
+    
+    def __add__(self, v : np.ndarray) -> 'pose2z':
+        return self.retract(v)
+
+    def __minus__(self, g : 'pose2z') -> 'pose2z':
+        return self.between(g)
+
+    def __str__(self):
+        return f"pose2z({self.x},{self.y},{self.theta},{self.z})"
+
+    def R(self) -> np.ndarray:
+        return np.array([[np.cos(self.theta),-np.sin(self.theta)],
+                            [np.sin(self.theta),np.cos(self.theta)],
+                            [0,0,1]])
+    def t(self) -> np.ndarray:
+        return np.array([[self.x], 
+                         [self.y], 
+                         [self.z]])    
+
 class pose2:
     
     size = 3 #state size
