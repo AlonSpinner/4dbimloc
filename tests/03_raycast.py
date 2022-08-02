@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.geometry import pose2
+from bim4loc.geometry import pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
@@ -8,12 +8,12 @@ from bim4loc.maps import Map
 import time
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
+drone = Drone(pose = pose2z(3,3,0,1.5))
 world = Map(objects)
 
-straight = pose2(0.5,0,0)
-turn_left = pose2(0,0,np.pi/8)
-turn_right = pose2(0,0,-np.pi/8)
+straight = pose2z(0.5,0,0,0)
+turn_left = pose2z(0,0,np.pi/8,0)
+turn_right = pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 visApp = VisApp()

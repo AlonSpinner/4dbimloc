@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.geometry import pose2
+from bim4loc.geometry import pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid, Arrow
@@ -12,12 +12,12 @@ import logging
 logging.basicConfig(format = '%(levelname)s in %(funcName)s: %(message)s')
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
+drone = Drone(pose = pose2z(3,3,0, 1.5))
 world = Map(solids)
 
-straight = pose2(0.5,0,0)
-turn_left = pose2(0,0,np.pi/8)
-turn_right = pose2(0,0,-np.pi/8)
+straight = pose2z(0.5,0,0,0)
+turn_left = pose2z(0,0,np.pi/8,0)
+turn_right = pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 model = world
@@ -27,9 +27,10 @@ Nparticles = 100
 inital_poses = []
 for i in range(Nparticles):
     inital_poses.append(
-        pose2(np.random.uniform(min_bounds[0], max_bounds[0]),
+        pose2z(np.random.uniform(min_bounds[0], max_bounds[0]),
             np.random.uniform(min_bounds[1], max_bounds[1]),
-            np.random.uniform(min_bounds[2], max_bounds[2]))
+            np.random.uniform(min_bounds[2], max_bounds[2]),
+            drone.pose._z)
     )
 arrows = []
 for i in range(Nparticles):
@@ -49,7 +50,7 @@ visApp.add_solid(pcd_scan)
 
 time.sleep(1)
 for a in actions:
-    drone.move(a, 1e-9 * np.eye(3))
+    drone.move(a, 1e-9 * np.eye(4))
     z, p = drone.scan(world, std = 0.1)
     
     pcd_scan.update(p)

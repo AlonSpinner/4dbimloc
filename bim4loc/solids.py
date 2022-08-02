@@ -4,7 +4,7 @@ import numpy as np
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random_models.one_dim as random1d
-from bim4loc.geometry import pose2
+from bim4loc.geometry import pose2z
 from importlib import import_module
 from copy import deepcopy
 
@@ -45,7 +45,7 @@ class PcdSolid(o3dSolid):
 
 class DynamicSolid(o3dSolid):
     base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
-    pose : pose2 = pose2(0,0,0)
+    pose : pose2z = pose2z.identity()
     
     def __init__(self, name, geometry, material, pose = None):
         self.name = name
@@ -57,9 +57,9 @@ class DynamicSolid(o3dSolid):
         if pose is not None:
             self.update_geometry(pose)
 
-    def update_geometry(self, pose2 : pose2, z = 0) -> None:
-        self.geometry = deepcopy(self.base_geometry).transform(pose2.T3d(z = z))
-        self.pose2 = pose2
+    def update_geometry(self, pose : pose2z) -> None:
+        self.geometry = deepcopy(self.base_geometry).transform(pose.Exp())
+        self.pose = pose
 
 class Arrow(DynamicSolid):
     def __init__(self, name, alpha : float, pose = None):

@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.geometry import pose2
+from bim4loc.geometry import pose2z
 from bim4loc.maps import Map
 from bim4loc.agents import Drone
 from bim4loc.random_models.multi_dim import gauss_likelihood, gauss_fit
@@ -9,11 +9,11 @@ import time
 START_TIME = time.time()
 
 class vanila_SE2:
-    def __init__(self, agent : Drone, m : Map ,initial_states : list[pose2]):
+    def __init__(self, agent : Drone, m : Map ,initial_states : list[pose2z]):
         self.agent : Drone = agent
 
         self.N_PARTICLES : int = len(initial_states) #amount of particles
-        self.STATE_SIZE : int = 3
+        self.STATE_SIZE : int = 4
         
         self.particles = initial_states
         self.m = m # map must have method forward_measurement_model(x)
@@ -25,14 +25,14 @@ class vanila_SE2:
         self.verbose = True
 
     def step(self, z : np.ndarray ,z_cov : np.ndarray,
-                    u : pose2 ,u_cov : np.ndarray):
+                    u : pose2z ,u_cov : np.ndarray):
         
         #update particles
         for i in range(self.N_PARTICLES):
             
             #create proposal distribution
-            whiten_u = pose2(*np.random.multivariate_normal(u.local(),u_cov))
-            self.particles[i] = self.particles[i] + whiten_u
+            whiten_u = pose2z(*np.random.multivariate_normal(u.Log(),u_cov))
+            self.particles[i] = self.particles[i].compose(whiten_u)
             
             #create target distribution
             zhat = self.m.forward_measurement_model(self.particles[i], angles = self.agent.lidar_angles)
@@ -74,6 +74,3 @@ class vanila_SE2:
         locals = self.particleLocals().T # -> 3xN_PARTICLES
         mu, cov = gauss_fit(locals, self.weights)       
         return mu,cov
-
-    def particleLocals(self):
-        return np.array([p.local() for p in self.particles])
