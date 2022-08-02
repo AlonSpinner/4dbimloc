@@ -1,18 +1,18 @@
 import numpy as np
 import open3d as o3d
 from bim4loc.geometry import pose2
-from bim4loc.solid_objects import IfcObject
+from bim4loc.solids import IfcSolid
 from typing import Union
 
 class Map:
-        def __init__(self, objects : list[IfcObject]) -> None:
+        def __init__(self, solids : list[IfcSolid]) -> None:
             scene = o3d.t.geometry.RaycastingScene()
-            for o in objects:
-                o = o3d.t.geometry.TriangleMesh.from_legacy(o.geometry)
-                scene.add_triangles(o)
+            for s in solids:
+                s = o3d.t.geometry.TriangleMesh.from_legacy(s.geometry)
+                scene.add_triangles(s)
             
             self._scene =  scene
-            self._objects = objects
+            self._solids = solids
 
         def forward_measurement_model(self, pose2 : pose2, angles : np.ndarray, max_range : float) -> np.ndarray:
             rays = o3d.core.Tensor([[pose2.x,pose2.y,0,
@@ -24,7 +24,7 @@ class Map:
             return z.reshape(-1,1)
 
         def bounds(self) -> Union[np.ndarray, np.ndarray]:
-            all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self._objects])
+            all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self._solids])
             all_points = o3d.utility.Vector3dVector(all_points)
             aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(all_points)
             return aabb.get_min_bound(), aabb.get_max_bound()

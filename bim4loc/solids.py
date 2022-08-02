@@ -9,13 +9,13 @@ from importlib import import_module
 from copy import deepcopy
 
 @dataclass(frozen = False)
-class o3dObject:
+class o3dSolid:
     name : str #name
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
     material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
 
 @dataclass()
-class IfcObject(o3dObject):
+class IfcSolid(o3dSolid):
     schedule : random1d.Distribution1D
     completion_time : float = 0.0
     
@@ -26,7 +26,7 @@ class IfcObject(o3dObject):
     def complete(self, time : float) -> bool:
         return time > self.completion_time
 
-class PcdObject(o3dObject):
+class PcdSolid(o3dSolid):
     def __init__(self, pcd : np.ndarray = None):
         self.name = 'pcd'
         
@@ -43,7 +43,7 @@ class PcdObject(o3dObject):
     def update(self, pcd : np.ndarray) -> None:
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
 
-class DynamicObject(o3dObject):
+class DynamicSolid(o3dSolid):
     base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
     pose : pose2 = pose2(0,0,0)
     
@@ -61,7 +61,7 @@ class DynamicObject(o3dObject):
         self.geometry = deepcopy(self.base_geometry).transform(pose2.T3d(z = z))
         self.pose2 = pose2
 
-class Arrow(DynamicObject):
+class Arrow(DynamicSolid):
     def __init__(self, name, alpha : float, pose = None):
         self.name = name
         self.geometry = o3d.geometry.TriangleMesh.create_arrow(0.1, 0.15, 0.5, 0.4)
@@ -100,9 +100,9 @@ def description2schedule(description : str) -> random1d.Distribution1D:
     else:
         return random1d.Distribution1D() #empty
 
-def ifc_converter(ifc_path) -> list[IfcObject]:
+def ifc_converter(ifc_path) -> list[IfcSolid]:
     '''
-    converts ifc file to a list of ifcObjects
+    converts ifc file to a list of ifcSolids
     '''
     ifc = ifcopenshell.open(ifc_path)
 
@@ -111,7 +111,7 @@ def ifc_converter(ifc_path) -> list[IfcObject]:
     settings.set(settings.USE_WORLD_COORDS,True)
     settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
 
-    objects = []
+    solids = []
     for product in products:
         if product.is_a("IfcOpeningElement"): continue
         if product.Representation: #has shape
@@ -133,11 +133,11 @@ def ifc_converter(ifc_path) -> list[IfcObject]:
             mat.shader = "defaultLitTransparency"
             mat.base_color = np.hstack([base_color, 1.0])
 
-            objects.append(IfcObject(
+            solids.append(IfcSolid(
                                 name = element.GlobalId,
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),                                
                                 ))
 
-    return objects
+    return solids

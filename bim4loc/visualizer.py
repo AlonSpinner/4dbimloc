@@ -1,9 +1,10 @@
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
-from bim4loc.solid_objects import o3dObject
+from bim4loc.solids import o3dSolid
 import threading
 import time
 from typing import Literal
+import logging
 
 class VisApp():
 
@@ -25,26 +26,26 @@ class VisApp():
         self._app.add_window(self._vis)
         self._app.run()
 
-    def add_object(self, object : o3dObject) -> None:
+    def add_solid(self, solid : o3dSolid) -> None:
 
-        def _add_object(vis, object : o3dObject) -> None:
-            vis.add_geometry(object.name, object.geometry, object.material)
+        def _add_solid(vis, solid : o3dSolid) -> None:
+            vis.add_geometry(solid.name, solid.geometry, solid.material)
             vis.post_redraw()
 
-        self._app.post_to_main_thread(self._vis, lambda: _add_object(self._vis, object))
+        self._app.post_to_main_thread(self._vis, lambda: _add_solid(self._vis, solid))
         time.sleep(0.001)
 
-    def update_object(self, object : o3dObject) -> None:
-        if not self._vis.scene.has_geometry(object.name):
-            print(f'geometry {object.name} does not exist in scene')
+    def update_solid(self, solid : o3dSolid) -> None:
+        if not self._vis.scene.has_geometry(solid.name):
+            logging.warning(f'geometry {solid.name} does not exist in scene')
             return
 
-        def _update_object(vis, object: o3dObject) -> None:
-            self._vis.remove_geometry(object.name)
-            self._vis.add_geometry(object.name, object.geometry, object.material)
-            self._vis.post_redraw()
+        def _update_solid(vis, solid: o3dSolid) -> None:
+            vis.remove_geometry(solid.name)
+            vis.add_geometry(solid.name, solid.geometry, solid.material)
+            vis.post_redraw()
         
-        self._app.post_to_main_thread(self._vis, lambda: _update_object(self._vis, object))
+        self._app.post_to_main_thread(self._vis, lambda: _update_solid(self._vis, solid))
         time.sleep(0.001)
     
     def redraw(self):
