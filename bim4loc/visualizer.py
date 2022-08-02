@@ -23,6 +23,7 @@ class VisApp(threading.Thread):
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
+
         self.show_ground_plane(True)
         self.show_skybox(False)
 
@@ -30,6 +31,7 @@ class VisApp(threading.Thread):
         self._app.run()
 
     def add_object(self, object : o3dObject) -> None:
+        # self._app.post_to_main_thread()
         self._vis.add_geometry(object.name, object.geometry, object.material)
         self._vis.post_redraw()
 
@@ -64,6 +66,15 @@ class VisApp(threading.Thread):
         
         if show:
             self._vis.show_ground = True  
+
+class VisApp_Controller():
+    def __init__(self):
+
+        pass
+        gui.Application.instance.run()
+
+
+
 
 if __name__ == "__main__":
     visApp = VisApp()

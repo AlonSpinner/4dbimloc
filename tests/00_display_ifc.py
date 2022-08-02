@@ -3,9 +3,8 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solid_objects import ifc_converter
 import time
 
-import open3d
-vlevel = open3d.utility.VerbosityLevel(3)
-open3d.utility.set_verbosity_level(vlevel)
+import open3d as o3d
+o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
