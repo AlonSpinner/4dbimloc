@@ -36,14 +36,15 @@ pf = vanila_SE2(drone, model , inital_poses)
 visApp = VisApp()
 for o in objects:
     visApp.add_object(o)
+visApp.show_axes(True)
+visApp.reset_camera_to_default(); time.sleep(0.5)
 for a in arrows:
     visApp.add_object(a)
 visApp.add_object(drone.object)
 pcd_scan = PcdObject()
 visApp.add_object(pcd_scan)
-visApp.reset_camera_to_default()
-time.sleep(1)
 
+time.sleep(1)
 for a in actions:
     drone.move(a, 1e-9 * np.eye(3))
     z, p = drone.scan(world, std = 0.1)
@@ -51,8 +52,9 @@ for a in actions:
     
     pcd_scan.update(p)
     visApp.update_object(drone.object)
+    time.sleep(0.01)
     visApp.update_object(pcd_scan)
 
-    time.sleep(0.3)
+    time.sleep(0.1)
 
 print('finished')
