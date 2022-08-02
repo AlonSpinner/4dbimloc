@@ -21,26 +21,42 @@ class VisApp(threading.Thread):
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
-        self.show_axes(True)
-        self.show_ground_plane(True)
-        self.show_skybox(False)
+
 
         self._app.add_window(self._vis)
         self._app.run()
 
     def add_object(self, object : o3dObject) -> None:
         self._vis.add_geometry(object.name, object.geometry, object.material)
+        self._vis.post_redraw()
+
+    def update_object(self, object : o3dObject) -> None:
+        if not self._vis.scene.has_geometry(object.name):
+            self.add_object(object)
+            return
+
+        self._vis.remove_geometry(object.name)
+        self._vis.add_geometry(object.name, object.geometry, object.material)
+        self._vis.post_redraw()
         
+    def default_settings(self):
+        self.show_ground_plane(True)
+        self.show_skybox(False)
+        self.show_axes(True)
+        self.reset_camera_to_default()
+        self.redraw()
+    
+    def redraw(self):
+        self._vis.post_redraw()
+
     def reset_camera_to_default(self):
         self._vis.reset_camera_to_default()
 
     def show_axes(self, show : bool = True) -> None:
         self._vis.show_axes = show
-        self._vis.post_redraw()
 
     def show_skybox(self, show : bool = True) -> None:
         self._vis.show_skybox(show)
-        self._vis.post_redraw()
 
     def show_ground_plane(self, show : bool, ground_plane : Literal['XY','XZ','YZ']  = 'XY') -> None:
         if ground_plane == 'XY':
@@ -52,16 +68,6 @@ class VisApp(threading.Thread):
         
         if show:
             self._vis.show_ground = True  
-        self._vis.post_redraw()
-    
-    def update_object(self, object : o3dObject) -> None:
-        if not self._vis.scene.has_geometry(object.name):
-            self.add_object(object)
-            return
-
-        self._vis.remove_geometry(object.name)
-        self._vis.add_geometry(object.name, object.geometry, object.material)
-        self._vis.post_redraw()
 
 if __name__ == "__main__":
     visApp = VisApp()

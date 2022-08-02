@@ -8,4 +8,4 @@ visApp = VisApp()
 for o in objects:
     visApp.add_object(o)
 
-visApp.reset_camera_to_default()
+visApp.default_settings()

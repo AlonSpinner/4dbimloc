@@ -8,7 +8,7 @@ from bim4loc.maps import Map
 class Drone:
     def __init__(self, pose2 : pose2, hover_height = 0.0):
         mat = o3d.visualization.rendering.MaterialRecord()
-        mat.shader = "defaultLit"
+        mat.shader = "defaultUnlit"
         mat.base_color = [1.0 , 0.0 , 0.0 , 1.0]
         mat.base_roughness = 0.2
         mat.base_metallic = 1.0
@@ -21,7 +21,7 @@ class Drone:
         
         self.pose2 = pose2
         self.hover_height = hover_height
-        self.lidar_angles = np.linspace(-np.pi/2, np.pi/2, num = 60)
+        self.lidar_angles = np.linspace(-np.pi/2, np.pi/2, num = 36)
         self.lidar_max_range = 10.0
             
         self.object.update_geometry(self.pose2, self.hover_height)

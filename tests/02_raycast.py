@@ -10,7 +10,6 @@ import time
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
 world = Map(objects)
-pcd_scan = PcdObject()
 
 straight = pose2(0.5,0,0)
 turn_left = pose2(0,0,np.pi/8)
@@ -20,10 +19,12 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 visApp = VisApp()
 for o in objects:
     visApp.add_object(o)
-visApp.reset_camera_to_default()
 visApp.add_object(drone.object)
-time.sleep(1)
+pcd_scan = PcdObject()
+visApp.add_object(pcd_scan)
+visApp.reset_camera_to_default()
 
+time.sleep(1)
 for a in actions:
     drone.move(a)
     z, p = drone.scan(world, std = 0.1)

@@ -8,14 +8,14 @@ import time
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
+visApp.default_settings()
 time.sleep(1)
 
 for o in objects:
     visApp.add_object(o)
-visApp.reset_camera_to_default()
 
 drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
-arrow = Arrow('arrow', drone.pose2)
+arrow = Arrow(name = 'arrow', alpha = 1.0, pose =  drone.pose2)
 visApp.add_object(drone.object)
 visApp.add_object(arrow)
 

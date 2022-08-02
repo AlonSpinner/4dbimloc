@@ -29,11 +29,10 @@ class IfcObject(o3dObject):
 class PcdObject(o3dObject):
     def __init__(self, pcd : np.ndarray = None):
         self.name = 'pcd'
-
+        
         if pcd is None:
-            self.geometry = o3d.geometry.PointCloud()
-        else:
-            self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
+            pcd = np.array([[0,0,0]])
+        self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
 
         mat = rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
@@ -63,16 +62,23 @@ class DynamicObject(o3dObject):
         self.pose2 = pose2
 
 class Arrow(DynamicObject):
-    def __init__(self, name, pose = None):
+    def __init__(self, name, alpha : float, pose = None):
         self.name = name
         self.geometry = o3d.geometry.TriangleMesh.create_arrow(0.1, 0.15, 0.5, 0.4)
         self.geometry.rotate(o3d.geometry.Geometry3D.get_rotation_matrix_from_xyz(np.array([0,np.pi/2,0])))
+        self.geometry.compute_triangle_normals()
         mat = rendering.MaterialRecord()
-        mat.shader = "defaultUnlit"
-        mat.base_color = [0.0, 0.0, 1.0, 1.0]
+        mat.shader = "defaultLitTransparency" #"defaultUnlitTransparency"
+        mat.base_color = np.array([0.0, 0.0, 1.0, alpha])
         self.material = mat
         self.base_geometry = self.geometry
         self.pose = pose
+        
+        if pose is not None:
+            self.update_geometry(pose)
+
+    def update_alpha(self, alpha : float) -> None:
+        self.material.base_color[3] = alpha
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
