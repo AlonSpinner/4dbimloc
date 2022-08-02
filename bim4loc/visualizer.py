@@ -10,11 +10,13 @@ class VisApp(threading.Thread):
     def __init__(self) -> None:
         super(VisApp,self).__init__()
         
+        # print('seting up visualization app')
         self.start()
 
         #without this, we will have a bug where self._vis wont be created
         #reducing time also causes the bug
         time.sleep(0.5)
+        # print('finished setting up visualization app')
 
     def run(self) -> None:
         self._app = gui.Application.instance

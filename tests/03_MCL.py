@@ -8,6 +8,10 @@ from bim4loc.maps import Map
 from bim4loc.filters import vanila_SE2
 import time
 
+import open3d
+vlevel = open3d.utility.VerbosityLevel(3)
+open3d.utility.set_verbosity_level(vlevel)
+
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose2 = pose2(3,3,0), hover_height = 1.5)
 world = Map(objects)
