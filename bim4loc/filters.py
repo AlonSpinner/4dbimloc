@@ -3,12 +3,11 @@ from bim4loc.geometry import Pose2z
 from bim4loc.maps import Map
 from bim4loc.agents import Drone
 from bim4loc.random_models.multi_dim import gauss_likelihood, gauss_fit
-
+import logging
 import time
+from copy import deepcopy
 
-START_TIME = time.time()
-
-class vanila_SE2:
+class vanila:
     def __init__(self, agent : Drone, m : Map ,initial_states : list[Pose2z]):
         self.agent : Drone = agent
 
@@ -22,7 +21,7 @@ class vanila_SE2:
         self.ETA_THRESHOLD : float = 4.0/self.N_PARTICLES # bigger - lower threshold
         self.SPREAD_THRESHOLD = 1.0 #bigger - higher threshold
 
-        self.verbose = True
+        self.init_time = time.time()
 
     def step(self, z : np.ndarray ,z_cov : np.ndarray,
                     u : Pose2z ,u_cov : np.ndarray):
@@ -35,27 +34,28 @@ class vanila_SE2:
             self.particles[i] = self.particles[i].compose(whiten_u)
             
             #create target distribution
-            zhat = self.m.forward_measurement_model(self.particles[i], angles = self.agent.lidar_angles)
+            zhat = self.m.forward_measurement_model(self.particles[i], 
+                                                    angles = self.agent.lidar_angles, 
+                                                    max_range = self.agent.lidar_max_range)
 
-
-            self.weights[i] *= gauss_likelihood(z, zhat, z_cov, pseudo = True)
+            self.weights[i] *= gauss_likelihood(z, zhat, z_cov, pseudo = False)
 
         #normalize
         sm = self.weights.sum()
         if sm == 0.0: #numerical errors can cause this if particles have diverged from solution
-            if self.verbose: print(f'{time.time() - START_TIME}[s]: numerically caused weight reset')
+            logging.warning(f'{time.time() - self.init_time}[s]: numerically caused weight reset')
             self.weights = np.ones(self.N_PARTICLES) * 1/self.N_PARTICLES
         else:
             self.weights = self.weights/sm
             
         #resample
-        spread = np.linalg.norm(np.cov(self.particleLocals().T))
         n_eff = self.weights.dot(self.weights)
-        if n_eff < self.ETA_THRESHOLD or spread > self.SPREAD_THRESHOLD:
-            if self.verbose: print(f'{time.time() - START_TIME}[s]: resampling')
-            self.low_variance_sampler()
+        if n_eff < self.ETA_THRESHOLD:
+            logging.info(f'{time.time() - self.init_time}[s]: resampling')
+            self.resample()
 
-    def low_variance_sampler(self):
+    def resample(self):
+        #low_variance_sampler
         r = np.random.uniform()/self.N_PARTICLES
         idx = 0
         c = self.weights[idx]
@@ -65,12 +65,7 @@ class vanila_SE2:
             while u > c:
                 idx += 1
                 c += self.weights[idx]
-            new_particles.append(self.particles[idx])
+            new_particles.append(deepcopy(self.particles[idx]))
         
         self.particles = new_particles
         self.weights = np.ones(self.N_PARTICLES) * 1/self.N_PARTICLES
-
-    def estimateGaussian(self):
-        locals = self.particleLocals().T # -> 3xN_PARTICLES
-        mu, cov = gauss_fit(locals, self.weights)       
-        return mu,cov

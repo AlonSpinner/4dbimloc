@@ -64,21 +64,30 @@ class DynamicSolid(o3dSolid):
 class ArrowSolid(DynamicSolid):
     def __init__(self, name, alpha : float, pose = None):
         self.name = name
-        self.geometry = o3d.geometry.TriangleMesh.create_arrow(0.1, 0.15, 0.5, 0.4)
+        
+        self.geometry = o3d.geometry.TriangleMesh.create_arrow(cylinder_radius = 0.07, 
+                                                                cone_radius = 0.12, 
+                                                                cylinder_height = 0.5, 
+                                                                cone_height = 0.4)
         self.geometry.rotate(o3d.geometry.Geometry3D.get_rotation_matrix_from_xyz(np.array([0,np.pi/2,0])))
         self.geometry.compute_triangle_normals()
-        mat = rendering.MaterialRecord()
-        mat.shader = "defaultLitTransparency" #"defaultUnlitTransparency"
-        mat.base_color = np.array([0.0, 0.0, 1.0, alpha])
-        self.material = mat
         self.base_geometry = self.geometry
+        
+        mat = rendering.MaterialRecord()
+        mat.shader = "defaultUnlit" #"defaultUnlitTransparency"
+        mat.base_color = np.array([0.0, 0.0, 1.0, 1.0])
+        self.material = mat
+        
         self.pose = pose
+        
+        self._min_alpha = 0.2
+        # self.update_alpha(alpha)
         
         if pose is not None:
             self.update_geometry(pose)
 
     def update_alpha(self, alpha : float) -> None:
-        self.material.base_color[3] = alpha
+        self.material.base_color[3] = min(alpha,self._min_alpha)
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------

@@ -33,7 +33,7 @@ class VisApp():
             vis.post_redraw()
 
         self._app.post_to_main_thread(self._vis, lambda: _add_solid(self._vis, solid))
-        # time.sleep(0.001)
+        time.sleep(0.001)
 
     def update_solid(self, solid : o3dSolid) -> None:
         if not self._vis.scene.has_geometry(solid.name):
@@ -46,15 +46,15 @@ class VisApp():
             vis.post_redraw()
         
         self._app.post_to_main_thread(self._vis, lambda: _update_solid(self._vis, solid))
-        # time.sleep(0.001)
+        time.sleep(0.001)
     
     def redraw(self):
         self._app.post_to_main_thread(self._vis, self._vis.post_redraw)
-        # time.sleep(0.001)
+        time.sleep(0.001)
 
     def reset_camera_to_default(self):
         self._app.post_to_main_thread(self._vis, self._vis.reset_camera_to_default)
-        # time.sleep(0.001)
+        time.sleep(0.001)
 
     def show_axes(self, show : bool = True) -> None:
         self._vis.show_axes = show #axes size are proportional to the scene size

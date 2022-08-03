@@ -1,8 +1,7 @@
 import numpy as np
 
-class Pose2z:
-
-    size = 4 #state size
+class Pose2z:    
+    state_size : int = 4 #state size
 
     def __init__(self, x, y, theta, z) -> None:
         #we hold the storage form
@@ -11,8 +10,29 @@ class Pose2z:
         self._theta : float = theta
         self._z : float = z
         
-        self.R = self.Rz(theta)
-        self.t = np.vstack((x, y, z))
+        self._R  : np.ndarray = self.Rz(self._theta)
+        self._t : np.ndarray = np.vstack((self._x, self._y, self._z))
+
+    #prevents users from settings internal storage directly. Basically creating an immutable class
+         #example in: https://realpython.com/python-property/
+    @property
+    def x(self) -> float:
+        return self._x
+    @property
+    def y(self) -> float:
+        return self._y
+    @property
+    def theta(self) -> float:
+        return self._theta
+    @property
+    def z(self) -> float:
+        return self._z
+    @property
+    def R(self) -> float:
+        return self._R
+    @property
+    def t(self) -> float:
+        return self._t
 
     @classmethod
     def from_Exp(cls, T : np.ndarray) -> 'Pose2z':
@@ -31,12 +51,12 @@ class Pose2z:
         return Pose2z(0,0,0,0)
 
     def Exp(self) -> np.ndarray:
-        return self.Rt2T(self.R,self.t)
+        return self.Rt2T(self._R,self._t)
 
     def Log(self) -> np.ndarray:
         #slow but correct as opposed to just returnning internal storage.. whatevah
-        theta = np.arctan2(self.R[1,0], self.R[0,0])
-        return np.array([np.asscalar(self.t[0]), np.asscalar(self.t[1]), theta, np.asscalar(self.t[2])])
+        theta = np.arctan2(self._R[1,0], self._R[0,0])
+        return np.array([self._t[0,0], self._t[1,0], theta, self._t[2,0]])
 
     def compose(self, g : 'Pose2z') -> 'Pose2z':
         #returns the composition of self and x.
@@ -44,8 +64,8 @@ class Pose2z:
 
     def inverse(self) -> 'Pose2z':
         #returns the inverse of self.
-        invR = self.R.T
-        invt = -invR @ self.t
+        invR = self._R.T
+        invt = -invR @ self._t
         return self.from_Rt(invR,invt)
 
     def between(self, g : 'Pose2z') -> 'Pose2z':

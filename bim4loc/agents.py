@@ -4,6 +4,7 @@ from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.geometry import Pose2z
 from bim4loc.maps import Map
+from typing import Union
 
 class Drone:
     def __init__(self, pose : Pose2z):
@@ -32,10 +33,9 @@ class Drone:
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : Map, std = None):
+    def scan(self, m : Map, std = 0.1) -> Union[np.ndarray, np.ndarray]:
         z = m.forward_measurement_model(self.pose, self.lidar_angles, self.lidar_max_range)
-        if std is not None:
-            z = np.random.normal(z, std)
+        z = np.random.normal(z, std)
         
         world_thetas = (self.pose._theta + self.lidar_angles).reshape(-1,1)
         world_p = np.hstack((self.pose._x + z * np.cos(world_thetas), 

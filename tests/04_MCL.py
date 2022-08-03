@@ -5,11 +5,14 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid, ArrowSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import Map
-from bim4loc.filters import vanila_SE2
+from bim4loc.filters import vanila
 import time
 import logging
+from copy import deepcopy
 
 logging.basicConfig(format = '%(levelname)s in %(funcName)s: %(message)s')
+logger = logging.getLogger('dev')
+logger.setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
@@ -32,27 +35,38 @@ for i in range(Nparticles):
             np.random.uniform(min_bounds[2], max_bounds[2]),
             0)
     )
+# inital_poses[0] = deepcopy(drone.pose)
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
-pf = vanila_SE2(drone, model , inital_poses)
+pf = vanila(drone, model , inital_poses)
+Z_STD = 0.05
+Z_COV = np.kron(np.eye(drone.lidar_angles.size),Z_STD**2)
+U_COV = np.diag([0.001,0.001,np.radians(0.005/180),0.0])
 
 visApp = VisApp()
 for s in solids:
     visApp.add_solid(s)
 visApp.show_axes(True)
 visApp.reset_camera_to_default()
-for a in arrows:
-    visApp.add_solid(a)
+[visApp.add_solid(a) for a in arrows]
 visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan)
 
 time.sleep(1)
-for a in actions:
-    drone.move(a, 1e-9 * np.eye(4))
-    z, p = drone.scan(world, std = 0.1)
+for t,u in enumerate(actions):
+    drone.move(u, U_COV)
+    z, p = drone.scan(world, Z_STD)
+
+    pf.step(z, Z_COV * 100, u, U_COV)
+    # if t  == 10:
+    #     pf.resample()
     
+    for a,pt in zip(arrows, pf.particles):
+        a.update_geometry(pt)
+        visApp.update_solid(a)
+
     pcd_scan.update(p)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
