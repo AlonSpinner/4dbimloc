@@ -32,7 +32,8 @@ for i in range(Nparticles):
                 np.random.uniform(drone.pose.y + extent[1]/10, drone.pose.y - extent[1]/10),
                 np.random.uniform(-np.pi, +np.pi),
                 0)
-    )
+                        )
+inital_poses[0] = drone.pose #<---------------------------------------- CHEATING
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))

@@ -87,6 +87,7 @@ class ArrowSolid(DynamicSolid):
         
         mat = rendering.MaterialRecord()
         mat.shader = "defaultLitTransparency" #"defaultUnlit", usefull for debugging purposes
+        mat.base_color = np.array([0.0, 0.0, 1.0, 1.0])
         self.material = mat
         self.update_alpha(alpha) #sets base_color
         
