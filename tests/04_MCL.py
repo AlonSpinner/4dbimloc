@@ -9,8 +9,9 @@ from bim4loc.filters import vanila
 import time
 import logging
 from copy import deepcopy
+from threading import Lock
 
-logging.basicConfig(format = '%(levelname)s in %(funcName)s: %(message)s')
+logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
@@ -34,7 +35,6 @@ for i in range(Nparticles):
                 np.random.uniform(-np.pi, +np.pi),
                 0)
     )
-inital_poses[0] = deepcopy(drone.pose)
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
@@ -59,13 +59,12 @@ for t,u in enumerate(actions):
     z, p = drone.scan(world, Z_STD)
 
     pf.step(z, Z_COV, u, U_COV)
-    if t  == 10:
+    if t % 3 == 0:
         pf.resample()
     
     for a,pt in zip(arrows, pf.particles):
         a.update_geometry(pt)
         visApp.update_solid(a)
-
     pcd_scan.update(p)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)

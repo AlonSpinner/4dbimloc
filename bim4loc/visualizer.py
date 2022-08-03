@@ -9,6 +9,7 @@ import logging
 class VisApp():
 
     def __init__(self) -> None:
+        self._lock = threading.Lock()
         threading.Thread(target = self.run).start() #executes the run method in a different thread
         
         #without this, we will have a bug where self._vis wont be created
@@ -27,15 +28,17 @@ class VisApp():
         self._app.run()
 
     def add_solid(self, solid : o3dSolid) -> None:
+        self._lock.acquire()
 
         def _add_solid(vis, solid : o3dSolid) -> None:
             vis.add_geometry(solid.name, solid.geometry, solid.material)
             vis.post_redraw()
 
         self._app.post_to_main_thread(self._vis, lambda: _add_solid(self._vis, solid))
-        time.sleep(0.001)
+        self._lock.release()
 
     def update_solid(self, solid : o3dSolid) -> None:
+        self._lock.acquire()
         if not self._vis.scene.has_geometry(solid.name):
             logging.warning(f'geometry {solid.name} does not exist in scene')
             return
@@ -46,15 +49,17 @@ class VisApp():
             vis.post_redraw()
         
         self._app.post_to_main_thread(self._vis, lambda: _update_solid(self._vis, solid))
-        time.sleep(0.001)
+        self._lock.release()
     
     def redraw(self):
+        self._lock.acquire()
         self._app.post_to_main_thread(self._vis, self._vis.post_redraw)
-        time.sleep(0.001)
+        self._lock.release()
 
     def reset_camera_to_default(self):
+        self._lock.acquire()
         self._app.post_to_main_thread(self._vis, self._vis.reset_camera_to_default)
-        time.sleep(0.001)
+        self._lock.release()
 
     def show_axes(self, show : bool = True) -> None:
         self._vis.show_axes = show #axes size are proportional to the scene size
