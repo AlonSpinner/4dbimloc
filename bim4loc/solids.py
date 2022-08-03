@@ -13,18 +13,30 @@ class o3dSolid:
     name : str #name
     geometry : o3d.cuda.pybind.geometry.TriangleMesh
     material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
+    _min_alpha = 0.3
+
+    def update_alpha(self, alpha : float) -> None:
+        self.material.base_color = np.hstack((self.material.base_color[:3], max(alpha,self._min_alpha)))
 
 @dataclass()
 class IfcSolid(o3dSolid):
     schedule : random1d.Distribution1D
     completion_time : float = 0.0
+    ifc_color : np.ndarray = np.array([0, 0, 0])
     
-    def random_completion_time(self) -> None:
-        self.completion_time = self.schedule.sample()
-    def opacity(self, time: float) -> float:
-        return self.schedule.cdf(time)
-    def complete(self, time : float) -> bool:
-        return time > self.completion_time
+    def set_random_completion_time(self) -> None:
+        s = self.schedule.sample()
+        if s:
+            self.completion_time = s[0]
+
+    def is_complete(self, time : float) -> bool:
+        return (time > self.completion_time)
+    
+    def set_shader_by_schedule_and_time(self, time: float) -> None:
+        if self.is_complete(time):
+            self.material.base_color = np.hstack((self.ifc_color, 1.0))
+        else:
+            self.material.base_color = np.array([1, 0, 0, self.schedule.cdf(time)])
 
 class PcdSolid(o3dSolid):
     def __init__(self, pcd : np.ndarray = None):
@@ -76,16 +88,12 @@ class ArrowSolid(DynamicSolid):
         mat = rendering.MaterialRecord()
         mat.shader = "defaultLitTransparency" #"defaultUnlit", usefull for debugging purposes
         self.material = mat
-        self._min_alpha = 0.3
         self.update_alpha(alpha) #sets base_color
         
         self.pose = pose
     
         if pose is not None:
             self.update_geometry(pose)
-
-    def update_alpha(self, alpha : float) -> None:
-        self.material.base_color = np.array([0.0, 0.0, 1.0, max(alpha,self._min_alpha)])
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
@@ -124,7 +132,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
         if product.Representation: #has shape
             shape = ifcopenshell.geom.create_shape(settings, inst=product)
             m = shape.geometry.materials
-            base_color = np.array(m[0].diffuse)
+            ifc_color = np.array(m[0].diffuse)
             element = ifc.by_guid(shape.guid)
                       
             verts = shape.geometry.verts # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
@@ -138,13 +146,14 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
             
             mat = rendering.MaterialRecord()
             mat.shader = "defaultLitTransparency" #if transparent, use "defaultLitTransparency": https://github.com/isl-org/Open3D/issues/2890
-            mat.base_color = np.hstack((base_color, 1.0))
+            mat.base_color = np.hstack((ifc_color, 1.0))
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,
                                 geometry = mesh,
                                 material = mat,
-                                schedule = description2schedule(element.Description),                                
+                                schedule = description2schedule(element.Description),
+                                ifc_color = ifc_color,                                
                                 ))
 
     return solids

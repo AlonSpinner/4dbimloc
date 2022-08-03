@@ -24,7 +24,7 @@ class Gaussian(Distribution1D):
     def pdf(self,x : np.ndarray) -> np.ndarray:
         return 1/(np.sqrt(2*np.pi)*self.sigma) * np.exp(-(x-self.mu)**2/(2*self.sigma**2))
 
-    def cdf(self,x : float): #cumulative distibution function
+    def cdf(self,x : np.ndarray) -> np.ndarray: #cumulative distibution function
         # https://en.wikipedia.org/wiki/Normal_distribution
         #returns integral from [-inf,x]
         zeta = (x-self.mu)/(self.sigma)
