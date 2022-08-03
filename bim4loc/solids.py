@@ -74,10 +74,9 @@ class ArrowSolid(DynamicSolid):
         self.base_geometry = self.geometry
         
         mat = rendering.MaterialRecord()
-        mat.shader = "defaultUnlit" #"defaultlit" "defaultlit" "defaultUnlit"
-        mat.transmission = 0.0
+        mat.shader = "defaultLitTransparency" #"defaultUnlit", usefull for debugging purposes
         self.material = mat
-        self._min_alpha = 0.2
+        self._min_alpha = 0.3
         self.update_alpha(alpha) #sets base_color
         
         self.pose = pose
@@ -86,7 +85,7 @@ class ArrowSolid(DynamicSolid):
             self.update_geometry(pose)
 
     def update_alpha(self, alpha : float) -> None:
-        self.material.base_color = np.array([0.0, 0.0, 1.0, min(alpha,self._min_alpha)])
+        self.material.base_color = np.array([0.0, 0.0, 1.0, max(alpha,self._min_alpha)])
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------------- IFC CONVERTION ----------------------------------------------------
