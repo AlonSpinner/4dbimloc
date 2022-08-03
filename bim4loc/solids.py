@@ -74,7 +74,8 @@ class ArrowSolid(DynamicSolid):
         self.base_geometry = self.geometry
         
         mat = rendering.MaterialRecord()
-        mat.shader = "defaultUnlit" #"defaultUnlitTransparency"
+        mat.shader = "defaultUnlit" #"defaultlit" "defaultlit" "defaultUnlit"
+        mat.transmission = 0.0
         self.material = mat
         self._min_alpha = 0.2
         self.update_alpha(alpha) #sets base_color
@@ -137,8 +138,8 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
             mesh.compute_triangle_normals()
             
             mat = rendering.MaterialRecord()
-            mat.shader = "defaultLitTransparency"
-            mat.base_color = np.hstack([base_color, 1.0])
+            mat.shader = "defaultLitTransparency" #if transparent, use "defaultLitTransparency": https://github.com/isl-org/Open3D/issues/2890
+            mat.base_color = np.hstack((base_color, 1.0))
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,

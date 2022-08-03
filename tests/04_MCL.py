@@ -8,8 +8,6 @@ from bim4loc.maps import Map
 from bim4loc.filters import vanila
 import time
 import logging
-from copy import deepcopy
-from threading import Lock
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -38,6 +36,7 @@ for i in range(Nparticles):
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
+
 pf = vanila(drone, model , inital_poses)
 Z_STD = 0.05
 Z_COV = np.kron(np.eye(drone.lidar_angles.size),Z_STD**2)

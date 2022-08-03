@@ -21,6 +21,7 @@ class VisApp():
         self._app.initialize()
 
         self._vis = visualization.O3DVisualizer()
+        # self._vis.scene_shader = self._vis.UNLIT
         self.show_ground_plane(True)
         self.show_skybox(False)
         
