@@ -55,16 +55,16 @@ visApp.add_solid(pcd_scan)
 time.sleep(1)
 for t,u in enumerate(actions):
     drone.move(u, U_COV)
-    z, p = drone.scan(world, Z_STD)
+    z, z_p = drone.scan(world, Z_STD)
 
     pf.step(z, Z_COV, u, U_COV)
     if t % 3 == 0:
         pf.resample()
     
-    for a,pt in zip(arrows, pf.particles):
-        a.update_geometry(pt)
+    for a,p in zip(arrows, pf.particles):
+        a.update_geometry(p)
         visApp.update_solid(a)
-    pcd_scan.update(p)
+    pcd_scan.update(z_p)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 

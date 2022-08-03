@@ -15,8 +15,8 @@ class Map:
             self._solids = solids
 
         def forward_measurement_model(self, pose : Pose2z, angles : np.ndarray, max_range : float) -> np.ndarray:
-            rays = o3d.core.Tensor([[pose._x,pose._y,pose._z,
-                                    np.cos(pose._theta+a),np.sin(pose._theta+a),0] for a in angles],
+            rays = o3d.core.Tensor([[pose.x,pose.y,pose.z,
+                                    np.cos(pose.theta+a),np.sin(pose.theta+a),0] for a in angles],
                                     dtype=o3d.core.Dtype.Float32)
             ans = self._scene.cast_rays(rays)
             z = ans['t_hit'].numpy()

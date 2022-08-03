@@ -38,8 +38,8 @@ class Drone:
         z = np.random.normal(z, std)
         
         world_thetas = (self.pose._theta + self.lidar_angles).reshape(-1,1)
-        world_p = np.hstack((self.pose._x + z * np.cos(world_thetas), 
-                       self.pose._y + z * np.sin(world_thetas),
-                       self.pose._z * np.ones_like(z)))
+        world_p = np.hstack((self.pose.x + z * np.cos(world_thetas), 
+                       self.pose.y + z * np.sin(world_thetas),
+                       self.pose.z * np.ones_like(z)))
         return z, world_p
 
