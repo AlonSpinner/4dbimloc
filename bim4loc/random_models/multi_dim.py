@@ -17,6 +17,7 @@ def gauss_likelihood(x : np.ndarray, mu : np.ndarray, cov : np.ndarray, pseudo =
         den = np.sqrt((2.0 * np.pi) ** k * np.linalg.det(cov))
         return num/den
 
+@njit(parallel = True)
 def gauss_fit(x : np.ndarray ,p: np.ndarray):
     # x - [m,n] 
     #   n is the number of observations

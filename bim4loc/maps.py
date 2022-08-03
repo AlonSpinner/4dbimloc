@@ -27,7 +27,7 @@ class Map:
             all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self._solids])
             all_points = o3d.utility.Vector3dVector(all_points)
             aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(all_points)
-            return aabb.get_min_bound(), aabb.get_max_bound()
+            return aabb.get_min_bound(), aabb.get_max_bound(), aabb.get_extent()
 
 
 

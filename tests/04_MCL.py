@@ -11,8 +11,7 @@ import logging
 from copy import deepcopy
 
 logging.basicConfig(format = '%(levelname)s in %(funcName)s: %(message)s')
-logger = logging.getLogger('dev')
-logger.setLevel(logging.WARNING)
+logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
@@ -24,18 +23,18 @@ turn_right = Pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 model = world
-min_bounds, max_bounds = model.bounds()
+_, _, extent = model.bounds()
 
 Nparticles = 100
 inital_poses = []
 for i in range(Nparticles):
     inital_poses.append(
-        Pose2z(np.random.uniform(min_bounds[0], max_bounds[0]),
-            np.random.uniform(min_bounds[1], max_bounds[1]),
-            np.random.uniform(min_bounds[2], max_bounds[2]),
-            0)
+        Pose2z(np.random.uniform(drone.pose.y + extent[0]/10, drone.pose.y - extent[0]/10),
+                np.random.uniform(drone.pose.y + extent[1]/10, drone.pose.y - extent[1]/10),
+                np.random.uniform(-np.pi, +np.pi),
+                0)
     )
-# inital_poses[0] = deepcopy(drone.pose)
+inital_poses[0] = deepcopy(drone.pose)
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
@@ -59,9 +58,9 @@ for t,u in enumerate(actions):
     drone.move(u, U_COV)
     z, p = drone.scan(world, Z_STD)
 
-    pf.step(z, Z_COV * 100, u, U_COV)
-    # if t  == 10:
-    #     pf.resample()
+    pf.step(z, Z_COV, u, U_COV)
+    if t  == 10:
+        pf.resample()
     
     for a,pt in zip(arrows, pf.particles):
         a.update_geometry(pt)

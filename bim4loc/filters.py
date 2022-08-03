@@ -43,7 +43,7 @@ class vanila:
         #normalize
         sm = self.weights.sum()
         if sm == 0.0: #numerical errors can cause this if particles have diverged from solution
-            logging.warning(f'{time.time() - self.init_time}[s]: numerically caused weight reset')
+            logging.warning(f'{time.time() - self.init_time:2.2f}[s]: numerically caused weight reset')
             self.weights = np.ones(self.N_PARTICLES) * 1/self.N_PARTICLES
         else:
             self.weights = self.weights/sm
