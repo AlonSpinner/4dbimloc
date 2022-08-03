@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.geometry import pose2z
+from bim4loc.geometry import Pose2z
 from bim4loc.maps import Map
 from bim4loc.agents import Drone
 from bim4loc.random_models.multi_dim import gauss_likelihood, gauss_fit
@@ -9,7 +9,7 @@ import time
 START_TIME = time.time()
 
 class vanila_SE2:
-    def __init__(self, agent : Drone, m : Map ,initial_states : list[pose2z]):
+    def __init__(self, agent : Drone, m : Map ,initial_states : list[Pose2z]):
         self.agent : Drone = agent
 
         self.N_PARTICLES : int = len(initial_states) #amount of particles
@@ -25,13 +25,13 @@ class vanila_SE2:
         self.verbose = True
 
     def step(self, z : np.ndarray ,z_cov : np.ndarray,
-                    u : pose2z ,u_cov : np.ndarray):
+                    u : Pose2z ,u_cov : np.ndarray):
         
         #update particles
         for i in range(self.N_PARTICLES):
             
             #create proposal distribution
-            whiten_u = pose2z(*np.random.multivariate_normal(u.Log(),u_cov))
+            whiten_u = Pose2z(*np.random.multivariate_normal(u.Log(),u_cov))
             self.particles[i] = self.particles[i].compose(whiten_u)
             
             #create target distribution

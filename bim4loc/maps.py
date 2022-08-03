@@ -1,6 +1,6 @@
 import numpy as np
 import open3d as o3d
-from bim4loc.geometry import pose2z
+from bim4loc.geometry import Pose2z
 from bim4loc.solids import IfcSolid
 from typing import Union
 
@@ -14,7 +14,7 @@ class Map:
             self._scene =  scene
             self._solids = solids
 
-        def forward_measurement_model(self, pose : pose2z, angles : np.ndarray, max_range : float) -> np.ndarray:
+        def forward_measurement_model(self, pose : Pose2z, angles : np.ndarray, max_range : float) -> np.ndarray:
             rays = o3d.core.Tensor([[pose._x,pose._y,pose._z,
                                     np.cos(pose._theta+a),np.sin(pose._theta+a),0] for a in angles],
                                     dtype=o3d.core.Dtype.Float32)

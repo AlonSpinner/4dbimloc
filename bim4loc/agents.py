@@ -2,11 +2,11 @@ import open3d as o3d
 import numpy as np
 from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
-from bim4loc.geometry import pose2z
+from bim4loc.geometry import Pose2z
 from bim4loc.maps import Map
 
 class Drone:
-    def __init__(self, pose : pose2z):
+    def __init__(self, pose : Pose2z):
         mat = o3d.visualization.rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
         mat.base_color = [1.0 , 0.0 , 0.0 , 1.0]
@@ -25,9 +25,9 @@ class Drone:
             
         self.solid.update_geometry(self.pose)
 
-    def move(self, a : pose2z, cov = None):
+    def move(self, a : Pose2z, cov = None):
         if cov is not None:
-            a = pose2z(*np.random.multivariate_normal(a.Log(), cov))
+            a = Pose2z(*np.random.multivariate_normal(a.Log(), cov))
             
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
