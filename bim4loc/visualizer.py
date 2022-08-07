@@ -22,26 +22,24 @@ class VisApp():
         self._app = gui.Application.instance
         self._app.initialize()
         
-        self.add_window() #must create app with at least one window or core dumps
+        self.add_window('main window') #must create app with at least one window or core dumps
         self._app.run()
 
     def set_active_window(self, n : int):
         self._active_window = self._windows[n]
 
     def add_window(self, title : str = ''):
-        def _add_window(self):
+        def _add_window(self : 'VisApp'):
             new_window = visualization.O3DVisualizer(title)
-
+            self._app.add_window(new_window)
             
-            #doesnt seem to work for some reason
+            #has to be after window is added to app
             if len(self._windows) > 0:
                 last_window_pos = (self._windows[-1].os_frame.x, self._windows[-1].os_frame.y)
-                new_window.os_frame = gui.Rect(last_window_pos[0] + 50,
+                new_window.os_frame = gui.Rect(last_window_pos[0] + 1800,
                                             last_window_pos[1] + 50,
                                             new_window.os_frame.width,
                                             new_window.os_frame.height)
-
-            self._app.add_window(new_window)
 
             self._windows.append(new_window)
             self._active_window = new_window
