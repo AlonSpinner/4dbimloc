@@ -52,6 +52,7 @@ class VisApp():
         else:
             self._lock.acquire()
             self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
+            time.sleep(0.5)
             self._lock.release()
 
     def add_solid(self, solid : o3dSolid) -> None:
