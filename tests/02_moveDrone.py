@@ -10,7 +10,7 @@ objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
 
 for o in objects:
-    visApp.add_solid(o); time.sleep(0.001)
+    visApp.add_solid(o)
 visApp.show_axes(True)
 visApp.reset_camera_to_default()
 
