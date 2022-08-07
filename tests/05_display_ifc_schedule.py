@@ -15,9 +15,8 @@ for s in solids:
         s.set_random_completion_time()
         # if s.is_complete(current_time):
                 # visApp1.add_solid(s)
-        s.set_shader_by_schedule_and_time(current_time)
+        s.set_existance_belief_by_schedule(current_time, set_shader = True)
         visApp1.add_solid(s)
-
 
 #show axes and reset camera after building scene
 visApp1.show_axes(True)

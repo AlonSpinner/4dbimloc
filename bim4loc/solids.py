@@ -18,11 +18,15 @@ class o3dSolid:
     def update_alpha(self, alpha : float) -> None:
         self.material.base_color = np.hstack((self.material.base_color[:3], max(alpha,self._min_alpha)))
 
+    def clone(self) -> 'o3dSolid':
+        pass
+
 @dataclass()
 class IfcSolid(o3dSolid):
     schedule : random1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
+    existance_belief : float = 0.0
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -32,11 +36,13 @@ class IfcSolid(o3dSolid):
     def is_complete(self, time : float) -> bool:
         return (time > self.completion_time)
     
-    def set_shader_by_schedule_and_time(self, time: float) -> None:
-        # if self.is_complete(time):
-            # self.material.base_color = np.hstack((self.ifc_color, 1.0))
-        # else:
-        self.material.base_color = np.array([1, 0, 0, self.schedule.cdf(time)])
+    def set_existance_belief_by_schedule(self, time : float, set_shader = False) -> None:
+        self.existance_belief = self.schedule.cdf(time)
+        if set_shader:
+            self.set_shader_existance_belief()
+
+    def set_shader_existance_belief(self) -> None:
+        self.material.base_color = np.array([1, 0, 0, self.existance_belief])
 
 class PcdSolid(o3dSolid):
     def __init__(self, pcd : np.ndarray = None):

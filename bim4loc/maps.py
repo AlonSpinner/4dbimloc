@@ -13,7 +13,7 @@ class Map:
                 scene.add_triangles(s)
             
             self._scene =  scene
-            self._solids = solids
+            self.solids = solids
 
         def forward_measurement_model(self, pose : Pose2z, angles : np.ndarray, max_range : float) \
                                             -> Union[np.ndarray,np.ndarray]:
