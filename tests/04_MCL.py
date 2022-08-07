@@ -33,7 +33,7 @@ for i in range(Nparticles):
                 np.random.uniform(-np.pi, +np.pi),
                 0)
                         )
-inital_poses[0] = drone.pose #<---------------------------------------- CHEATING
+inital_poses[0] = Pose2z(drone.pose.x,drone.pose.y,drone.pose.theta,0.0); #<---------------------------------------- CHEATING
 arrows = []
 for i in range(Nparticles):
     arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
@@ -41,7 +41,7 @@ for i in range(Nparticles):
 pf = vanila(drone, model , inital_poses)
 Z_STD = 0.05
 Z_COV = np.kron(np.eye(drone.lidar_angles.size),Z_STD**2)
-U_COV = np.diag([0.001,0.001,np.radians(0.005/180),0.0])
+U_COV = np.diag([0.005,0.005,np.radians(0.001/180),0.0])
 
 visApp = VisApp()
 for s in solids:

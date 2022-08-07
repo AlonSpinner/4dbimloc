@@ -33,10 +33,10 @@ class IfcSolid(o3dSolid):
         return (time > self.completion_time)
     
     def set_shader_by_schedule_and_time(self, time: float) -> None:
-        if self.is_complete(time):
-            self.material.base_color = np.hstack((self.ifc_color, 1.0))
-        else:
-            self.material.base_color = np.array([1, 0, 0, self.schedule.cdf(time)])
+        # if self.is_complete(time):
+            # self.material.base_color = np.hstack((self.ifc_color, 1.0))
+        # else:
+        self.material.base_color = np.array([1, 0, 0, self.schedule.cdf(time)])
 
 class PcdSolid(o3dSolid):
     def __init__(self, pcd : np.ndarray = None):

@@ -63,6 +63,7 @@ class VisApp():
         self._lock.release()
 
     def show_axes(self, show : bool = True) -> None:
+        time.sleep(0.1) #wait for scene to be drawn as axes are added to scene in proportional to scene size
         self._vis.show_axes = show #axes size are proportional to the scene size
         self.redraw()
 
