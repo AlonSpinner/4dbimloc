@@ -41,7 +41,7 @@ for i in range(Nparticles):
 pf = vanila(drone, model , inital_poses)
 Z_STD = 0.05
 Z_COV = np.kron(np.eye(drone.lidar_angles.size),Z_STD**2)
-U_COV = np.diag([0.1,0.1,np.radians(0.1),0.0])
+U_COV = 0.01 * np.diag([0.1,0.1,np.radians(0.1),0.0])
 
 visApp = VisApp()
 for s in solids:
@@ -53,7 +53,7 @@ visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan)
 
-time.sleep(1)
+time.sleep(0.1)
 for t,u in enumerate(actions):
     drone.move(u)
     z, z_p = drone.scan(world, Z_STD)
@@ -65,7 +65,7 @@ for t,u in enumerate(actions):
     for a,p in zip(arrows, pf.particles):
         a.update_geometry(p)
         visApp.update_solid(a)
-    pcd_scan.update(z_p)
+    pcd_scan.update(z_p.T)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 

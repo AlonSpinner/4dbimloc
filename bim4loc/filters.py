@@ -34,11 +34,11 @@ class vanila:
             self.particles[i] = self.particles[i].compose(whiten_u)
             
             #create target distribution
-            zhat = self.m.forward_measurement_model(self.particles[i], 
+            zhat, _ = self.m.forward_measurement_model(self.particles[i], 
                                                     angles = self.agent.lidar_angles, 
                                                     max_range = self.agent.lidar_max_range)
 
-            self.weights[i] *= gauss_likelihood(z, zhat, z_cov, pseudo = False)
+            self.weights[i] *= gauss_likelihood(z.reshape(-1,1), zhat.reshape(-1,1), z_cov, pseudo = False)
 
         #normalize
         sm = self.weights.sum()

@@ -34,12 +34,18 @@ class Drone:
         self.solid.update_geometry(self.pose)
 
     def scan(self, m : Map, std = 0.1) -> Union[np.ndarray, np.ndarray]:
-        z = m.forward_measurement_model(self.pose, self.lidar_angles, self.lidar_max_range)
+        '''
+        output:
+        z - 1D array
+        world_p - MX3 matrix
+        '''
+        z, _ = m.forward_measurement_model(self.pose, self.lidar_angles, self.lidar_max_range)
         z = np.random.normal(z, std)
         
-        world_thetas = (self.pose._theta + self.lidar_angles).reshape(-1,1)
-        world_p = np.hstack((self.pose.x + z * np.cos(world_thetas), 
-                       self.pose.y + z * np.sin(world_thetas),
-                       self.pose.z * np.ones_like(z)))
+        p = np.vstack((z * np.cos(self.lidar_angles), 
+                        z * np.sin(self.lidar_angles),
+                        np.zeros_like(z)))
+        world_p = self.pose.transform_from(p)
+
         return z, world_p
 

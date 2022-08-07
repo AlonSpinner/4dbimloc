@@ -15,6 +15,7 @@ class Pose2z:
 
     #prevents users from settings internal storage directly. Basically creating an immutable class
          #example in: https://realpython.com/python-property/
+
     @property
     def x(self) -> float:
         return self._x
@@ -71,11 +72,17 @@ class Pose2z:
     def between(self, g : 'Pose2z') -> 'Pose2z':
         return self.compose(self.inverse(),g)
 
-    def transform_to(self, p : np.ndarray) -> np.ndarray:
-        return self.Exp() @ p
-
     def transform_from(self, p : np.ndarray) -> np.ndarray:
-        return self.inverse().Exp() @ p
+        #accepts and outputs 3xm matrix
+        p = np.vstack((p,np.ones(p.shape[1])))
+        tp = self.Exp() @ p
+        return tp[:3,:]
+
+    def transform_to(self, p : np.ndarray) -> np.ndarray:
+        #accepts and outputs 3xm matrix
+        p = np.vstack((p,np.ones(p.shape[1])))
+        tp = self.inverse().Exp() @ p
+        return tp[:3,:]
 
     def localCoordinates(self, x : 'Pose2z') -> 'Pose2z':
         return self.between(x).Log()

@@ -53,6 +53,10 @@ class PcdSolid(o3dSolid):
         self.material = mat
 
     def update(self, pcd : np.ndarray) -> None:
+        '''
+        input:
+        pcd - 3Xm matrix
+        '''
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
 
 class DynamicSolid(o3dSolid):

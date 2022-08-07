@@ -29,7 +29,7 @@ time.sleep(1)
 for a in actions:
     drone.move(a)
     z, p = drone.scan(world, std = 0.1)
-    pcd_scan.update(p)
+    pcd_scan.update(p.T)
 
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
