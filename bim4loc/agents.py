@@ -3,7 +3,8 @@ import numpy as np
 from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.geometry import Pose2z
-from bim4loc.maps import Map
+from bim4loc.maps import RayTracingMap
+from bim4loc.sensors import Lidar1D
 from typing import Union
 
 class Drone:
@@ -21,9 +22,7 @@ class Drone:
         
         
         self.pose = pose
-        self.lidar_angles = np.linspace(-np.pi/2, np.pi/2, num = 36)
-        self.lidar_max_range = 10.0
-            
+        self.sensor = Lidar1D()
         self.solid.update_geometry(self.pose)
 
     def move(self, a : Pose2z, cov = None):
@@ -33,19 +32,19 @@ class Drone:
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : Map, std = 0.1) -> Union[np.ndarray, np.ndarray]:
+    def scan(self, m : RayTracingMap) -> Union[np.ndarray, np.ndarray, list[str]]:
         '''
         output:
         z - 1D array
         world_p - MX3 matrix
         '''
-        z, _ = m.forward_measurement_model(self.pose, self.lidar_angles, self.lidar_max_range)
-        z = np.random.normal(z, std)
-        
-        p = np.vstack((z * np.cos(self.lidar_angles), 
-                        z * np.sin(self.lidar_angles),
+
+        z, solid_names = self.sensor.sense(self.pose, m)
+
+        p = np.vstack((z * np.cos(self.sensor.angles), 
+                        z * np.sin(self.sensor.angles),
                         np.zeros_like(z)))
         world_p = self.pose.transform_from(p)
 
-        return z, world_p
+        return z, solid_names, world_p
 

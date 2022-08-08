@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid
 from bim4loc.agents import Drone
-from bim4loc.maps import Map
+from bim4loc.maps import BeliefMap, RayTracingMap
 import time
 import logging
 
@@ -19,12 +19,12 @@ for s in solids:
     s.set_random_completion_time()
     if s.completion_time < current_time:
         constructed_solids.append(s.clone())
-world = Map(constructed_solids)
+world = RayTracingMap(constructed_solids)
 
 belief_solids = [s.clone() for s in solids]
 for s in belief_solids:
     s.set_existance_belief_by_schedule(current_time, set_shader = True)
-belief = Map(belief_solids)
+belief = BeliefMap(belief_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
 
@@ -53,7 +53,9 @@ visApp.reset_camera_to_default()
 time.sleep(0.1)
 for t,u in enumerate(actions):
     drone.move(u)
-    z, z_p = drone.scan(world, Z_STD)
+    z, solid_names, z_p = drone.scan(world, Z_STD)
+
+    belief.update_belief(sensor_model, solid_names)
 
     visApp.set_active_window(0)
     pcd_scan.update(z_p.T)

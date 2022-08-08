@@ -4,12 +4,13 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
 from bim4loc.agents import Drone
-from bim4loc.maps import Map
+from bim4loc.maps import RayTracingMap
 import time
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-world = Map(objects)
+drone.sensor.std = 0.1
+world = RayTracingMap(objects)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -28,7 +29,7 @@ visApp.add_solid(pcd_scan)
 time.sleep(1)
 for a in actions:
     drone.move(a)
-    z, p = drone.scan(world, std = 0.1)
+    z, _, p = drone.scan(world)
     pcd_scan.update(p.T)
 
     visApp.update_solid(drone.solid)

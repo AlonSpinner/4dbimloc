@@ -14,9 +14,9 @@ class VisApp():
         self._lock = threading.Lock()
         threading.Thread(target = self.run).start() #executes the run method in a different thread
         
-        #without this, we will have a bug where self._vis wont be created
-        #reducing time also causes the bug
-        time.sleep(0.5)
+        #without this, we will have a bug where self._active_window wont be created or something
+        #reducing time also causes the bug. We need time to allow the thread to create the window I guess.
+        time.sleep(0.7)
 
     def run(self) -> None:
         self._app = gui.Application.instance
