@@ -26,7 +26,7 @@ for s in belief_solids:
     s.set_existance_belief_by_schedule(current_time, set_shader = True)
 belief = BeliefMap(belief_solids)
 
-drone = Drone(pose = Pose2z(3,3,0, 1.5))
+drone = Drone(pose = Pose2z(3,3,0, 1.5));  drone.sensor.std = 0.05
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -55,7 +55,8 @@ for t,u in enumerate(actions):
     drone.move(u)
     z, solid_names, z_p = drone.scan(world, Z_STD)
 
-    belief.update_belief(sensor_model, solid_names)
+    
+    belief.update_belief(drone.sensor.forward_existence_model, solid_names)
 
     visApp.set_active_window(0)
     pcd_scan.update(z_p.T)

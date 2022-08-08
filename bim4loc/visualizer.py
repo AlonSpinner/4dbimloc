@@ -50,45 +50,38 @@ class VisApp():
         if len(self._windows) == 0:
             _add_window(self)
         else:
-            self._lock.acquire()
-            self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
-            time.sleep(0.5)
-            self._lock.release()
+            with self._lock:
+                self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
+                time.sleep(0.5)
 
     def add_solid(self, solid : o3dSolid) -> None:
-        self._lock.acquire()
+        with self._lock:
+            def _add_solid(window, solid : o3dSolid) -> None:
+                window.add_geometry(solid.name, solid.geometry, solid.material)
+                window.post_redraw()
 
-        def _add_solid(window, solid : o3dSolid) -> None:
-            window.add_geometry(solid.name, solid.geometry, solid.material)
-            window.post_redraw()
-
-        self._app.post_to_main_thread(self._active_window, lambda: _add_solid(self._active_window, solid))
-        self._lock.release()
+            self._app.post_to_main_thread(self._active_window, lambda: _add_solid(self._active_window, solid))
 
     def update_solid(self, solid : o3dSolid) -> None:
-        self._lock.acquire()
+        with self._lock:
+            if not self._active_window.scene.has_geometry(solid.name):
+                logging.warning(f'geometry {solid.name} does not exist in scene')
+                return
 
-        if not self._active_window.scene.has_geometry(solid.name):
-            logging.warning(f'geometry {solid.name} does not exist in scene')
-            return
-
-        def _update_solid(window, solid: o3dSolid) -> None:
-            window.remove_geometry(solid.name)
-            window.add_geometry(solid.name, solid.geometry, solid.material)
-            window.post_redraw()
-        
-        self._app.post_to_main_thread(self._active_window, lambda: _update_solid(self._active_window, solid))
-        self._lock.release()
+            def _update_solid(window, solid: o3dSolid) -> None:
+                window.remove_geometry(solid.name)
+                window.add_geometry(solid.name, solid.geometry, solid.material)
+                window.post_redraw()
+            
+            self._app.post_to_main_thread(self._active_window, lambda: _update_solid(self._active_window, solid))
     
     def redraw(self):
-        self._lock.acquire()
-        self._app.post_to_main_thread(self._active_window, self._active_window.post_redraw)
-        self._lock.release()
+        with self._lock:
+            self._app.post_to_main_thread(self._active_window, self._active_window.post_redraw)
 
     def reset_camera_to_default(self):
-        self._lock.acquire()
-        self._app.post_to_main_thread(self._active_window, self._active_window.reset_camera_to_default)
-        self._lock.release()
+        with self._lock:
+            self._app.post_to_main_thread(self._active_window, self._active_window.reset_camera_to_default)
 
     def show_axes(self, show : bool = True) -> None:
         time.sleep(0.1) #wait for scene to be drawn as axes are added to scene in proportional to scene size

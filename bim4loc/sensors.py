@@ -16,7 +16,7 @@ class Sensor():
         pass
 
     @staticmethod
-    def forward_exitsance_model(z : str, m : str) -> float: #to be overwritten
+    def forward_existence_model(z : str, m : str) -> float: #to be overwritten
         '''
         z - meaurement "⬜" or "⬛"
         m - cell state "⬜" or "⬛"
@@ -53,7 +53,7 @@ class Lidar1D(Sensor):
         return z, solid_names
 
     @staticmethod
-    def forward_exitsance_model(z : str, m : str) -> float:
+    def forward_existence_model(z : str, m : str) -> float:
         if m == "⬛":
             if z == "⬜":
                 return 0.1
