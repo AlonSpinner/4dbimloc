@@ -53,7 +53,12 @@ class Lidar1D(Sensor):
         return z, solid_names
 
     @staticmethod
-    def forward_existence_model(z : str, m : str) -> float:
+    def inverse_existence_model(z : str, m : str) -> float:
+        '''
+        returns the probability of m given measurement z
+        ⬛ - exists
+        ⬜ - doesnt exist
+        '''
         if m == "⬛":
             if z == "⬜":
                 return 0.1

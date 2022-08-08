@@ -36,10 +36,11 @@ class IfcSolid(o3dSolid):
     def set_existance_belief_by_schedule(self, time : float, set_shader = False) -> None:
         self.existance_belief = self.schedule.cdf(time)
         if set_shader:
-            self.set_shader_existance_belief()
+            self.material.base_color = np.array([1, 0, 0, self.existance_belief])
 
-    def set_shader_existance_belief(self) -> None:
-        self.material.base_color = np.array([1, 0, 0, self.existance_belief])
+    def set_shader_and_existance_belief(self, belief) -> None:
+        self.existance_belief = belief
+        self.material.base_color = np.array([1, 0, 0, belief])
 
     def clone(self) -> 'IfcSolid':
         mat = rendering.MaterialRecord()
