@@ -18,9 +18,6 @@ class o3dSolid:
     def update_alpha(self, alpha : float) -> None:
         self.material.base_color = np.hstack((self.material.base_color[:3], max(alpha,self._min_alpha)))
 
-    def clone(self) -> 'o3dSolid':
-        pass
-
 @dataclass()
 class IfcSolid(o3dSolid):
     schedule : random1d.Distribution1D
@@ -43,6 +40,22 @@ class IfcSolid(o3dSolid):
 
     def set_shader_existance_belief(self) -> None:
         self.material.base_color = np.array([1, 0, 0, self.existance_belief])
+
+    def clone(self) -> 'IfcSolid':
+        mat = rendering.MaterialRecord()
+        mat.shader = "defaultLitTransparency" #if transparent, use "defaultLitTransparency": https://github.com/isl-org/Open3D/issues/2890
+        mat.base_color = self.material.base_color.copy()
+
+        mesh = o3d.geometry.TriangleMesh(vertices  = self.geometry.vertices, triangles = self.geometry.triangles)
+        mesh.compute_triangle_normals()
+        
+        return IfcSolid(
+            name = self.name,
+            geometry = mesh,
+            material = mat,
+            schedule = deepcopy(self.schedule),
+            ifc_color = self.ifc_color.copy(),                                
+            )
 
 class PcdSolid(o3dSolid):
     def __init__(self, pcd : np.ndarray = None):

@@ -7,7 +7,6 @@ from bim4loc.agents import Drone
 from bim4loc.maps import Map
 import time
 import logging
-from copy import deepcopy
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -19,10 +18,10 @@ constructed_solids = []
 for s in solids:
     s.set_random_completion_time()
     if s.completion_time < current_time:
-        constructed_solids.append(deepcopy(s))
+        constructed_solids.append(s.clone())
 world = Map(constructed_solids)
 
-belief_solids = solids #just change name
+belief_solids = [s.clone() for s in solids]
 for s in belief_solids:
     s.set_existance_belief_by_schedule(current_time, set_shader = True)
 belief = Map(belief_solids)
