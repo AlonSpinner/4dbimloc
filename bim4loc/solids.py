@@ -38,7 +38,7 @@ class IfcSolid(o3dSolid):
         if set_shader:
             self.material.base_color = np.array([1, 0, 0, self.existance_belief])
 
-    def set_shader_and_existance_belief(self, belief) -> None:
+    def set_existance_belief_and_shader(self, belief) -> None:
         self.existance_belief = belief
         self.material.base_color = np.array([1, 0, 0, belief])
 

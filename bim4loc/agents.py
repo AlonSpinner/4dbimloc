@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.geometry import Pose2z
 from bim4loc.maps import RayTracingMap
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Sensor
 from typing import Union
 
 class Drone:
@@ -22,8 +22,11 @@ class Drone:
         
         
         self.pose = pose
-        self.sensor = Lidar1D()
         self.solid.update_geometry(self.pose)
+
+    def mount_sensor(self, sensor : Sensor):
+        #currently assume sensor pose is identical to agent pose
+        self.sensor = sensor
 
     def move(self, a : Pose2z, cov = None):
         if cov is not None:

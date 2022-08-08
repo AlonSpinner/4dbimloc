@@ -4,12 +4,14 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
 from bim4loc.agents import Drone
+from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayTracingMap
 import time
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-drone.sensor.std = 0.1
+sensor = Lidar1D(); sensor.std = 0.05
+drone.mount_sensor(sensor)
 world = RayTracingMap(objects)
 
 straight = Pose2z(0.5,0,0,0)

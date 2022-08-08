@@ -1,7 +1,11 @@
 import numpy as np
 from typing import Union
 
-def match(world_z : np.ndarray, world_solid_names : list[str],
+'''
+matchers recieve world sensor output, and belief sensor output and compare them
+'''
+
+def lidar1D_matcher(world_z : np.ndarray, world_solid_names : list[str],
           belief_z : np.ndarray, belief_solid_names : list[str]) -> Union[list[bool],list[bool]]:
 
     exist_solid_names = []

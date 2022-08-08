@@ -4,8 +4,9 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid, ArrowSolid
 from bim4loc.agents import Drone
+from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayTracingMap
-from bim4loc.filters import vanila
+from bim4loc.particle_filters import vanila
 import time
 import logging
 import copy
@@ -14,7 +15,9 @@ logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose = Pose2z(3,3,0, 1.5)); drone.sensor.std = 0.05
+drone = Drone(pose = Pose2z(3,3,0, 1.5))
+sensor = Lidar1D(); sensor.std = 0.05
+drone.mount_sensor(sensor)
 world = RayTracingMap(solids)
 
 straight = Pose2z(0.5,0,0,0)
