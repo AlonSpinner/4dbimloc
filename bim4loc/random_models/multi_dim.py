@@ -1,10 +1,6 @@
 import numpy as np
+import one_dim as r1d
 from numba import njit
-
-# class gaussianND:
-#         def __init__(self,mu : float,sigma : float) -> None:
-#         self.mu : float = mu
-#         self.sigma : float = sigma
 
 @njit(parallel = True)
 def gauss_likelihood(x : np.ndarray, mu : np.ndarray, cov : np.ndarray, pseudo = False):
@@ -16,6 +12,13 @@ def gauss_likelihood(x : np.ndarray, mu : np.ndarray, cov : np.ndarray, pseudo =
         k = x.size
         den = np.sqrt((2.0 * np.pi) ** k * np.linalg.det(cov))
         return num/den
+
+@njit(parallel = True)
+def gauss_likelihood_uncoupled(x_vec : np.ndarray, mu_vec : np.ndarray, std_vec : np.ndarray, pseudo = False):
+    p = 1.0
+    for mu, std, x in zip(mu_vec, std_vec, x_vec):
+        p *= r1d.Gaussian._pdf(mu, std, x)
+    return p
 
 @njit(parallel = True)
 def gauss_fit(x : np.ndarray ,p: np.ndarray):

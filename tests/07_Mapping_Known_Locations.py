@@ -61,7 +61,7 @@ for t,u in enumerate(actions):
     
     z, solid_names, z_p = drone.scan(world)
     belief_z, belief_solid_names, _ = drone.scan(belief)
-    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, solid_names, belief_z, belief_solid_names)
+    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, belief_z, belief_solid_names, sensor.std)
 
     vanila_filter(belief, drone.sensor.forward_existence_model, exist_solid_names, notexist_solid_names)
     

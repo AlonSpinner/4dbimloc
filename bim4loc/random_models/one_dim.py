@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import erf
 from typing import Tuple
+from numba import njit
 
 class Distribution1D:
     def sample(n : int) -> np.ndarray:
@@ -22,7 +23,7 @@ class Gaussian(Distribution1D):
         return np.random.normal(self.mu, self.sigma, n)
 
     def pdf(self,x : np.ndarray) -> np.ndarray:
-        return 1/(np.sqrt(2*np.pi)*self.sigma) * np.exp(-(x-self.mu)**2/(2*self.sigma**2))
+        return self._pdf(self.mu,self.sigma,x)
 
     def cdf(self,x : np.ndarray) -> np.ndarray: #cumulative distibution function
         # https://en.wikipedia.org/wiki/Normal_distribution
@@ -43,6 +44,11 @@ class Gaussian(Distribution1D):
         axes[1].plot(t,dydt)
         axes[1].set_title('pdf(t)')
         return fig,axes
+
+    @staticmethod
+    @njit()
+    def _pdf(mu : float ,sigma : float, x : np.ndarray) -> np.ndarray:
+        return 1/(np.sqrt(2*np.pi)*sigma) * np.exp(-(x-mu)**2/(2*sigma**2))
 
 class GaussianT(Distribution1D):
 #https://en.wikipedia.org/wiki/Truncated_normal_distribution
