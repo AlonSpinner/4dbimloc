@@ -1,5 +1,5 @@
 import numpy as np
-import one_dim as r1d
+from . import one_dim as r1d
 from numba import njit
 
 @njit(parallel = True)

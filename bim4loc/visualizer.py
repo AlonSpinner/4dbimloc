@@ -11,18 +11,23 @@ class VisApp():
     def __init__(self) -> None:
         self._windows = [] #list of windows
 
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         threading.Thread(target = self.run).start() #executes the run method in a different thread
         
-        #without this, we will have a bug where self._active_window wont be created or something
-        #reducing time also causes the bug. We need time to allow the thread to create the window I guess.
-        time.sleep(0.7)
+    def lock_acquire(self) -> None:
+        #lock should be acquired not interacting with visuals (computing new pose of drone for example)
+        self._lock.acquire()
+
+    def lock_release(self) -> None:
+        #lock should be released to allow the visuals to update
+        self._lock.release()  
 
     def run(self) -> None:
-        self._app = gui.Application.instance
-        self._app.initialize()
+        with self._lock:
+            self._app = gui.Application.instance
+            self._app.initialize()
+            self.add_window('main window') #must create app with at least one window or core dumps
         
-        self.add_window('main window') #must create app with at least one window or core dumps
         self._app.run()
 
     def set_active_window(self, n : int):
@@ -32,7 +37,7 @@ class VisApp():
         def _add_window(self : 'VisApp'):
             new_window = visualization.O3DVisualizer(title)
             self._app.add_window(new_window)
-            
+
             #has to be after window is added to app
             if len(self._windows) > 0:
                 last_window_pos = (self._windows[-1].os_frame.x, self._windows[-1].os_frame.y)
@@ -52,7 +57,7 @@ class VisApp():
         else:
             with self._lock:
                 self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
-                time.sleep(0.5)
+                # time.sleep(0.5)
 
     def add_solid(self, solid : o3dSolid) -> None:
         with self._lock:
