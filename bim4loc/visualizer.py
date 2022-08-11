@@ -6,6 +6,8 @@ import time
 from typing import Literal
 import logging
 
+#NEED TO CHECK THIS: https://github.com/isl-org/Open3D/issues/999
+
 class VisApp():
 
     def __init__(self) -> None:
