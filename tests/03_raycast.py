@@ -30,12 +30,10 @@ visApp.add_solid(pcd_scan)
 
 time.sleep(1)
 for a in actions:
-    visApp.lock_acquire()
     drone.move(a)
     z, _, p = drone.scan(world)
     pcd_scan.update(p.T)
 
-    visApp.lock_release()
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 

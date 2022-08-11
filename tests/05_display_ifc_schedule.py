@@ -16,7 +16,8 @@ for s in solids:
         # if s.is_complete(current_time):
                 # visApp1.add_solid(s)
         s.set_existance_belief_by_schedule(current_time, set_shader = True)
-        visApp1.add_solid(s)
+        
+[visApp1.add_solid(s) for s in solids]
 
 #show axes and reset camera after building scene
 visApp1.show_axes(True)

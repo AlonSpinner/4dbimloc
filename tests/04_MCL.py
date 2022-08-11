@@ -59,7 +59,6 @@ visApp.add_solid(pcd_scan)
 
 time.sleep(0.1)
 for t,u in enumerate(actions):
-    visApp.lock_acquire()
     drone.move(u)
     z, _, z_p = drone.scan(world)
 
@@ -71,7 +70,6 @@ for t,u in enumerate(actions):
     for a,p in zip(arrows, pf.particles):
         a.update_geometry(p)
   
-    visApp.lock_release()
     [visApp.update_solid(a) for a in arrows]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)

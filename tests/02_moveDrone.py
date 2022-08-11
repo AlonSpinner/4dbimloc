@@ -26,11 +26,9 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 time.sleep(0.5)
 for a in actions:
-    visApp.lock_acquire()
     drone.move(a, 1e-9 * np.eye(4))
     arrow.update_geometry(drone.pose)
     
-    visApp.lock_release()
     visApp.update_solid(arrow)
     visApp.update_solid(drone.solid)
 

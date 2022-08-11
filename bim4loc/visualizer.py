@@ -11,27 +11,18 @@ class VisApp():
     def __init__(self) -> None:
         self._windows = [] #list of windows
 
-        self._lock = threading.RLock()
         threading.Thread(target = self.run).start() #executes the run method in a different thread
-        
-    def lock_acquire(self) -> None:
-        #lock should be acquired not interacting with visuals (computing new pose of drone for example)
-        self._lock.acquire()
-
-    def lock_release(self) -> None:
-        #lock should be released to allow the visuals to update
-        self._lock.release()  
+        time.sleep(0.5) #amount of time it takes app to create the first window
 
     def run(self) -> None:
-        with self._lock:
-            self._app = gui.Application.instance
-            self._app.initialize()
-            self.add_window('main window') #must create app with at least one window or core dumps
-        
+        self._app = gui.Application.instance
+        self._app.initialize()
+        self.add_window('main window') #must create app with at least one window or core dumps
+    
         self._app.run()
 
     def set_active_window(self, n : int):
-        self._active_window = self._windows[n]
+            self._active_window = self._windows[n]
 
     def add_window(self, title : str = ''):
         def _add_window(self : 'VisApp'):
@@ -55,47 +46,45 @@ class VisApp():
         if len(self._windows) == 0:
             _add_window(self)
         else:
-            with self._lock:
-                self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
-                # time.sleep(0.5)
+            self._app.post_to_main_thread(self._active_window, lambda: _add_window(self)) #this works god knows why
+            time.sleep(0.5) #amount of time it takes app to create the window
 
     def add_solid(self, solid : o3dSolid) -> None:
-        with self._lock:
-            def _add_solid(window, solid : o3dSolid) -> None:
-                window.add_geometry(solid.name, solid.geometry, solid.material)
-                window.post_redraw()
+        def _add_solid(window, solid : o3dSolid) -> None:
+            window.add_geometry(solid.name, solid.geometry, solid.material)
+            window.post_redraw()
 
-            self._app.post_to_main_thread(self._active_window, lambda: _add_solid(self._active_window, solid))
+        t = self._app.post_to_main_thread(self._active_window, lambda: _add_solid(self._active_window, solid))
+        time.sleep(0.001) #amount of time it takes app to add the solid
 
     def update_solid(self, solid : o3dSolid) -> None:
-        with self._lock:
-            if not self._active_window.scene.has_geometry(solid.name):
-                logging.warning(f'geometry {solid.name} does not exist in scene')
-                return
+        if not self._active_window.scene.has_geometry(solid.name):
+            logging.warning(f'geometry {solid.name} does not exist in scene')
+            return
 
-            def _update_solid(window, solid: o3dSolid) -> None:
-                window.remove_geometry(solid.name)
-                window.add_geometry(solid.name, solid.geometry, solid.material)
-                window.post_redraw()
-            
-            self._app.post_to_main_thread(self._active_window, lambda: _update_solid(self._active_window, solid))
+        def _update_solid(window, solid: o3dSolid) -> None:
+            window.remove_geometry(solid.name)
+            window.add_geometry(solid.name, solid.geometry, solid.material)
+            window.post_redraw()
+        
+        self._app.post_to_main_thread(self._active_window, lambda: _update_solid(self._active_window, solid))
+        time.sleep(0.001) #amount of time it takes app to update the solid
     
-    def redraw(self):
-        with self._lock:
-            self._app.post_to_main_thread(self._active_window, self._active_window.post_redraw)
+    def redraw(self, blocking = True):
+        # self._app.post_to_main_thread(self._active_window, self._active_window.post_redraw)
+        self._active_window.post_redraw()
 
     def reset_camera_to_default(self):
-        with self._lock:
-            self._app.post_to_main_thread(self._active_window, self._active_window.reset_camera_to_default)
+        self._app.post_to_main_thread(self._active_window, self._active_window.reset_camera_to_default)
 
     def show_axes(self, show : bool = True) -> None:
-        time.sleep(0.1) #wait for scene to be drawn as axes are added to scene in proportional to scene size
+        #Important: Axes need to be drawn AFTER the app has finished adding all relevent solids
         self._active_window.show_axes = show #axes size are proportional to the scene size
-        self.redraw()
+        self.redraw(blocking = True)
 
     def show_skybox(self, show : bool = True) -> None:
         self._active_window.show_skybox(show)
-        self.redraw()
+        self.redraw(blocking = False)
 
     def show_ground_plane(self, show : bool, ground_plane : Literal['XY','XZ','YZ']  = 'XY') -> None:
         if ground_plane == 'XY':
@@ -108,7 +97,7 @@ class VisApp():
         if show:
             self._active_window.show_ground = True  
         
-        self.redraw()
+        self.redraw(blocking = False)
 
 if __name__ == "__main__":
     visApp = VisApp()

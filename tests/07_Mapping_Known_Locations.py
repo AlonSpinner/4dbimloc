@@ -57,6 +57,7 @@ visApp.reset_camera_to_default()
 
 time.sleep(0.1)
 for t,u in enumerate(actions):
+    
     drone.move(u)
     
     z, solid_names, z_p = drone.scan(world)
@@ -65,12 +66,12 @@ for t,u in enumerate(actions):
 
     vanila_filter(belief, drone.sensor.forward_existence_model, exist_solid_names, notexist_solid_names)
     
+    pcd_scan.update(z_p.T)
+
     visApp.set_active_window(1)
     [visApp.update_solid(s) for s in belief.solids]
-    time.sleep(0.2)
-
+    time.sleep(0.1)
     visApp.set_active_window(0)
-    pcd_scan.update(z_p.T)
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
