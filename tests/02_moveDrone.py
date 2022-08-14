@@ -29,7 +29,7 @@ time.sleep(0.5)
 for a in actions:
     drone.move(a, 1e-9 * np.eye(4))
     arrow.update_geometry(drone.pose)
-    
+
     visApp.update_solid(arrow)
     visApp.update_solid(drone.solid)
 

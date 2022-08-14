@@ -13,8 +13,13 @@ visApp = VisApp()
 for s in solids:
     visApp.add_solid(s, "world")
 
-time.sleep(0.1) #need to wait until all solids are rendered 
+visApp.redraw()
+time.sleep(1) #need to wait until all solids are rendered 
 visApp.setup_default_camera("world")
 visApp.show_axes()
+
+# visApp.setup_default_camera2("world")
+# time.sleep(1) #need to wait until all solids are rendered 
+
 
 
