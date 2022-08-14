@@ -50,8 +50,9 @@ U_COV = 0.01 * np.diag([0.1,0.1,np.radians(0.1),0.0])
 visApp = VisApp()
 for s in solids:
     visApp.add_solid(s)
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
+time.sleep(0.1)
+visApp.show_axes()
+visApp.setup_default_camera()
 [visApp.add_solid(a) for a in arrows]
 visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
