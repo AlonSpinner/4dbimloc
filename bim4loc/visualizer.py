@@ -1,5 +1,6 @@
 from curses import keyname
 from distutils.core import setup
+from tkinter import CENTER
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
 from bim4loc.solids import o3dSolid
@@ -21,6 +22,7 @@ class VisApp():
         self._scenes : dict[gui.SceneWidget] = {}
         self._windows : dict = {}
         self._scene2window : dict[str] = {}
+        self._scene_heightWidth : dict[tuple] = {}
         self._lock = threading.Lock() #lock is mostly for first window. don't want to update stuff before fully creating
 
         self._app = gui.Application.instance
@@ -34,29 +36,26 @@ class VisApp():
 
     def setup_default_camera(self, scene_name : str = "world") -> None:
         with self._lock:
-            sceneWidget = self._scenes[scene_name]
-            bbox = sceneWidget.scene.bounding_box
-            camera = sceneWidget.scene.camera
-            camera.look_at(bbox.get_center(), bbox.get_center() + [0,0,15], [0,1,0])
+            scene_widget = self._scenes[scene_name]
+            height,width = self._scene_heightWidth[scene_name]
+            
+            bbox = scene_widget.scene.bounding_box
+            camera = scene_widget.scene.camera
 
-            fov = 90
-            aspect_ratio = 2
-            near_plane= 0.0
-            far_plane = 10.0
-            vertical = camera.FovType(0.1)
+            center = bbox.get_center()
+            eye = bbox.get_center() + [0,0,15]
+            up = [0,1,0]
+            camera.look_at(center, eye, up)
+
+            scene_widget.center_of_rotation = center
+            scene_widget.set_view_controls(scene_widget.ROTATE_CAMERA_SPHERE)
+
+            fov = 90 #degrees
+            aspect_ratio = height/width
+            near_plane= 0.1
+            far_plane = 10 * max(bbox.get_max_bound())
+            vertical = camera.FovType(1)
             camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
-            # print(camera.get_field_of_view())
-            # print(camera.get_projection_matrix())
-
-    def setup_default_camera2(self, scene_name : str = "world") -> None:
-        with self._lock:
-            sceneWidget = self._scenes[scene_name]
-            bbox = sceneWidget.scene.bounding_box
-            camera = sceneWidget.scene.camera
-
-            sceneWidget.look_at(bbox.get_center(), bbox.get_center() + [0,0,10], [0,1,0])
-            print(camera.get_field_of_view())
-            print(camera.get_projection_matrix())
 
     def add_scene(self, scene_name : str, window_name : str = None):
         with self._lock:
@@ -68,7 +67,9 @@ class VisApp():
             if window_name not in self._windows.keys():
                 #create new window having the same name as scene
                 window_name = scene_name
-                window = self._app.create_window(window_name, int(1.5*1025), int(1.5*512))
+                width = 768
+                height = 2 * width
+                window = self._app.create_window(window_name, height, width)
                 self._windows[window_name] = window #add to _windows
             else:
                 window = self._windows[window_name] = window
@@ -82,6 +83,7 @@ class VisApp():
             window.add_child(scene_widget)
             self._scenes[scene_name] = scene_widget
             self._scene2window[scene_name] = window_name
+            self._scene_heightWidth[scene_name] = (height,width)
 
     def add_solid(self, solid : o3dSolid, scene_name = 'world') -> None:
         with self._lock:
