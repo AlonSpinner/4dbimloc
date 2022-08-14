@@ -18,8 +18,5 @@ time.sleep(1) #need to wait until all solids are rendered
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
-# visApp.setup_default_camera2("world")
-# time.sleep(1) #need to wait until all solids are rendered 
-
 
 
