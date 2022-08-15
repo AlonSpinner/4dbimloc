@@ -61,7 +61,7 @@ class VisApp():
             self._app.post_to_main_thread(world_window, partial(_add_window, self, window_name))
             self._app_thread_finished(world_window)
 
-    def add_scene(self, scene_name : str, window_name : str = None) -> None:
+    def add_scene(self, scene_name : str, window_name : str) -> None:
         if scene_name in self._scenes.keys():
             msg = "scene name already exists in VisApp's scenes"
             logging.error(msg)
@@ -119,7 +119,7 @@ class VisApp():
         vertical = camera.FovType(0)
         camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
 
-    def add_solid(self, solid : o3dSolid, scene_name = 'world') -> None:
+    def add_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         def _add_solid(scene_widget, solid : o3dSolid) -> None:
             scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
 
@@ -127,7 +127,7 @@ class VisApp():
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_add_solid,scene_widget, solid))
 
-    def update_solid(self, solid : o3dSolid, scene_name = 'world') -> None:
+    def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
         if not scene_widget.scene.has_geometry(solid.name):
             logging.warning(f'geometry {solid.name} does not exist in scene')
@@ -140,7 +140,7 @@ class VisApp():
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_update_solid,scene_widget, solid))
 
-    def set_solid_transform(self, solid: o3dSolid, T : np.ndarray, scene_name = 'world') -> None:
+    def set_solid_transform(self, solid: o3dSolid, T : np.ndarray, scene_name = "world") -> None:
         def _set_solid_transform(scene_widget, solid : o3dSolid, T) -> None:
             scene_widget.scene.set_geometry_transform(solid.name, T)
 
@@ -148,11 +148,11 @@ class VisApp():
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_set_solid_transform,scene_widget, solid, T))
 
-    def show_axes(self, scene_name = 'world' ,show : bool = True) -> None:
+    def show_axes(self, show : bool = True, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
         scene_widget.scene.show_axes(show) #axes size are proportional to the existing scene size
 
-    def redraw(self, scene_name = 'world'):        
+    def redraw(self, scene_name = "world") -> None:        
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, scene_widget.force_redraw)

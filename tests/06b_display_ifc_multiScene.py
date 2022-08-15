@@ -21,6 +21,6 @@ for s in solids:
     visApp.add_solid(s, "belief")
 visApp.redraw()
 visApp.setup_default_camera("belief")
-visApp.show_axes("belief", True)
+visApp.show_axes(True, "belief")
 
 
