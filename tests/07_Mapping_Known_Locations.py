@@ -64,7 +64,7 @@ for t,u in enumerate(actions):
     
     z, solid_names, z_p = drone.scan(world)
     belief_z, belief_solid_names, _ = drone.scan(belief)
-    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, belief_z, belief_solid_names, sensor.std)
+    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, belief_z, belief_solid_names, sensor.std, solid_names)
 
     vanila_filter(belief, drone.sensor.forward_existence_model, exist_solid_names, notexist_solid_names)
     
@@ -73,6 +73,8 @@ for t,u in enumerate(actions):
     [visApp.update_solid(s,"belief") for s in belief.solids]
     visApp.update_solid(drone.solid,"world")
     visApp.update_solid(pcd_scan,"world")
+    
+    visApp.redraw_all_scenes()
 
     time.sleep(0.1)
 

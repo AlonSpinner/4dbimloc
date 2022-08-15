@@ -158,6 +158,10 @@ class VisApp():
         self._app.post_to_main_thread(window, scene_widget.force_redraw)
         self._app_thread_finished(window)
 
+    def redraw_all_scenes(self) -> None:
+        for scene_name in self._scenes.keys():
+            self.redraw(scene_name)
+
     def _app_thread_finished(self, window) -> None:
         #blocks until app thread is finished processing all posted functions
         done_flag = [False] #send something mutable to the app thread
