@@ -10,6 +10,7 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
+time.sleep(0.5)  #need to wait until all solids are rendered 
 
 for s in solids:
     visApp.add_solid(s)
@@ -17,11 +18,11 @@ time.sleep(0.1)  #need to wait until all solids are rendered
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
-visApp.add_scene("world")
-for s in solids:
-    visApp.add_solid(s)
-time.sleep(0.1)  #need to wait until all solids are rendered 
-visApp.setup_default_camera("world")
-visApp.show_axes()
+visApp.add_scene("belief","belief")
+# for s in solids:
+#     visApp.add_solid(s)
+# time.sleep(0.1)  #need to wait until all solids are rendered 
+# visApp.setup_default_camera("world")
+# visApp.show_axes()
 
 

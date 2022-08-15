@@ -9,6 +9,7 @@ import time
 from typing import Literal
 import logging
 import numpy as np
+from functools import partial
 
 # gui.Application : http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Application.html#open3d.visualization.gui.Application
 # gui.Window :  http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Window.html?highlight=gui%20application%20instance%20create_window
@@ -26,39 +27,57 @@ class VisApp():
 
         self._app = gui.Application.instance
         self._app.initialize()
-        threading.Thread(target = self.run).start() #executes the run method in a different thread
-        time.sleep(0.1) #some time for self.add_scene to finish
+        threading.Thread(target = self.run, name = 'app_thread').start() #executes the run method in a different thread
+        
+        #wait for windows to be created
+        while len(self._scenes) == 0:
+            pass 
 
     def run(self) -> None:
         self.add_scene("world")   
         self._app.run()
 
-    def add_scene(self, scene_name : str, window_name : str = None):
-        if scene_name in self._scenes.keys():
-            msg = "scene name already exists in VisApp's scenes"
-            logging.error(msg)
-            raise NameError(msg)
+    def add_scene(self, scene_name : str, window_name : str = None) -> None:
+        
+        def _add_scene(self, scene_name : str, window_name : str = None) -> None:
+            if scene_name in self._scenes.keys():
+                msg = "scene name already exists in VisApp's scenes"
+                logging.error(msg)
+                raise NameError(msg)
 
-        if window_name not in self._windows.keys():
-            #create new window having the same name as scene
-            window_name = scene_name
-            width = 768
-            height = 2 * width
-            window = self._app.create_window(window_name, height, width)
+            if window_name not in self._windows.keys():
+                #create new window having the same name as scene
+                window_name = scene_name
+                width = 768
+                height = 2 * width
+                window = self._app.create_window(window_name, height, width)
+            else:
+                window = self._windows[window_name]
+
+            scene_widget = gui.SceneWidget()
+            scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
+            scene_widget.scene.set_background([1, 1, 1, 1])  # White background
+            scene_widget.scene.show_ground_plane(True,visualization.rendering.Scene.GroundPlane.XY)
+            scene_widget.enable_scene_caching(False)      
+            window.add_child(scene_widget)
+            
+            self._scene2window[scene_name] = window_name
+            self._scene_heightWidth[scene_name] = (height,width)
             self._windows[window_name] = window #add to _windows
+            self._scenes[scene_name] = scene_widget
+
+        N_scenes = len(self._scenes)
+        print(N_scenes)
+
+        if threading.current_thread().name == 'app_thread':
+            _add_scene(self, scene_name, window_name)
         else:
-            window = self._windows[window_name] = window
-
-        scene_widget = gui.SceneWidget()
-        scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
-        scene_widget.scene.set_background([1, 1, 1, 1])  # White background
-        scene_widget.scene.show_ground_plane(True,visualization.rendering.Scene.GroundPlane.XY)
-        scene_widget.enable_scene_caching(False)
-
-        window.add_child(scene_widget)
-        self._scenes[scene_name] = scene_widget
-        self._scene2window[scene_name] = window_name
-        self._scene_heightWidth[scene_name] = (height,width)
+            window = self._windows[window_name]
+            self._app.post_to_main_thread(window, partial(_add_scene,self,scene_name, window_name))
+            #block until window was added to list
+            while True:
+                if len(self._scenes) == N_scenes + 1:
+                    return
 
     def setup_default_camera(self, scene_name : str = "world") -> None:
         scene_widget = self._scenes[scene_name]
@@ -88,15 +107,7 @@ class VisApp():
 
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, lambda: _add_solid(scene_widget, solid))
-
-    def set_solid_transform(self, solid: o3dSolid, T : np.ndarray, scene_name = 'world') -> None:
-        def _set_solid_transform(scene_widget, solid : o3dSolid, T) -> None:
-            scene_widget.scene.set_geometry_transform(solid.name, T)
-
-        scene_widget = self._scenes[scene_name]
-        window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, lambda: _set_solid_transform(scene_widget, solid, T))
+        self._app.post_to_main_thread(window, partial(_add_solid,scene_widget, solid))
 
     def update_solid(self, solid : o3dSolid, scene_name = 'world') -> None:
         scene_widget = self._scenes[scene_name]
@@ -109,17 +120,33 @@ class VisApp():
             scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
         
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, lambda: _update_solid(scene_widget, solid))
+        self._app.post_to_main_thread(window, partial(_update_solid,scene_widget, solid))
+
+    def set_solid_transform(self, solid: o3dSolid, T : np.ndarray, scene_name = 'world') -> None:
+        def _set_solid_transform(scene_widget, solid : o3dSolid, T) -> None:
+            scene_widget.scene.set_geometry_transform(solid.name, T)
+
+        scene_widget = self._scenes[scene_name]
+        window = self._get_window(scene_name)
+        self._app.post_to_main_thread(window, partial(_set_solid_transform,scene_widget, solid, T))
 
     def show_axes(self, scene_name = 'world' ,show : bool = True) -> None:
         scene_widget = self._scenes[scene_name]
         #Important: Axes need to be drawn AFTER the app has finished adding all relevent solids
         scene_widget.scene.show_axes(show) #axes size are proportional to the scene size
-        
+
     def redraw(self, scene_name = 'world'):
-        sceneWidget = self._scenes[scene_name]
+        done_flag = [False]
+        
+        def _redraw(scene_widget, done_flag) -> None:
+            scene_widget.force_redraw()
+            done_flag[0] = True
+
+        scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, sceneWidget.force_redraw)
+        self._app.post_to_main_thread(window, partial(_redraw,scene_widget, done_flag))
+        while done_flag[0] == False:
+            pass
 
     def _get_window(self, scene_name : str):
             window_name = self._scene2window[scene_name]
