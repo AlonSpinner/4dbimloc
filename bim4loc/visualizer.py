@@ -24,7 +24,6 @@ class VisApp():
         self._windows : dict = {}
         self._scene2window : dict[str] = {}
         self._scene_heightWidth : dict[tuple] = {}
-        self._window_heightWidth : dict[tuple] = {}
 
         self._app = gui.Application.instance
         self._app.initialize()
@@ -52,7 +51,6 @@ class VisApp():
             window = self._app.create_window(window_name, height, width)
 
             self._windows[window_name] = window 
-            self._window_heightWidth[window_name] = (height,width)
 
         if threading.current_thread().name == 'app_thread':
             _add_window(self, window_name)
@@ -87,8 +85,6 @@ class VisApp():
 
     def setup_default_camera(self, scene_name : str = "world") -> None:
         scene_widget = self._scenes[scene_name]
-        window_name = self._scene2window[scene_name]
-        height,width = self._window_heightWidth[window_name]
         
         bbox = scene_widget.scene.bounding_box
         camera = scene_widget.scene.camera
@@ -102,10 +98,11 @@ class VisApp():
         scene_widget.set_view_controls(scene_widget.ROTATE_CAMERA_SPHERE)
 
         fov = 90 #degrees
-        aspect_ratio = height/width
+        height = scene_widget.frame.height; width = scene_widget.frame.width
+        aspect_ratio = width/height
         near_plane= 0.01
         far_plane = 10 * max(bbox.get_max_bound())
-        vertical = camera.FovType(1)
+        vertical = camera.FovType(0)
         camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
 
     def add_solid(self, solid : o3dSolid, scene_name = 'world') -> None:
@@ -139,8 +136,7 @@ class VisApp():
 
     def show_axes(self, scene_name = 'world' ,show : bool = True) -> None:
         scene_widget = self._scenes[scene_name]
-        #Important: Axes need to be drawn AFTER the app has finished adding all relevent solids
-        scene_widget.scene.show_axes(show) #axes size are proportional to the scene size
+        scene_widget.scene.show_axes(show) #axes size are proportional to the existing scene size
 
     def redraw(self, scene_name = 'world'):        
         scene_widget = self._scenes[scene_name]
@@ -150,7 +146,7 @@ class VisApp():
 
     def _app_thread_finished(self, window) -> None:
         #blocks until app thread is finished processing all posted functions
-        done_flag = [False]
+        done_flag = [False] #send something mutable to the app thread
         def _finished(done_flag):
             done_flag[0] = True
         self._app.post_to_main_thread(window, partial(_finished, done_flag))

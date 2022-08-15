@@ -11,10 +11,10 @@ solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 visApp = VisApp()
 
 for s in solids:
-    visApp.add_solid(s, "world")
+    visApp.add_solid(s)
 visApp.redraw() #must be called after adding all solids
 
-visApp.setup_default_camera("world")
+visApp.setup_default_camera()
 visApp.show_axes()
 
 
