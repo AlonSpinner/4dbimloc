@@ -40,20 +40,22 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 Z_STD = 0.05
 
-#create main window
+#create world scene
 visApp = VisApp()
-[visApp.add_solid(s) for s in world.solids]
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
-visApp.add_solid(drone.solid)
+[visApp.add_solid(s,"world") for s in world.solids]
+visApp.redraw("world")
+visApp.show_axes(True,"world")
+visApp.setup_default_camera("world")
+visApp.add_solid(drone.solid, "world")
 pcd_scan = PcdSolid()
-visApp.add_solid(pcd_scan)
+visApp.add_solid(pcd_scan, "world")
 
 #create belief window
-visApp.add_window('belief - view')
-[visApp.add_solid(s) for s in belief.solids]
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
+visApp.add_scene("belief", "world")
+[visApp.add_solid(s,"belief") for s in belief.solids]
+visApp.redraw("belief")
+visApp.show_axes(True,"belief")
+visApp.setup_default_camera("belief")
 
 time.sleep(0.1)
 for t,u in enumerate(actions):
@@ -62,18 +64,17 @@ for t,u in enumerate(actions):
     
     z, solid_names, z_p = drone.scan(world)
     belief_z, belief_solid_names, _ = drone.scan(belief)
-    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, belief_z, belief_solid_names, sensor.std)
+    exist_solid_names, notexist_solid_names = lidar1D_matcher(z, belief_z, belief_solid_names, sensor.std, solid_names)
 
     vanila_filter(belief, drone.sensor.forward_existence_model, exist_solid_names, notexist_solid_names)
     
     pcd_scan.update(z_p.T)
 
-    visApp.set_active_window(1)
-    [visApp.update_solid(s) for s in belief.solids]
-    time.sleep(0.1)
-    visApp.set_active_window(0)
-    visApp.update_solid(drone.solid)
-    visApp.update_solid(pcd_scan)
+    [visApp.update_solid(s,"belief") for s in belief.solids]
+    visApp.update_solid(drone.solid,"world")
+    visApp.update_solid(pcd_scan,"world")
+    
+    visApp.redraw_all_scenes()
 
     time.sleep(0.1)
 

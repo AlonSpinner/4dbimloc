@@ -11,8 +11,8 @@ from copy import deepcopy
 @dataclass(frozen = False)
 class o3dSolid:
     name : str #name
-    geometry : o3d.cuda.pybind.geometry.TriangleMesh
-    material : o3d.cuda.pybind.visualization.rendering.MaterialRecord
+    geometry : float #o3d.cuda.pybind.geometry.TriangleMesh
+    material : float #o3d.cuda.pybind.visualization.rendering.MaterialRecord
     _min_alpha = 0.3
 
     def update_alpha(self, alpha : float) -> None:
@@ -68,7 +68,7 @@ class PcdSolid(o3dSolid):
 
         mat = rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
-        mat.point_size = 5.0
+        mat.point_size = 10.0
         mat.base_color = [1.0, 0.8, 0.0, 1.0]
         self.material = mat
 
@@ -80,7 +80,7 @@ class PcdSolid(o3dSolid):
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
 
 class DynamicSolid(o3dSolid):
-    base_geometry : o3d.cuda.pybind.geometry.TriangleMesh
+    base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh
     pose : Pose2z = Pose2z.identity()
     
     def __init__(self, name, geometry, material, pose = None):

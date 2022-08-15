@@ -11,8 +11,9 @@ visApp = VisApp()
 
 for o in objects:
     visApp.add_solid(o)
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
+visApp.redraw()
+visApp.setup_default_camera("world")
+visApp.show_axes()
 
 drone = Drone(pose = Pose2z(3,3,0,1.5))
 arrow = ArrowSolid(name = 'arrow', alpha = 1.0, pose =  drone.pose)
@@ -28,7 +29,7 @@ time.sleep(0.5)
 for a in actions:
     drone.move(a, 1e-9 * np.eye(4))
     arrow.update_geometry(drone.pose)
-    
+
     visApp.update_solid(arrow)
     visApp.update_solid(drone.solid)
 

@@ -3,7 +3,6 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter
 import logging
 import time
-import threading
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -13,14 +12,15 @@ visApp = VisApp()
 
 for s in solids:
     visApp.add_solid(s)
+visApp.redraw()
+visApp.setup_default_camera()
+visApp.show_axes()
 
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
-
-visApp.add_window('second_window')
+visApp.add_scene("belief", "world")
 for s in solids:
-    visApp.add_solid(s)
-visApp.show_axes(True)
-visApp.reset_camera_to_default()
+    visApp.add_solid(s, "belief")
+visApp.redraw()
+visApp.setup_default_camera("belief")
+visApp.show_axes(True, "belief")
 
 
