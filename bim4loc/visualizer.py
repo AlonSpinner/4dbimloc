@@ -48,7 +48,13 @@ class VisApp():
         def _add_window(self, window_name):
             width = 768
             height = 2 * width
-            window = self._app.create_window(window_name, height, width)
+            if len(self._windows) == 0:
+                window = self._app.create_window(window_name, height, width)
+            else:
+                last_window = list(self._windows.values())[-1]
+                xnew = last_window.os_frame.x + 100
+                ynew = last_window.os_frame.y + 100
+                window = self._app.create_window(window_name, height, width, xnew, ynew)
 
             self._windows[window_name] = window 
 

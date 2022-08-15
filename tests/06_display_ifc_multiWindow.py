@@ -15,7 +15,7 @@ time.sleep(0.5)  #need to wait until all solids are rendered
 for s in solids:
     visApp.add_solid(s)
 visApp.redraw()
-visApp.setup_default_camera("world")
+visApp.setup_default_camera()
 visApp.show_axes()
 
 visApp.add_window("belief")
