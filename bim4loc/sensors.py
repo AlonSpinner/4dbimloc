@@ -43,7 +43,7 @@ class Lidar1D(Sensor):
 
         ans = m._scene.cast_rays(rays)
         z = ans['t_hit'].numpy()
-        solid_names = [m.solids[i].name if i != m._scene.INVALID_ID else '' for i in ans['geometry_ids'].numpy()]
+        solid_names = [m.solid_names[i] if i != m._scene.INVALID_ID else '' for i in ans['geometry_ids'].numpy()]
 
         if self.std is not None:
             z = np.random.normal(z, self.std)

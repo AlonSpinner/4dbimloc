@@ -2,7 +2,7 @@ import numpy as np
 from bim4loc.geometry import Pose2z
 from bim4loc.maps import Map
 from bim4loc.sensors import Sensor
-from bim4loc.random_models.multi_dim import gauss_likelihood, gauss_fit
+from bim4loc.random.multi_dim import gauss_likelihood, gauss_fit
 import logging
 import time
 from copy import deepcopy

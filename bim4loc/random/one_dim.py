@@ -47,8 +47,13 @@ class Gaussian(Distribution1D):
 
     @staticmethod
     @njit()
-    def _pdf(mu : float ,sigma : float, x : np.ndarray) -> np.ndarray:
-        return 1/(np.sqrt(2*np.pi)*sigma) * np.exp(-(x-mu)**2/(2*sigma**2))
+    def _pdf(mu : float ,sigma : float, x : np.ndarray, pseudo = False) -> np.ndarray:
+        num = np.exp(-(x-mu)**2/(2*sigma**2))
+        if pseudo:
+            return num
+        else:
+            den = 1/(np.sqrt(2*np.pi)*sigma)
+            return num/den
 
 class GaussianT(Distribution1D):
 #https://en.wikipedia.org/wiki/Truncated_normal_distribution
@@ -156,6 +161,7 @@ def nperf(x : np.ndarray) -> np.ndarray:
 
 def npPhi(x : np.ndarray) -> np.ndarray:
     return 0.5*(1 + nperf(x/np.sqrt(2)))
+
 
 
 

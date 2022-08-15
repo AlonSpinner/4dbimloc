@@ -3,7 +3,8 @@ import ifcopenshell, ifcopenshell.geom
 import numpy as np
 import open3d as o3d
 from open3d.visualization import rendering
-import bim4loc.random_models.one_dim as random1d
+import bim4loc.random.one_dim as r_1d
+import bim4loc.random.utils as r_utils
 from bim4loc.geometry import Pose2z
 from importlib import import_module
 from copy import deepcopy
@@ -20,10 +21,11 @@ class o3dSolid:
 
 @dataclass()
 class IfcSolid(o3dSolid):
-    schedule : random1d.Distribution1D
+    schedule : r_1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
     existance_belief : float = 0.0
+    logOdds_existence_belief : float = 0.0
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -35,11 +37,13 @@ class IfcSolid(o3dSolid):
     
     def set_existance_belief_by_schedule(self, time : float, set_shader = False) -> None:
         self.existance_belief = self.schedule.cdf(time)
+        self.logOdds_existence_belief = r_utils.p2logodds(self.existance_belief)
         if set_shader:
             self.material.base_color = np.array([1, 0, 0, self.existance_belief])
 
-    def set_existance_belief_and_shader(self, belief) -> None:
-        self.existance_belief = belief
+    def set_existance_belief_and_shader(self, belief : float) -> None:
+        self.existance_belief = belief #probablity
+        self.logOdds_existence_belief = r_utils.p2logodds(self.existance_belief)
         self.material.base_color = np.array([1, 0, 0, belief])
 
     def clone(self) -> 'IfcSolid':
@@ -125,20 +129,20 @@ class ArrowSolid(DynamicSolid):
 #----------------------------------------------------------------------------------------------------------------------
 
 
-def description2schedule(description : str) -> random1d.Distribution1D:
+def description2schedule(description : str) -> r_1d.Distribution1D:
     if description:
         try:
             lst = description.split(" ")
             _dname = lst[0]
             _dparams = [int(num) for num in lst[1:]]
-            _class = getattr(import_module(random1d.__name__),_dname)
+            _class = getattr(import_module(r_1d.__name__),_dname)
             instance = _class.__new__(_class)
             instance.__init__(*_dparams)
             return instance
         except:
-            print(f'description does not fit any programmed schedule time distribution in {random1d.__name__}')
+            print(f'description does not fit any programmed schedule time distribution in {r_1d.__name__}')
     else:
-        return random1d.Distribution1D() #empty
+        return r_1d.Distribution1D() #empty
 
 def ifc_converter(ifc_path) -> list[IfcSolid]:
     '''
