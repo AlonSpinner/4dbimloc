@@ -19,12 +19,12 @@ for s in solids:
         s.set_existance_belief_by_schedule(current_time, set_shader = True)
         
 [visApp.add_solid(s) for s in solids]
-time.sleep(0.1)
+visApp.redraw()
 #show axes and reset camera after building scene
 
 visApp.show_axes()
 visApp.setup_default_camera()
-visApp.redraw()
+# visApp.redraw()
 
 
 

@@ -24,36 +24,50 @@ class VisApp():
         self._windows : dict = {}
         self._scene2window : dict[str] = {}
         self._scene_heightWidth : dict[tuple] = {}
+        self._window_heightWidth : dict[tuple] = {}
 
         self._app = gui.Application.instance
         self._app.initialize()
         threading.Thread(target = self.run, name = 'app_thread').start() #executes the run method in a different thread
         
-        #wait for windows to be created
+        #wait for scene and window to be created. 
+        #since no window, cant use _app_thread_finished()
         while len(self._scenes) == 0:
             pass 
 
     def run(self) -> None:
-        self.add_scene("world")   
+        self.add_window("world")
+        self.add_scene("world","world")   
         self._app.run()
 
+    def add_window(self, window_name : str) -> None:
+        if window_name in self._windows.keys():
+            msg = "scene name already exists in VisApp's scenes"
+            logging.error(msg)
+            raise NameError(msg)
+
+        def _add_window(self, window_name):
+            width = 768
+            height = 2 * width
+            window = self._app.create_window(window_name, height, width)
+
+            self._windows[window_name] = window 
+            self._window_heightWidth[window_name] = (height,width)
+
+        if threading.current_thread().name == 'app_thread':
+            _add_window(self, window_name)
+        else:
+            world_window = self._windows["world"] #we use world_window to post to main thread
+            self._app.post_to_main_thread(world_window, partial(_add_window, self, window_name))
+            self._app_thread_finished(world_window)
+
     def add_scene(self, scene_name : str, window_name : str = None) -> None:
+        if scene_name in self._scenes.keys():
+            msg = "scene name already exists in VisApp's scenes"
+            logging.error(msg)
+            raise NameError(msg)
         
-        def _add_scene(self, scene_name : str, window_name : str = None) -> None:
-            if scene_name in self._scenes.keys():
-                msg = "scene name already exists in VisApp's scenes"
-                logging.error(msg)
-                raise NameError(msg)
-
-            if window_name not in self._windows.keys():
-                #create new window having the same name as scene
-                window_name = scene_name
-                width = 768
-                height = 2 * width
-                window = self._app.create_window(window_name, height, width)
-            else:
-                window = self._windows[window_name]
-
+        def _add_scene(self, scene_name : str, window) -> None:
             scene_widget = gui.SceneWidget()
             scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
             scene_widget.scene.set_background([1, 1, 1, 1])  # White background
@@ -62,26 +76,19 @@ class VisApp():
             window.add_child(scene_widget)
             
             self._scene2window[scene_name] = window_name
-            self._scene_heightWidth[scene_name] = (height,width)
-            self._windows[window_name] = window #add to _windows
             self._scenes[scene_name] = scene_widget
 
-        N_scenes = len(self._scenes)
-        print(N_scenes)
-
+        window = self._windows[window_name]
         if threading.current_thread().name == 'app_thread':
-            _add_scene(self, scene_name, window_name)
+            _add_scene(self, scene_name, window)
         else:
-            window = self._windows[window_name]
-            self._app.post_to_main_thread(window, partial(_add_scene,self,scene_name, window_name))
-            #block until window was added to list
-            while True:
-                if len(self._scenes) == N_scenes + 1:
-                    return
+            self._app.post_to_main_thread(window, partial(_add_scene,self,scene_name, window))
+            self._app_thread_finished(window)
 
     def setup_default_camera(self, scene_name : str = "world") -> None:
         scene_widget = self._scenes[scene_name]
-        height,width = self._scene_heightWidth[scene_name]
+        window_name = self._scene2window[scene_name]
+        height,width = self._window_heightWidth[window_name]
         
         bbox = scene_widget.scene.bounding_box
         camera = scene_widget.scene.camera
@@ -96,7 +103,7 @@ class VisApp():
 
         fov = 90 #degrees
         aspect_ratio = height/width
-        near_plane= 0.1
+        near_plane= 0.01
         far_plane = 10 * max(bbox.get_max_bound())
         vertical = camera.FovType(1)
         camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
@@ -135,16 +142,18 @@ class VisApp():
         #Important: Axes need to be drawn AFTER the app has finished adding all relevent solids
         scene_widget.scene.show_axes(show) #axes size are proportional to the scene size
 
-    def redraw(self, scene_name = 'world'):
-        done_flag = [False]
-        
-        def _redraw(scene_widget, done_flag) -> None:
-            scene_widget.force_redraw()
-            done_flag[0] = True
-
+    def redraw(self, scene_name = 'world'):        
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, partial(_redraw,scene_widget, done_flag))
+        self._app.post_to_main_thread(window, scene_widget.force_redraw)
+        self._app_thread_finished(window)
+
+    def _app_thread_finished(self, window) -> None:
+        #blocks until app thread is finished processing all posted functions
+        done_flag = [False]
+        def _finished(done_flag):
+            done_flag[0] = True
+        self._app.post_to_main_thread(window, partial(_finished, done_flag))
         while done_flag[0] == False:
             pass
 

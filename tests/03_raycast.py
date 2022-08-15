@@ -22,7 +22,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 visApp = VisApp()
 for o in objects:
     visApp.add_solid(o,"world")
-time.sleep(0.1)
+visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 

@@ -14,15 +14,16 @@ time.sleep(0.5)  #need to wait until all solids are rendered
 
 for s in solids:
     visApp.add_solid(s)
-time.sleep(0.1)  #need to wait until all solids are rendered 
+visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
-visApp.add_scene("belief","belief")
-# for s in solids:
-#     visApp.add_solid(s)
-# time.sleep(0.1)  #need to wait until all solids are rendered 
-# visApp.setup_default_camera("world")
-# visApp.show_axes()
+visApp.add_window("belief")
+visApp.add_scene("belief", "belief")
+for s in solids:
+    visApp.add_solid(s, "belief")
+visApp.redraw()
+visApp.setup_default_camera("belief")
+visApp.show_axes("belief", True)
 
 

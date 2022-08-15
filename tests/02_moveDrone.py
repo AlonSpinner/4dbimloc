@@ -11,7 +11,7 @@ visApp = VisApp()
 
 for o in objects:
     visApp.add_solid(o)
-time.sleep(0.1)
+visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
