@@ -2,7 +2,6 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_TEST_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter
 from bim4loc.random_models.one_dim import Gaussian
-import time
 
 # import open3d as o3d
 # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
@@ -20,8 +19,6 @@ for s in solids:
         
 [visApp.add_solid(s) for s in solids]
 visApp.redraw()
-#show axes and reset camera after building scene
-
 visApp.show_axes()
 visApp.setup_default_camera()
 # visApp.redraw()

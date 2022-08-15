@@ -1,12 +1,8 @@
-from curses import keyname
-from distutils.core import setup
-from tkinter import CENTER
+
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
 from bim4loc.solids import o3dSolid
 import threading
-import time
-from typing import Literal
 import logging
 import numpy as np
 from functools import partial
@@ -70,8 +66,9 @@ class VisApp():
             msg = "scene name already exists in VisApp's scenes"
             logging.error(msg)
             raise NameError(msg)
-        
-        def _add_scene(self, scene_name : str, window) -> None:
+
+        window = self._windows[window_name]        
+        def _add_scene(self :'VisApp', scene_name : str, window) -> None:
             scene_widget = gui.SceneWidget()
             scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
             scene_widget.scene.set_background([1, 1, 1, 1])  # White background
@@ -82,7 +79,18 @@ class VisApp():
             self._scene2window[scene_name] = window_name
             self._scenes[scene_name] = scene_widget
 
-        window = self._windows[window_name]
+            #in case we want to split the window into two scenes:
+            window_scenes_names = [s for s in self._scenes.keys() if self._scene2window[s] == window_name]
+            N_scenes = len(window_scenes_names)
+            if  N_scenes == 3:
+                msg = "window can't have more than 2 scenes"
+                logging.error(msg)
+                raise NameError(msg)
+            elif N_scenes == 2:
+                r = window.content_rect
+                self._scenes[window_scenes_names[0]].frame = gui.Rect(r.x, r.y, r.width / 2, r.height)
+                self._scenes[window_scenes_names[1]].frame= gui.Rect(r.x + r.width / 2, r.y, r.width / 2, r.height)
+
         if threading.current_thread().name == 'app_thread':
             _add_scene(self, scene_name, window)
         else:
