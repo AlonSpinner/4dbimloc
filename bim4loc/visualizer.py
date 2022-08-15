@@ -87,9 +87,12 @@ class VisApp():
                 logging.error(msg)
                 raise NameError(msg)
             elif N_scenes == 2:
-                r = window.content_rect
-                self._scenes[window_scenes_names[0]].frame = gui.Rect(r.x, r.y, r.width / 2, r.height)
-                self._scenes[window_scenes_names[1]].frame= gui.Rect(r.x + r.width / 2, r.y, r.width / 2, r.height)
+                def on_layout(theme):
+                    r = window.content_rect
+                    self._scenes[window_scenes_names[0]].frame = gui.Rect(r.x, r.y, r.width / 2, r.height)
+                    self._scenes[window_scenes_names[1]].frame= gui.Rect(r.x + r.width / 2, r.y, r.width / 2, r.height)
+                window.set_on_layout(on_layout)
+
 
         if threading.current_thread().name == 'app_thread':
             _add_scene(self, scene_name, window)
