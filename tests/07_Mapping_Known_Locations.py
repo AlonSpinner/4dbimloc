@@ -2,7 +2,7 @@ import numpy as np
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid
+from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayTracingMap
 from bim4loc.sensors import Lidar1D
@@ -57,7 +57,7 @@ visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
 
-time.sleep(1)
+time.sleep(5)
 for t,u in enumerate(actions):
     
     drone.move(u)
