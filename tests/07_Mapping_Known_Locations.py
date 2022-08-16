@@ -1,12 +1,11 @@
 import numpy as np
-from bim4loc.geometry import Pose2z
+from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayTracingMap
 from bim4loc.sensors import Lidar1D
-from bim4loc.existance_mapping.matchers import lidar1D_matcher
 from bim4loc.existance_mapping.filters import vanila_filter
 import time
 import logging
@@ -37,7 +36,7 @@ drone.mount_sensor(sensor)
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
 turn_right = Pose2z(0,0,-np.pi/8,0)
-actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
+actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + 4 * [turn_right]
 
 Z_STD = 0.005
 
@@ -58,7 +57,7 @@ visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
 
-time.sleep(0.5)
+time.sleep(1)
 for t,u in enumerate(actions):
     
     drone.move(u)
@@ -79,3 +78,4 @@ for t,u in enumerate(actions):
     time.sleep(0.1)
 
 print('finished')
+visApp.redraw_all_scenes()

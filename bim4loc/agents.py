@@ -2,7 +2,7 @@ import open3d as o3d
 import numpy as np
 from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
-from bim4loc.geometry import Pose2z
+from bim4loc.geometry.poses import Pose2z
 from bim4loc.maps import RayTracingMap
 from bim4loc.sensors import Sensor
 from typing import Union

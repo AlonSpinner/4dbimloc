@@ -2,7 +2,7 @@ from bim4loc.maps import Map, RayTracingMap
 import numpy as np
 from typing import Union
 import open3d as o3d
-from bim4loc.geometry import Pose2z
+from bim4loc.geometry.poses import Pose2z
 
 class Sensor():
     def __init__(self):

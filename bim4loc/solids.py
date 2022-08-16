@@ -5,7 +5,7 @@ import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
 import bim4loc.random.utils as r_utils
-from bim4loc.geometry import Pose2z
+from bim4loc.geometry.poses import Pose2z
 from importlib import import_module
 from copy import deepcopy
 
