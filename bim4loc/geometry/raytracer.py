@@ -8,6 +8,7 @@ from bim4loc.maps import RayTracingMap
 from collections import namedtuple
 
 EPS = 1e-16
+NO_HIT = 2161354
 SceneType = namedtuple('scene', ['vertices', 
                                 'triangles', 
                                 'inc_v', 
@@ -39,6 +40,21 @@ def map2scene(m : RayTracingMap):
 
     return SceneType(meshes_v, meshes_t, inc_v, inc_t)
 
+def post_process_raytrace(z_values, z_ids, solid_names, n_hits = 0):
+    pp_z_values = []
+    pp_z_names = []
+    for zi_values, zi_ids in zip(z_values, z_ids):
+        ii_cond, = np.where(zi_values != np.inf)
+        ii_sorted = np.argsort(zi_values[ii_cond])
+        
+        if n_hits > 0: #assumes all rays have at least n_hits
+            ii_sorted = ii_sorted[:n_hits]
+
+        pp_z_values.append(zi_values[ii_sorted])
+        pp_z_names.append([solid_names[i] for i in zi_ids[ii_sorted]])
+    
+    return pp_z_values, pp_z_names
+
 @njit(parallel = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
@@ -46,8 +62,8 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
 
-    z_values = np.zeros((N_rays, max_hits), dtype = np.float64)
-    z_ids = np.zeros((N_rays, max_hits), dtype = np.int32)
+    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
+    z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
 
     #assumes meshes have no more than 20 triangles and no more than 60 vertices
     for i_r in prange(N_rays):
@@ -66,7 +82,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     finished_mesh = True
                     break
                 z = ray_triangle_intersection(ray, triangle)
-                if z: # no hit == zero
+                if z != NO_HIT and z > 0:
                     z_values[i_r, i_hit] = z
                     z_ids[i_r, i_hit] = i_m
                     i_hit += 1
@@ -77,8 +93,6 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
             
             if ray_max_hits or finished_mesh:
                 break
-        if ray_max_hits:
-            break
     
     return z_values, z_ids
 
@@ -102,16 +116,16 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     det = np.dot(edge1,pvec)
     
     if det < EPS: #ray parallel to normal?
-        return 0
+        return NO_HIT
     
     tvec  = eye - triangle[0]
     u = np.dot(tvec, pvec)
     if u < 0 or u > det:
-        return 0
+        return NO_HIT
     qvec = np.cross(tvec,edge1)
     v = np.dot(dir,qvec)
     if v < 0 or u + v > det:
-        return 0
+        return NO_HIT
 
     z = np.dot(edge2,qvec) / det
     return z

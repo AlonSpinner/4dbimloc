@@ -37,8 +37,10 @@ time.sleep(1)
 for a in actions:
     drone.move(a)
     rays = sensor.get_rays(drone.pose)
-    z_values, z_ids = myRayTracer.raytrace(rays, *rayTracingScene, max_hits = 1)
-    p = sensor.project_scan(drone.pose, z_values[:,0])
+    z_values, z_ids = myRayTracer.raytrace(rays, *rayTracingScene)
+    z_values, z_names = myRayTracer.post_process_raytrace(z_values, z_ids, world.solid_names, n_hits = 1)
+
+    p = sensor.project_scan(drone.pose, np.array(z_values)[:,0])
     # z, _, p = drone.scan(world)
     pcd_scan.update(p.T)
 
