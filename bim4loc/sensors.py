@@ -45,6 +45,7 @@ class Lidar1D(Sensor):
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
             z_values, z_names = raytracer.post_process_raytrace(z_values, z_ids, m.solid_names, n_hits = 1)
             z_values = z_values[:,0] #flatten
+            z_values[z_values > self.max_range] = self.max_range
             z_names = [zn[0] for zn in z_names] #flatten
         else:
             z_values, z_names = raytracer.post_process_raytrace(z_values, z_ids, m.solid_names, n_hits)

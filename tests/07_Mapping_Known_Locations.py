@@ -57,8 +57,10 @@ visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
 
-time.sleep(5)
+time.sleep(1)
+dt = 0.1
 for t,u in enumerate(actions):
+    step_start = time.time()
     
     drone.move(u)
     
@@ -74,8 +76,9 @@ for t,u in enumerate(actions):
     visApp.update_solid(pcd_scan,"world")
     
     visApp.redraw_all_scenes()
-
-    time.sleep(0.1)
+    
+    step_end = time.time()
+    time.sleep(max(dt - (step_end - step_start),0))
 
 print('finished')
 visApp.redraw_all_scenes()
