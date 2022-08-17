@@ -1,7 +1,6 @@
 import numpy as np
 import open3d as o3d
 from bim4loc.solids import IfcSolid
-import bim4loc.geometry.raytracer as raytracer
 from typing import Union
 from collections import namedtuple
 
@@ -22,7 +21,7 @@ SceneType = namedtuple('scene', ['vertices',
                                 'inc_v', 
                                 'inc_t'])
 
-class RayTracingMap(Map):
+class RayCastingMap(Map):
     def __init__(self, solids_list : list[IfcSolid]) -> None:
         super().__init__(solids_list)
         self.scene = self.scene_from_solids()

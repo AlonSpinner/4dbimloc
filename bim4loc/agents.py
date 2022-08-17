@@ -3,7 +3,7 @@ import numpy as np
 from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.geometry.poses import Pose2z
-from bim4loc.maps import RayTracingMap
+from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar1D
 from typing import Union
 
@@ -35,7 +35,7 @@ class Drone:
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : RayTracingMap, project_scan = False) -> Union[np.ndarray, np.ndarray, list[str]]:
+    def scan(self, m : RayCastingMap, project_scan = False) -> Union[np.ndarray, np.ndarray, list[str]]:
         '''
         output:
         z - 1D array

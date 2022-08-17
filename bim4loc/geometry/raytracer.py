@@ -128,7 +128,7 @@ def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray,
 
         k = min(ii_sorted.size, n_hits)
         if k > 0:     
-            pp_z_values[i_a] = zi_values[ii_sorted[:k]]
+            pp_z_values[i_a][:k] = zi_values[ii_sorted[:k]]
             for i_k in range(k):
                 pp_z_names[i_a][i_k] = solid_names[zi_ids[ii_sorted[i_k]]]
     

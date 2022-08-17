@@ -4,9 +4,10 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
-from bim4loc.maps import RayTracingMap
+from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar1D
 from bim4loc.existance_mapping.filters import vanila_filter
+from copy import deepcopy
 import time
 import logging
 
@@ -21,17 +22,21 @@ for s in solids:
     s.set_random_completion_time()
     if s.completion_time < current_time:
         constructed_solids.append(s.clone())
-world = RayTracingMap(constructed_solids)
+world = RayCastingMap(constructed_solids)
+
+drone = Drone(pose = Pose2z(3,3,0, 1.5))
+sensor = Lidar1D(); sensor.std = 0.05; 
+sensor.piercing = False
+sensor.max_range = 100.0
+drone.mount_sensor(sensor)
+
+simulated_sensor = deepcopy(sensor)
+simulated_sensor.piercing = True
 
 belief_solids = [s.clone() for s in solids]
 for s in belief_solids:
     s.set_existance_belief_and_shader(0.5)
-belief = RayTracingMap(belief_solids)
-
-drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
-sensor.max_range = 100.0
-drone.mount_sensor(sensor)
+belief = RayCastingMap(belief_solids)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -65,7 +70,7 @@ for t,u in enumerate(actions):
     drone.move(u)
     
     z, solid_names, z_p = drone.scan(world, project_scan = True)
-    belief_z, belief_solid_names = drone.scan(belief)
+    belief_z, belief_solid_names = simulated_sensor.sense(drone.pose, belief, 1)
 
     vanila_filter(belief,z, belief_z, sensor.std, belief_solid_names)
     
