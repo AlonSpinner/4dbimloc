@@ -34,7 +34,10 @@ pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan)
 
 time.sleep(1)
-for a in actions:
+for i, a in enumerate(actions):
+    if i == 1:
+        start_time = time.time()
+
     drone.move(a)
     rays = sensor.get_rays(drone.pose)
     z_values, z_ids = myRayTracer.raytrace(rays, *rayTracingScene)
@@ -47,4 +50,8 @@ for a in actions:
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
-    time.sleep(0.1)
+    time.sleep(0.01)
+
+end_time = time.time()
+print(f'finished in {end_time - start_time} seconds')
+myRayTracer.raytrace.parallel_diagnostics(level = 1)

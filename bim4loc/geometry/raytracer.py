@@ -1,11 +1,9 @@
 import numpy as np
 from numba import njit, prange
 import numba
-from numba.typed import Dict
-from numba.core import types
-from dataclasses import dataclass
 from bim4loc.maps import RayTracingMap
 from collections import namedtuple
+from typing import Union
 
 EPS = 1e-16
 NO_HIT = 2161354
@@ -15,6 +13,15 @@ SceneType = namedtuple('scene', ['vertices',
                                 'inc_t'])
 
 def map2scene(m : RayTracingMap):   
+    '''
+    takes a RayTracingMap and returns a SceneType:
+
+    meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices
+    meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles
+    inc_v - amounts of rows that contain a single mesh data in meshes_v
+    inc_t - amounts of rows that contain a single mesh data in meshes_t
+    
+    '''
     max_vertices = 0
     max_triangles = 0
     for s in m.solids.values():
@@ -40,7 +47,20 @@ def map2scene(m : RayTracingMap):
 
     return SceneType(meshes_v, meshes_t, inc_v, inc_t)
 
-def post_process_raytrace(z_values, z_ids, solid_names, n_hits = 0):
+def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray, 
+                            solid_names : list[str], n_hits : int = 0) \
+                            -> Union[list[np.ndarray],list[list[str]]]:
+    '''
+    input:
+        z_values - array of shape (n_rays, max_hits) containing range values
+        z_ids - array of shape (n_rays, max_hits) containing meshes ids
+                as provided in meshes_v and meshes_t
+
+    output:
+        outputs are ordered: closest hit to furtherst hit
+        pp_z_values - list of arrays. each array containing the range values of the ray hits
+        pp_z_ids -  each element contains a list of the solid names that were hit by ray
+    '''
     pp_z_values = []
     pp_z_names = []
     for zi_values, zi_ids in zip(z_values, z_ids):
@@ -58,14 +78,26 @@ def post_process_raytrace(z_values, z_ids, solid_names, n_hits = 0):
 @njit(parallel = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
-                    max_hits : int = 10) -> None:
+                    max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
+    '''
+    input:
+        rays - array of shape (n_rays, 6) containing [origin,direction]
+        meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices
+        meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles
+        max_hits - after max_hits stop raytracing for ray.
+                        this is an assumption that allows us to allocate size
+
+    output:
+        z_values - array of shape (n_rays, max_hits) containing range values
+        z_ids - array of shape (n_rays, max_hits) containing meshes ids
+                as provided in meshes_v and meshes_t
+    '''
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
 
     z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
 
-    #assumes meshes have no more than 20 triangles and no more than 60 vertices
     for i_r in prange(N_rays):
         ray_max_hits = False
         ray = rays[i_r]
@@ -81,6 +113,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                 if triangle.sum() == 0: #empty triangle
                     finished_mesh = True
                     break
+
                 z = ray_triangle_intersection(ray, triangle)
                 if z != NO_HIT and z > 0:
                     z_values[i_r, i_hit] = z
@@ -101,11 +134,14 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
 
-    ray - np.array([x,y,z,vx,vy,vz])
-    triangle - np.array([[ax,ay,az],
-                        [bx,by,bz],
-                        [cx,cy,cz]])
-                        
+    input:
+        ray - np.array([x,y,z,vx,vy,vz])
+        triangle - np.array([[ax,ay,az],
+                            [bx,by,bz],
+                            [cx,cy,cz]])
+
+    output:
+        z - distance to intersection             
     '''
     eye = ray[:3]
     dir = ray[3:]
@@ -115,7 +151,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
     
-    if det < EPS: #ray parallel to normal?
+    if det < EPS: #ray parallel to plane?
         return NO_HIT
     
     tvec  = eye - triangle[0]
@@ -131,6 +167,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     return z
 
 if __name__ == "__main__":
+    #simple test to show functionality and speed
     import time
     ray = np.array([0,0,0,1,0,0],dtype=float)
     triangle = np.array([[2,-1,-1],
@@ -144,4 +181,3 @@ if __name__ == "__main__":
         ray_triangle_intersection(ray, triangle)
     e = time.time()
     print((e-s)/N)
-    # ray_triangle_intersection.parallel_diagnostics(level = 4)
