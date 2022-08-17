@@ -75,7 +75,7 @@ def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray,
     
     return pp_z_values, pp_z_names
 
-@njit(parallel = True)
+@njit(parallel = True, cache = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
@@ -129,7 +129,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     
     return z_values, z_ids
 
-@numba.njit(fastmath = True)
+@numba.njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
