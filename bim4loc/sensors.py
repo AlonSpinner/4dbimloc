@@ -51,3 +51,14 @@ class Lidar1D(Sensor):
         z[z > self.max_range] = self.max_range
 
         return z, solid_names
+
+    def get_rays(self, pose : Pose2z) -> np.ndarray:
+        return np.vstack([(pose.x,pose.y,pose.z,
+                        np.cos(pose.theta+a),np.sin(pose.theta+a),0) for a in self.angles])
+
+    def project_scan(self, pose : Pose2z, z):
+        p = np.vstack((z * np.cos(self.angles), 
+                z * np.sin(self.angles),
+                np.zeros_like(z)))
+        world_p = pose.transform_from(p)
+        return world_p

@@ -4,36 +4,84 @@ import numba
 from numba.typed import Dict
 from numba.core import types
 from dataclasses import dataclass
+from bim4loc.maps import RayTracingMap
+from collections import namedtuple
 
 EPS = 1e-16
+SceneType = namedtuple('scene', ['vertices', 
+                                'triangles', 
+                                'inc_v', 
+                                'inc_t'])
 
-# @dataclass(frozen = True)
-# class Mesh:
-#     pass
+def map2scene(m : RayTracingMap):   
+    max_vertices = 0
+    max_triangles = 0
+    for s in m.solids.values():
+        n_v = (np.asarray(s.geometry.vertices)).shape[0]
+        n_t = (np.asarray(s.geometry.triangles)).shape[0]
 
-# @njit(cache = True, parallel = True)
-# def raytrace(rays : np.ndarray, meshes : list[Mesh]) -> None:
-#     #assumes meshes have no more than 20 triangles and no more than 60 vertices
-#     for i_r in prange(rays.shape[0]):
-#         ray = rays[i_r]
-#         for mesh, m in prange(meshes.shape[0]):
-#             for j in prange(mesh.triangles.shape[0]):
-#                 triangle = mesh.triangles[j]
-#                 z = ray_triangle_intersection(ray, triangle)
-#                 if z:
-#                     rays[i, 2] = [z,
-                    
+        if n_v > max_vertices:
+            max_vertices = n_v
+        if n_t > max_triangles:
+            max_triangles = n_t
 
-                    
-#             else:
-#                 continue
-#             break
-#         else:
-#             continue
-#         break
+    inc_v = max_vertices
+    inc_t = max_triangles
 
+    n = len(m.solids)
+    meshes_v = np.zeros((n * inc_v,3), dtype = np.float64)
+    meshes_t = np.zeros((n * inc_t,3), dtype = np.int32)
+    for i_s, s in enumerate(m.solids.values()):
+        v = np.asarray(s.geometry.vertices)
+        t = np.asarray(s.geometry.triangles)
+        meshes_v[i_s * inc_v : i_s * inc_v + v.shape[0]] = v
+        meshes_t[i_s * inc_t : i_s * inc_t + t.shape[0]] = t
 
-#     return
+    return SceneType(meshes_v, meshes_t, inc_v, inc_t)
+
+@njit(parallel = True)
+def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
+                    inc_v : int = 60, inc_t : int = 20,
+                    max_hits : int = 10) -> None:
+    N_meshes = int(meshes_t.shape[0]/ inc_t)
+    N_rays = rays.shape[0]
+
+    z_values = np.zeros((N_rays, max_hits), dtype = np.float64)
+    z_ids = np.zeros((N_rays, max_hits), dtype = np.int32)
+
+    #assumes meshes have no more than 20 triangles and no more than 60 vertices
+    for i_r in prange(N_rays):
+        ray_max_hits = False
+        ray = rays[i_r]
+        i_hit = 0
+
+        for i_m in prange(N_meshes):
+            finished_mesh = False
+
+            m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]
+            m_v = meshes_v[i_m * inc_v : (i_m + 1) * inc_v]
+            for i_t in prange(m_t.shape[0]):
+                triangle = m_v[m_t[i_t]]
+                if triangle.sum() == 0: #empty triangle
+                    finished_mesh = True
+                    break
+                z = ray_triangle_intersection(ray, triangle)
+                if z: # no hit == zero
+                    z_values[i_r, i_hit] = z
+                    z_ids[i_r, i_hit] = i_m
+                    i_hit += 1
+
+                if i_hit == max_hits:
+                    ray_max_hits = True
+                    break
+            
+            if ray_max_hits or finished_mesh:
+                break
+        if ray_max_hits:
+            break
+    
+    return z_values, z_ids
+
 @numba.njit(fastmath = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
@@ -68,18 +116,18 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     z = np.dot(edge2,qvec) / det
     return z
 
-ray = np.array([0,0,0,1,0,0],dtype=float)
-triangle = np.array([[2,-1,-1],
-                    [2,0,1],
-                    [2,1,-1]], dtype = float)
-
-
-import time
-N = int(1e4)
-s = time.time()
-for _ in range(N):
+if __name__ == "__main__":
+    import time
+    ray = np.array([0,0,0,1,0,0],dtype=float)
+    triangle = np.array([[2,-1,-1],
+                        [2,0,1],
+                        [2,1,-1]], dtype = float)
+    
+    N = int(1e4)
     ray_triangle_intersection(ray, triangle)
-e = time.time()
-
-print((e-s)/N)
-# ray_triangle_intersection.parallel_diagnostics(level = 4)
+    s = time.time()
+    for _ in range(N):
+        ray_triangle_intersection(ray, triangle)
+    e = time.time()
+    print((e-s)/N)
+    # ray_triangle_intersection.parallel_diagnostics(level = 4)
