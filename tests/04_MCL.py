@@ -16,7 +16,7 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.05
+sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
 drone.mount_sensor(sensor)
 world = RayTracingMap(solids)
 
@@ -61,7 +61,7 @@ visApp.add_solid(pcd_scan)
 time.sleep(0.1)
 for t,u in enumerate(actions):
     drone.move(u)
-    z, _, z_p = drone.scan(world)
+    z, _, z_p = drone.scan(world, project_scan = True)
 
     pf.step(z, Z_COV, u, U_COV)
     if t % 3 == 0:
@@ -75,6 +75,6 @@ for t,u in enumerate(actions):
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
-    time.sleep(0.1)
+    time.sleep(0.01)
 
 print('finished')

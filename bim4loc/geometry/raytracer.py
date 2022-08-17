@@ -1,79 +1,9 @@
 import numpy as np
 from numba import njit, prange
-import numba
-from bim4loc.maps import RayTracingMap
-from collections import namedtuple
 from typing import Union
 
 EPS = 1e-16
 NO_HIT = 2161354
-SceneType = namedtuple('scene', ['vertices', 
-                                'triangles', 
-                                'inc_v', 
-                                'inc_t'])
-
-def map2scene(m : RayTracingMap):   
-    '''
-    takes a RayTracingMap and returns a SceneType:
-
-    meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices
-    meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles
-    inc_v - amounts of rows that contain a single mesh data in meshes_v
-    inc_t - amounts of rows that contain a single mesh data in meshes_t
-    
-    '''
-    max_vertices = 0
-    max_triangles = 0
-    for s in m.solids.values():
-        n_v = (np.asarray(s.geometry.vertices)).shape[0]
-        n_t = (np.asarray(s.geometry.triangles)).shape[0]
-
-        if n_v > max_vertices:
-            max_vertices = n_v
-        if n_t > max_triangles:
-            max_triangles = n_t
-
-    inc_v = max_vertices
-    inc_t = max_triangles
-
-    n = len(m.solids)
-    meshes_v = np.zeros((n * inc_v,3), dtype = np.float64)
-    meshes_t = np.zeros((n * inc_t,3), dtype = np.int32)
-    for i_s, s in enumerate(m.solids.values()):
-        v = np.asarray(s.geometry.vertices)
-        t = np.asarray(s.geometry.triangles)
-        meshes_v[i_s * inc_v : i_s * inc_v + v.shape[0]] = v
-        meshes_t[i_s * inc_t : i_s * inc_t + t.shape[0]] = t
-
-    return SceneType(meshes_v, meshes_t, inc_v, inc_t)
-
-def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray, 
-                            solid_names : list[str], n_hits : int = 0) \
-                            -> Union[list[np.ndarray],list[list[str]]]:
-    '''
-    input:
-        z_values - array of shape (n_rays, max_hits) containing range values
-        z_ids - array of shape (n_rays, max_hits) containing meshes ids
-                as provided in meshes_v and meshes_t
-
-    output:
-        outputs are ordered: closest hit to furtherst hit
-        pp_z_values - list of arrays. each array containing the range values of the ray hits
-        pp_z_ids -  each element contains a list of the solid names that were hit by ray
-    '''
-    pp_z_values = []
-    pp_z_names = []
-    for zi_values, zi_ids in zip(z_values, z_ids):
-        ii_cond, = np.where(zi_values != np.inf)
-        ii_sorted = np.argsort(zi_values[ii_cond])
-        
-        if n_hits > 0: #assumes all rays have at least n_hits
-            ii_sorted = ii_sorted[:n_hits]
-
-        pp_z_values.append(zi_values[ii_sorted])
-        pp_z_names.append([solid_names[i] for i in zi_ids[ii_sorted]])
-    
-    return pp_z_values, pp_z_names
 
 @njit(parallel = True, cache = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
@@ -82,10 +12,14 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     '''
     input:
         rays - array of shape (n_rays, 6) containing [origin,direction]
-        meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices
-        meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles
+        meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices [px,py,pz]
+        meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles [id1,id2,id3]
         max_hits - after max_hits stop raytracing for ray.
                         this is an assumption that allows us to allocate size
+
+        to clarify: 
+            each mesh is contained of inc_v vertices and inc_t triangles
+            if a triangle is [0,0,0] we will ignore it
 
     output:
         z_values - array of shape (n_rays, max_hits) containing range values
@@ -129,7 +63,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     
     return z_values, z_ids
 
-@numba.njit(fastmath = True, cache = True)
+@njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
@@ -165,6 +99,41 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
 
     z = np.dot(edge2,qvec) / det
     return z
+
+
+def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray, 
+                        solid_names : list[str], n_hits : int = 10) \
+                            -> Union[np.ndarray, list[list[str]]]:
+    '''
+    input:
+        z_values - array of shape (n_rays, max_hits) containing range values
+        z_ids - array of shape (n_rays, max_hits) containing meshes ids
+                as provided in meshes_v and meshes_t
+        solid_names - list of strings to replace integers of z_ids
+        n_hits - assumption of how many hits were provided per ray
+
+    output:
+        outputs are ordered: closest hit to furtherst hit
+        pp_z_values - list of arrays. each row containing the range values of the ray hits
+        pp_z_ids -  each element contains a list of the solid names that were hit by ray
+    '''
+
+    n_angles = z_values.shape[0]
+    pp_z_values = np.full((n_angles, n_hits), np.inf, dtype = np.float64)
+    pp_z_names = [['' for _ in range(n_hits)] for _ in range(n_angles)]
+
+    for i_a, (zi_values, zi_ids) in enumerate(zip(z_values, z_ids)):
+        ii_cond, = np.where(zi_values != np.inf)
+        ii_sorted = np.argsort(zi_values[ii_cond])
+
+        k = min(ii_sorted.size, n_hits)
+        if k > 0:     
+            pp_z_values[i_a] = zi_values[ii_sorted[:k]]
+            for i_k in range(k):
+                pp_z_names[i_a][i_k] = solid_names[zi_ids[ii_sorted[i_k]]]
+    
+    return pp_z_values, pp_z_names
+
 
 if __name__ == "__main__":
     #simple test to show functionality and speed

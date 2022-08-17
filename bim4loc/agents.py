@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.maps import RayTracingMap
-from bim4loc.sensors import Sensor
+from bim4loc.sensors import Lidar1D
 from typing import Union
 
 class Drone:
@@ -24,9 +24,9 @@ class Drone:
         self.pose = pose
         self.solid.update_geometry(self.pose)
 
-    def mount_sensor(self, sensor : Sensor):
+    def mount_sensor(self, sensor : Lidar1D):
         #currently assume sensor pose is identical to agent pose
-        self.sensor = sensor
+        self.sensor : Lidar1D = sensor
 
     def move(self, a : Pose2z, cov = None):
         if cov is not None:
@@ -35,7 +35,7 @@ class Drone:
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : RayTracingMap) -> Union[np.ndarray, np.ndarray, list[str]]:
+    def scan(self, m : RayTracingMap, project_scan = False) -> Union[np.ndarray, np.ndarray, list[str]]:
         '''
         output:
         z - 1D array
@@ -43,11 +43,13 @@ class Drone:
         '''
 
         z, solid_names = self.sensor.sense(self.pose, m)
-
-        p = np.vstack((z * np.cos(self.sensor.angles), 
+        
+        if project_scan:
+            drone_p = np.vstack((z * np.cos(self.sensor.angles), 
                         z * np.sin(self.sensor.angles),
                         np.zeros_like(z)))
-        world_p = self.pose.transform_from(p)
-
-        return z, solid_names, world_p
+            world_p = self.pose.transform_from(drone_p)
+            return z, solid_names, world_p
+        else:
+            return z, solid_names
 

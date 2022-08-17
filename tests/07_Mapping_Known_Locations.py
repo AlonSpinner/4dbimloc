@@ -29,7 +29,7 @@ for s in belief_solids:
 belief = RayTracingMap(belief_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.05
+sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -62,8 +62,8 @@ for t,u in enumerate(actions):
     
     drone.move(u)
     
-    z, solid_names, z_p = drone.scan(world)
-    belief_z, belief_solid_names, _ = drone.scan(belief)
+    z, solid_names, z_p = drone.scan(world, project_scan = True)
+    belief_z, belief_solid_names = drone.scan(belief)
 
     vanila_filter(belief,z, belief_z, sensor.std, belief_solid_names)
     

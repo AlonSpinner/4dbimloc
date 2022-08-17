@@ -10,7 +10,7 @@ import time
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar1D(); sensor.std = 0.05
+sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
 drone.mount_sensor(sensor)
 world = RayTracingMap(objects)
 
@@ -33,10 +33,10 @@ visApp.add_solid(pcd_scan)
 time.sleep(1)
 for a in actions:
     drone.move(a)
-    z, _, p = drone.scan(world)
+    z, _, p = drone.scan(world, project_scan = True)
     pcd_scan.update(p.T)
 
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
-    time.sleep(0.1)
+    time.sleep(0.01)

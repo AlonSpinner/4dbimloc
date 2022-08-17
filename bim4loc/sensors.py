@@ -1,8 +1,9 @@
 from bim4loc.maps import Map, RayTracingMap
-import numpy as np
-from typing import Union
 import open3d as o3d
 from bim4loc.geometry.poses import Pose2z
+import bim4loc.geometry.raytracer as raytracer
+import numpy as np
+from typing import Union
 
 class Sensor():
     def __init__(self):
@@ -35,30 +36,21 @@ class Lidar1D(Sensor):
         self.angles = angles
         self.max_range = max_range
         self.std = std
+        self.piercing = True
 
-    def sense(self, pose : Pose2z, m : RayTracingMap) -> Union[np.ndarray,list[str]]:
-        rays = o3d.core.Tensor([[pose.x,pose.y,pose.z,
-                        np.cos(pose.theta+a),np.sin(pose.theta+a),0] for a in self.angles],
-                        dtype=o3d.core.Dtype.Float32)
+    def sense(self, pose : Pose2z, m : RayTracingMap, n_hits = 10):
+        rays = self.get_rays(pose)
 
-        ans = m._scene.cast_rays(rays)
-        z = ans['t_hit'].numpy()
-        solid_names = [m.solid_names[i] if i != m._scene.INVALID_ID else '' for i in ans['geometry_ids'].numpy()]
-
-        if self.std is not None:
-            z = np.random.normal(z, self.std)
-
-        z[z > self.max_range] = self.max_range
-
-        return z, solid_names
-
+        z_values, z_ids = raytracer.raytrace(rays, *m.scene)
+        if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
+            z_values, z_names = raytracer.post_process_raytrace(z_values, z_ids, m.solid_names, n_hits = 1)
+            z_values = z_values[:,0] #flatten
+            z_names = [zn[0] for zn in z_names] #flatten
+        else:
+            z_values, z_names = raytracer.post_process_raytrace(z_values, z_ids, m.solid_names, n_hits)
+        
+        return z_values, z_names
+            
     def get_rays(self, pose : Pose2z) -> np.ndarray:
         return np.vstack([(pose.x,pose.y,pose.z,
                         np.cos(pose.theta+a),np.sin(pose.theta+a),0) for a in self.angles])
-
-    def project_scan(self, pose : Pose2z, z):
-        p = np.vstack((z * np.cos(self.angles), 
-                z * np.sin(self.angles),
-                np.zeros_like(z)))
-        world_p = pose.transform_from(p)
-        return world_p
