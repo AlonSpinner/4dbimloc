@@ -139,6 +139,9 @@ class VisApp():
         def _update_solid(scene_widget, solid: o3dSolid) -> None:
             scene_widget.scene.remove_geometry(solid.name)
             scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
+
+            #only works for points clouds:
+            # scene_widget.scene.scene.update_geometry(solid.name, solid.geometry, solid.material)
         
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_update_solid,scene_widget, solid))

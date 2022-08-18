@@ -32,7 +32,7 @@ visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan)
 line_scan = o3dSolid('scan_line',o3d.geometry.LineSet,pcd_scan.material)
-visApp.add_solid(line_scan)
+# visApp.add_solid(line_scan)
 
 time.sleep(1)
 for a in actions:
@@ -51,7 +51,6 @@ for a in actions:
     line_ids = o3d.utility.Vector2iVector(np.ones((4,2)))
     line_scan.geometry.lines = line_ids
     line_scan.geometry.points = pcd_scan.geometry.points
-    
     
     visApp.update_solid(pcd_scan)
     # visApp.update_solid(line_scan)

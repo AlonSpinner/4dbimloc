@@ -62,8 +62,8 @@ visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
 
-time.sleep(1)
-dt = 0.1
+time.sleep(5)
+dt = 0.2
 for t,u in enumerate(actions):
     step_start = time.time()
     
