@@ -72,6 +72,7 @@ for t,u in enumerate(actions):
     z, solid_names, z_p = drone.scan(world, project_scan = True)
     belief_z, belief_solid_names = simulated_sensor.sense(drone.pose, belief, 1)
 
+    belief_solid_names = [bsn[0] for  bsn in belief_solid_names]
     vanila_filter(belief,z, belief_z, sensor.std, belief_solid_names)
     
     pcd_scan.update(z_p.T)

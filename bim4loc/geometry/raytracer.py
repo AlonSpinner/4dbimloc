@@ -25,6 +25,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
         z_values - array of shape (n_rays, max_hits) containing range values
         z_ids - array of shape (n_rays, max_hits) containing meshes ids
                 as provided in meshes_v and meshes_t
+        outputs are sorted by z_values (small to big)
     '''
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
@@ -60,6 +61,11 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
             
             if ray_max_hits or finished_mesh:
                 break
+    
+    for i_r in prange(N_rays):
+        i_sorted = np.argsort(z_values[i_r])
+        z_values[i_r] = z_values[i_r][i_sorted]
+        z_ids[i_r] = z_ids[i_r][i_sorted]
     
     return z_values, z_ids
 
@@ -100,39 +106,25 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     z = np.dot(edge2,qvec) / det
     return z
 
-
-def post_process_raytrace(z_values : np.ndarray, z_ids : np.ndarray, 
-                        solid_names : list[str], n_hits : int = 10) \
-                            -> Union[np.ndarray, list[list[str]]]:
+# @njit(parallel = True, cache = True)
+def ids2names(z_ids : np.ndarray, solid_names : list[str]) -> list[list[str]]:
     '''
     input:
-        z_values - array of shape (n_rays, max_hits) containing range values
         z_ids - array of shape (n_rays, max_hits) containing meshes ids
                 as provided in meshes_v and meshes_t
-        solid_names - list of strings to replace integers of z_ids
-        n_hits - assumption of how many hits were provided per ray
+        solid_names - numpy array of strings to replace integers of z_ids
 
     output:
         outputs are ordered: closest hit to furtherst hit
-        pp_z_values - list of arrays. each row containing the range values of the ray hits
-        pp_z_ids -  each element contains a list of the solid names that were hit by ray
+        z_names
     '''
 
-    n_angles = z_values.shape[0]
-    pp_z_values = np.full((n_angles, n_hits), np.inf, dtype = np.float64)
-    pp_z_names = [['' for _ in range(n_hits)] for _ in range(n_angles)]
-
-    for i_a, (zi_values, zi_ids) in enumerate(zip(z_values, z_ids)):
-        ii_cond, = np.where(zi_values != np.inf)
-        ii_sorted = np.argsort(zi_values[ii_cond])
-
-        k = min(ii_sorted.size, n_hits)
-        if k > 0:     
-            pp_z_values[i_a][:k] = zi_values[ii_sorted[:k]]
-            for i_k in range(k):
-                pp_z_names[i_a][i_k] = solid_names[zi_ids[ii_sorted[i_k]]]
-    
-    return pp_z_values, pp_z_names
+    out = [['' for _ in range(z_ids.shape[1])] for _ in range(z_ids.shape[0])]
+    for i_r in range(z_ids.shape[0]):
+        for i_h in range(z_ids.shape[1]):
+            id = z_ids[i_r, i_h]
+            out[i_r][i_h] = '' if id == NO_HIT else solid_names[id]
+    return out
 
 
 if __name__ == "__main__":

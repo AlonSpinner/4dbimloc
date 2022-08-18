@@ -1,3 +1,4 @@
+from re import S
 import numpy as np
 import open3d as o3d
 from bim4loc.solids import IfcSolid
@@ -7,7 +8,7 @@ from collections import namedtuple
 class Map:
     def __init__(self, solids_list : list[IfcSolid]) -> None:
         self.solid_names = [s.name for s in solids_list] #can extract later from dictionary but we will need it constantly
-        self.solids : dict[IfcSolid] = dict(zip(self.solid_names,solids_list))
+        self.solids : dict[str,IfcSolid] = dict(zip(self.solid_names,solids_list))
 
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids.values()])
