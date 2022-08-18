@@ -67,8 +67,8 @@ class PcdSolid(o3dSolid):
         self.name = 'pcd'
         
         if pcd is None:
-            pcd = np.array([[0,0,0]])
-        self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
+            pcd = [[0,0,0]]
+            self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
 
         mat = rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
@@ -82,6 +82,35 @@ class PcdSolid(o3dSolid):
         pcd - 3Xm matrix
         '''
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
+
+class LinesSolid(o3dSolid):
+    def __init__(self, pts : np.ndarray = None, indicies : np.ndarray = None):
+        self.name = 'lines'
+        
+        if pts is None or indicies is None:
+            p0 = [[0.0, 0.0, 0.0],
+                  [1.0, 0.0, 0.0]]
+            l0 = [[0,1]]
+            c0 = [[1.0, 0.8, 0.0]]
+            self.geometry = o3d.geometry.LineSet()
+            self.geometry.points = o3d.utility.Vector3dVector(p0)
+            self.geometry.lines = o3d.utility.Vector2iVector(l0)
+            self.geometry.colors = o3d.utility.Vector3dVector(c0)
+
+        mat = rendering.MaterialRecord()
+        mat.shader = "unlitLine"
+        mat.line_width = 10 
+        self.material = mat
+
+    def update(self, pts : np.ndarray = None, indicies : np.ndarray = None) -> None:
+        '''
+        input:
+        pcd - 3Xm matrix
+        '''
+        self.geometry.points = o3d.utility.Vector3dVector(pts)
+        self.geometry.lines = o3d.utility.Vector2iVector(indicies)
+        # self.geometry.colors = o3d.utility.Vector3dVector(indicies)
+
 
 class DynamicSolid(o3dSolid):
     base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh

@@ -2,7 +2,7 @@ import numpy as np
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, PcdSolid, o3dSolid
+from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayCastingMap
@@ -31,8 +31,8 @@ visApp.show_axes()
 visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan)
-line_scan = o3dSolid('scan_line',o3d.geometry.LineSet,pcd_scan.material)
-# visApp.add_solid(line_scan)
+line_scan = LinesSolid()
+visApp.add_solid(line_scan)
 
 time.sleep(1)
 for a in actions:
@@ -46,14 +46,12 @@ for a in actions:
 
     p = np.hstack((p, drone.pose.t))
     pcd_scan.update(p.T)
-    line_ids = np.zeros((p.shape[1],2))
+    line_ids = np.zeros((p.shape[1],2), dtype = int)
     line_ids[:,1] = np.arange(p.shape[1])
-    line_ids = o3d.utility.Vector2iVector(np.ones((4,2)))
-    line_scan.geometry.lines = line_ids
-    line_scan.geometry.points = pcd_scan.geometry.points
+    line_scan.update(p.T, line_ids)
     
     visApp.update_solid(pcd_scan)
-    # visApp.update_solid(line_scan)
+    visApp.update_solid(line_scan)
 
     [visApp.update_solid(s) for s in world.solids.values()]
     visApp.update_solid(drone.solid)
