@@ -86,20 +86,20 @@ class PcdSolid(o3dSolid):
 class LinesSolid(o3dSolid):
     def __init__(self, pts : np.ndarray = None, indicies : np.ndarray = None):
         self.name = 'lines'
+        self.color = np.array([1.0, 0.8, 0.0])
         
         if pts is None or indicies is None:
             p0 = [[0.0, 0.0, 0.0],
                   [1.0, 0.0, 0.0]]
             l0 = [[0,1]]
-            c0 = [[1.0, 0.8, 0.0]]
             self.geometry = o3d.geometry.LineSet()
             self.geometry.points = o3d.utility.Vector3dVector(p0)
             self.geometry.lines = o3d.utility.Vector2iVector(l0)
-            self.geometry.colors = o3d.utility.Vector3dVector(c0)
+            self.geometry.colors = o3d.utility.Vector3dVector([self.color])
 
         mat = rendering.MaterialRecord()
         mat.shader = "unlitLine"
-        mat.line_width = 10 
+        mat.line_width = 2 
         self.material = mat
 
     def update(self, pts : np.ndarray = None, indicies : np.ndarray = None) -> None:
@@ -109,7 +109,8 @@ class LinesSolid(o3dSolid):
         '''
         self.geometry.points = o3d.utility.Vector3dVector(pts)
         self.geometry.lines = o3d.utility.Vector2iVector(indicies)
-        # self.geometry.colors = o3d.utility.Vector3dVector(indicies)
+        c = np.tile(self.color, (indicies.shape[0], 1))
+        self.geometry.colors = o3d.utility.Vector3dVector(c)
 
 
 class DynamicSolid(o3dSolid):

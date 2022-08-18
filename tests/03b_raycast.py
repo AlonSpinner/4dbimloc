@@ -61,5 +61,5 @@ for a in actions:
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
-    time.sleep(1)
+    # time.sleep(1)
     keyboard.wait('space')

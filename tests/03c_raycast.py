@@ -7,11 +7,12 @@ from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayCastingMap
 import time
-import open3d as o3d
+import keyboard
 
 objects = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
+sensor = Lidar1D(angles = np.array([0.2]))
+sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(objects)
@@ -38,13 +39,14 @@ time.sleep(1)
 for a in actions:
     drone.move(a)
     z, z_solid_names, p = drone.scan(world, project_scan = True)
-    for s in world.solids.values():
-        if s.name in z_solid_names:
-            s.material.base_color = (1,0,0,1)
-        else:
-            s.material.base_color = np.hstack((s.ifc_color,1))
+    # for s in world.solids.values():
+    #     if s.name in z_solid_names:
+    #         s.material.base_color = (1,0,0,1)
+    #     else:
+    #         s.material.base_color = np.hstack((s.ifc_color,1))
 
-    p = np.hstack((p, drone.pose.t))
+    #show rays
+    p = np.hstack((drone.pose.t, p))
     pcd_scan.update(p.T)
     line_ids = np.zeros((p.shape[1],2), dtype = int)
     line_ids[:,1] = np.arange(p.shape[1])
@@ -57,4 +59,6 @@ for a in actions:
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 
-    time.sleep(1)
+    # time.sleep(1)
+    keyboard.wait('space')
+
