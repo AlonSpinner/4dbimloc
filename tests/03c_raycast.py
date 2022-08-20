@@ -9,13 +9,15 @@ from bim4loc.maps import RayCastingMap
 import time
 import keyboard
 
-objects = ifc_converter(IFC_ONLY_WALLS_PATH)
+full_solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
 sensor = Lidar1D(angles = np.array([0.2]))
 sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
-world = RayCastingMap(objects)
+
+solids = [s for s in full_solids if s.name == "1UH7XjeubFPe8ud33kpdAD" or s.name == "22fuoCLrXEA9lnNzqjOo6F"] 
+world = RayCastingMap(solids)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -23,11 +25,16 @@ turn_right = Pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 visApp = VisApp()
-for o in objects:
-    visApp.add_solid(o,"world")
+for s in world.solids.values():
+    visApp.add_solid(s,"world")
 visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
+
+# visApp.add_O3DVisualizer('o3d_window','o3d_scene')
+# for s in world.solids.values():
+#         visApp.add_solid(s,"o3d_scene")
+# visApp.redraw('o3d_scene')
 
 visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()

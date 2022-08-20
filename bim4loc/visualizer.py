@@ -52,7 +52,7 @@ class VisApp():
                 ynew = last_window.os_frame.y + 100
                 window = self._app.create_window(window_name, height, width, xnew, ynew)
 
-            self._windows[window_name] = window 
+            self._windows[window_name] = window
 
         if threading.current_thread().name == 'app_thread':
             _add_window(self, window_name)
@@ -122,13 +122,33 @@ class VisApp():
         vertical = camera.FovType(0)
         camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
 
+    def add_O3DVisualizer(self, window_name : str, scene_name : str):
+        def _add_O3DVisualizer(self, window_name : str , scene_name : str):
+             window = visualization.O3DVisualizer(window_name)
+             window.show_skybox(False)
+             window.ground_plane = visualization.rendering.Scene.GroundPlane.XY
+             window.show_ground = True
+             self._app.add_window(window)
+             self._windows[window_name] = window
+             self._scenes[scene_name] = window.scene
+             self._scene2window[scene_name] = window_name
+
+        world_window = self._windows["world"] #we use world_window to post to main thread
+        self._app.post_to_main_thread(world_window, partial(_add_O3DVisualizer, self, window_name, scene_name))
+        self._app_thread_finished(world_window)
+
     def add_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         def _add_solid(scene_widget, solid : o3dSolid) -> None:
             scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
+        def _add_solid_o3d(window, solid: o3dSolid) -> None:
+            window.add_geometry(solid.name, solid.geometry, solid.material)
             
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, partial(_add_solid,scene_widget, solid))
+        if type(window).__name__ == 'O3DVisualizer':
+            self._app.post_to_main_thread(window, partial(_add_solid_o3d,window, solid))
+        else:
+            self._app.post_to_main_thread(window, partial(_add_solid,scene_widget, solid))
 
     def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
@@ -161,7 +181,10 @@ class VisApp():
     def redraw(self, scene_name = "world") -> None:        
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
-        self._app.post_to_main_thread(window, scene_widget.force_redraw)
+        if type(window).__name__ == 'O3DVisualizer':
+            self._app.post_to_main_thread(window, window.post_redraw)
+        else:
+            self._app.post_to_main_thread(window, scene_widget.force_redraw)
         self._app_thread_finished(window)
 
     def redraw_all_scenes(self) -> None:

@@ -5,7 +5,7 @@ from typing import Union
 EPS = 1e-16
 NO_HIT = 2161354
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
@@ -50,7 +50,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     break
 
                 z = ray_triangle_intersection(ray, triangle)
-                if z != NO_HIT and z > 0:
+                if z != NO_HIT:# and z > 0:
                     z_values[i_r, i_hit] = z
                     z_ids[i_r, i_hit] = i_m
                     i_hit += 1
@@ -69,7 +69,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     
     return z_values, z_ids
 
-@njit(fastmath = True, cache = True)
+# @njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
@@ -90,21 +90,23 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
 
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
-    
-    if det < EPS: #ray parallel to plane?
+
+    if det < EPS:
         return NO_HIT
     
+    inv_det = 1.0/det
     tvec  = eye - triangle[0]
-    u = np.dot(tvec, pvec)
-    if u < 0 or u > det:
+    u = np.dot(tvec, pvec) * inv_det
+    if u < 0 or u > 1.0:
         return NO_HIT
     qvec = np.cross(tvec,edge1)
-    v = np.dot(dir,qvec)
-    if v < 0 or u + v > det:
+    v = np.dot(dir,qvec) * inv_det
+    if v < 0 or u + v > 1.0:
         return NO_HIT
 
-    z = np.dot(edge2,qvec) / det
+    z = np.dot(edge2,qvec) * inv_det
     return z
+
 
 # @njit(parallel = True, cache = True)
 def ids2names(z_ids : np.ndarray, solid_names : list[str]) -> list[list[str]]:
