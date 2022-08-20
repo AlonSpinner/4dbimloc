@@ -5,7 +5,7 @@ from typing import Union
 EPS = 1e-16
 NO_HIT = 2161354
 
-# @njit(parallel = True, cache = True)
+@njit(parallel = True, cache = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
@@ -50,7 +50,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     break
 
                 z = ray_triangle_intersection(ray, triangle)
-                if z != NO_HIT:# and z > 0:
+                if z != NO_HIT and z > 0:
                     z_values[i_r, i_hit] = z
                     z_ids[i_r, i_hit] = i_m
                     i_hit += 1
@@ -69,7 +69,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     
     return z_values, z_ids
 
-# @njit(fastmath = True, cache = True)
+@njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js

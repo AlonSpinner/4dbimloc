@@ -11,13 +11,14 @@ import keyboard
 
 full_solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar1D(angles = np.array([0.2]))
+# sensor = Lidar1D(angles = np.array([0.2]))
+sensor = Lidar1D()
 sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 
-solids = [s for s in full_solids if s.name == "1UH7XjeubFPe8ud33kpdAD" or s.name == "22fuoCLrXEA9lnNzqjOo6F"] 
-world = RayCastingMap(solids)
+# solids = [s for s in full_solids if s.name == "1UH7XjeubFPe8ud33kpdAD" or s.name == "22fuoCLrXEA9lnNzqjOo6F"] 
+world = RayCastingMap(full_solids)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)

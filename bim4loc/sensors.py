@@ -42,10 +42,10 @@ class Lidar1D(Sensor):
         rays = self.get_rays(pose)
 
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
-            z_values, z_ids = raytracer.raytrace(rays, *m.scene, 1)
+            z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
             z_names = raytracer.ids2names(z_ids, m.solid_names)
             
-            z_values = z_values.squeeze()
+            z_values = z_values[:,0]
             z_names = [zi_names[0] for zi_names in z_names]
         else:
             z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
