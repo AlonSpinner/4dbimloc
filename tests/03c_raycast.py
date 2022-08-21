@@ -32,10 +32,12 @@ visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
-# visApp.add_O3DVisualizer('o3d_window','o3d_scene')
-# for s in world.solids.values():
-#         visApp.add_solid(s,"o3d_scene")
-# visApp.redraw('o3d_scene')
+visApp.add_O3DVisualizer('o3d_window','o3d_scene')
+for s in world.solids.values():
+        visApp.O3DVis_add_solid(s,"o3d_scene")
+visApp.redraw('o3d_scene')
+visApp.O3DVis_reset_camera('o3d_window')
+visApp.O3DVis_show_axes('o3d_window')
 
 visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid()
