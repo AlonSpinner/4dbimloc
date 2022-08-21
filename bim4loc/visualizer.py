@@ -55,6 +55,7 @@ class VisApp():
 
             info = gui.Label("")
             info.visible = True
+            info.enabled = True
             window.add_child(info)
 
             self._infos[window_name] = info
@@ -115,7 +116,7 @@ class VisApp():
                         # post to the main thread to safely access UI items.
                         def update_label():
                             info.text = text
-                            info.visible = (text != "")
+                            # info.visible = (text != "")
                             # We are sizing the info label to be exactly the right size,
                             # so since the text likely changed width, we need to
                             # re-layout to set the new frame.
@@ -127,6 +128,7 @@ class VisApp():
                     scene_widget.scene.scene.render_to_depth_image(depth_callback)
                     return gui.Widget.EventCallbackResult.HANDLED
                 return gui.Widget.EventCallbackResult.IGNORED     
+            
             scene_widget.set_on_mouse(partial(_on_mouse_widget3d,window,scene_widget,info))
             
             window.add_child(scene_widget)
@@ -161,7 +163,6 @@ class VisApp():
                                     r.get_bottom() - pref.height, pref.width,
                                     pref.height)
                 window.set_on_layout(_on_layout)
-
 
         if threading.current_thread().name == 'app_thread':
             _add_scene(scene_name, window)
