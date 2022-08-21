@@ -49,6 +49,8 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     finished_mesh = True
                     break
 
+                if triangle[:,0].max() - triangle[:,0].min() > 0.1: #empty triangle
+                    continue
                 z = ray_triangle_intersection(ray, triangle)
                 if z != NO_HIT and z > 0:
                     z_values[i_r, i_hit] = z
@@ -90,8 +92,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
 
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
-
-    if det < EPS:
+    if abs(det) < EPS:
         return NO_HIT
     
     inv_det = 1.0/det
