@@ -18,9 +18,9 @@ class VisApp():
     def __init__(self) -> None:
         self._scenes : dict[gui.SceneWidget] = {}
         self._windows : dict = {}
-        self._scene2window : dict[str] = {}
-        self._scene_heightWidth : dict[tuple] = {}
-        self._infos : dict[str] = {}
+        self._infos : dict = {} #showing xyz of picked points with ALT modifier
+        self._scene2window : dict[str] = {} #stores window_names
+        # self._scene_heightWidth : dict[tuple] = {}
 
         self._app = gui.Application.instance
         self._app.initialize()
@@ -42,7 +42,7 @@ class VisApp():
             logging.error(msg)
             raise NameError(msg)
 
-        def _add_window(self : 'VisApp', window_name):
+        def _add_window(window_name):
             width = 768
             height = 2 * width
             if len(self._windows) == 0:
@@ -54,17 +54,17 @@ class VisApp():
                 window = self._app.create_window(window_name, height, width, xnew, ynew)
 
             info = gui.Label("")
-            info.visible = False
+            info.visible = True
             window.add_child(info)
 
             self._infos[window_name] = info
             self._windows[window_name] = window
 
         if threading.current_thread().name == 'app_thread':
-            _add_window(self, window_name)
+            _add_window(window_name)
         else:
             world_window = self._windows["world"] #we use world_window to post to main thread
-            self._app.post_to_main_thread(world_window, partial(_add_window, self, window_name))
+            self._app.post_to_main_thread(world_window, partial(_add_window, window_name))
             self._app_thread_finished(world_window)
 
     def add_scene(self, scene_name : str, window_name : str) -> None:
@@ -76,7 +76,7 @@ class VisApp():
         window = self._windows[window_name]    
         info = self._infos[window_name]
 
-        def _add_scene(self :'VisApp', scene_name : str, window) -> None:
+        def _add_scene(scene_name : str, window) -> None:
             scene_widget = gui.SceneWidget()
             scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
             scene_widget.scene.set_background([1, 1, 1, 1])  # White background
@@ -85,6 +85,7 @@ class VisApp():
 
             def _on_mouse_widget3d(window, scene_widget, info, event):
                 #from here: http://www.open3d.org/docs/release/python_example/visualization/index.html#mouse-and-point-coord-py
+                
                 # We could override BUTTON_DOWN without a modifier, but that would
                 # interfere with manipulating the scene.
                 if event.type == gui.MouseEvent.Type.BUTTON_DOWN and event.is_modifier_down(
@@ -102,7 +103,7 @@ class VisApp():
                         depth = np.asarray(depth_image)[y, x]
 
                         if depth == 1.0:  # clicked on nothing (i.e. the far plane)
-                            text = ""
+                            text = "nothing-clicked"
                         else:
                             world = scene_widget.scene.camera.unproject(
                                 event.x, event.y, depth, scene_widget.frame.width,
@@ -123,11 +124,11 @@ class VisApp():
                         gui.Application.instance.post_to_main_thread(
                             window, update_label)
 
-                        scene_widget.scene.scene.render_to_depth_image(depth_callback)
-                        return gui.Widget.EventCallbackResult.HANDLED
-                return gui.Widget.EventCallbackResult.IGNORED
-                    
+                    scene_widget.scene.scene.render_to_depth_image(depth_callback)
+                    return gui.Widget.EventCallbackResult.HANDLED
+                return gui.Widget.EventCallbackResult.IGNORED     
             scene_widget.set_on_mouse(partial(_on_mouse_widget3d,window,scene_widget,info))
+            
             window.add_child(scene_widget)
             self._scene2window[scene_name] = window_name
             self._scenes[scene_name] = scene_widget
@@ -140,18 +141,18 @@ class VisApp():
                 logging.error(msg)
                 raise NameError(msg)
             elif N_scenes == 2:
-                def on_layout(theme):
+                def _on_layout(theme):
                     r = window.content_rect
                     self._scenes[window_scenes_names[0]].frame = gui.Rect(r.x, r.y, r.width / 2, r.height)
                     self._scenes[window_scenes_names[1]].frame= gui.Rect(r.x + r.width / 2, r.y, r.width / 2, r.height)
-                    pref = self.info.calc_preferred_size(theme,
+                    pref = info.calc_preferred_size(theme,
                                              gui.Widget.Constraints())
                     info.frame = gui.Rect(r.x,
                                    r.get_bottom() - pref.height, pref.width,
                                    pref.height)
-                window.set_on_layout(on_layout)
+                window.set_on_layout(_on_layout)
             else:
-                def on_layout(theme):
+                def _on_layout(theme):
                     r = window.content_rect
                     scene_widget.frame = gui.Rect(r.x, r.y, r.width, r.height)
                     pref = info.calc_preferred_size(theme,
@@ -159,13 +160,13 @@ class VisApp():
                     info.frame = gui.Rect(r.x,
                                     r.get_bottom() - pref.height, pref.width,
                                     pref.height)
-                window.set_on_layout(on_layout)
+                window.set_on_layout(_on_layout)
 
 
         if threading.current_thread().name == 'app_thread':
-            _add_scene(self, scene_name, window)
+            _add_scene(scene_name, window)
         else:
-            self._app.post_to_main_thread(window, partial(_add_scene,self,scene_name, window))
+            self._app.post_to_main_thread(window, partial(_add_scene,scene_name, window))
             self._app_thread_finished(window)
 
     def setup_default_camera(self, scene_name : str = "world") -> None:
