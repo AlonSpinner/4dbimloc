@@ -65,8 +65,8 @@ visApp.setup_default_camera("belief")
 visApp.redraw("belief")
 
 time.sleep(5)
-dt = 0.2
-keyboard.wait('space')
+dt = 0.1
+# keyboard.wait('space')
 for t,u in enumerate(actions):
     step_start = time.time()
     
@@ -86,8 +86,8 @@ for t,u in enumerate(actions):
     visApp.redraw_all_scenes()
     
     step_end = time.time()
-    # time.sleep(max(dt - (step_end - step_start),0))
-    keyboard.wait('space')
+    time.sleep(max(dt - (step_end - step_start),0))
+    # keyboard.wait('space')
 
 print('finished')
 visApp.redraw_all_scenes()

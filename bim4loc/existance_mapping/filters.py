@@ -34,7 +34,7 @@ def vanila_filter(m : Map, world_z : np.ndarray, belief_z : np.ndarray, sensor_s
             elif abs(wz-bzi) < 1*sensor_std:
                 p = logodds2p(m.solids[bsni].logOdds_existence_belief + p2logodds(0.9))
             else: #wz + 3*sensor_std < bz, cant say nothing about bz
-                pass
+                continue
         # p = logodds2p(m.solids[bsn].logOdds_existence_belief + p2logodds(inverse_existence_model("⬛", wz, bz, sensor_std, pseudo = True)))
 
             m.solids[bsni].set_existance_belief_and_shader(p)
