@@ -34,9 +34,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
 
     for i_r in prange(N_rays):
-        ray_max_hits = False
         ray = rays[i_r]
-        i_hit = 0
 
         for i_m in prange(N_meshes):
             finished_mesh = False
@@ -51,15 +49,17 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                 
                 z = ray_triangle_intersection(ray, triangle)
                 if z != NO_HIT and z > 0:
-                    z_values[i_r, i_hit] = z
-                    z_ids[i_r, i_hit] = i_m
-                    i_hit += 1
-
-                if i_hit == max_hits:
-                    ray_max_hits = True
-                    break
+                    ii = np.searchsorted(z_values[i_r], z)
+                    if ii == max_hits: #new z is the biggest, throw it away
+                        pass
+                    elif ii == 0:
+                        z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][1:]))
+                        z_ids[i_r] = np.hstack((np.array([i_m]), z_ids[i_r][1:]))
+                    else:
+                        z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
+                        z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([i_m]), z_ids[i_r][ii:-1]))
             
-            if ray_max_hits or finished_mesh:
+            if finished_mesh:
                 break
     
     for i_r in prange(N_rays):
@@ -90,7 +90,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
 
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
-    if abs(det) < EPS:
+    if det < EPS: #abs(det) < EPS if we want internal intersection
         return NO_HIT
     
     inv_det = 1.0/det
