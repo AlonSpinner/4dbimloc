@@ -107,7 +107,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     return z
 
 
-# @njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True) #nested lists are not supported in numba
 def ids2names(z_ids : np.ndarray, solid_names : list[str]) -> list[list[str]]:
     '''
     input:

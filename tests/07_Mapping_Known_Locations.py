@@ -10,6 +10,7 @@ from bim4loc.existance_mapping.filters import vanila_filter
 from copy import deepcopy
 import time
 import logging
+import keyboard
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -61,19 +62,20 @@ visApp.add_scene("belief", "world")
 visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
+visApp.redraw("belief")
 
 time.sleep(5)
 dt = 0.2
+keyboard.wait('space')
 for t,u in enumerate(actions):
     step_start = time.time()
     
     drone.move(u)
     
     z, solid_names, z_p = drone.scan(world, project_scan = True)
-    belief_z, belief_solid_names = simulated_sensor.sense(drone.pose, belief, 1)
+    belief_z, belief_solid_names = simulated_sensor.sense(drone.pose, belief, 10)
 
-    belief_solid_names = [bsn[0] for  bsn in belief_solid_names]
-    vanila_filter(belief,z, belief_z, sensor.std, belief_solid_names)
+    vanila_filter(belief, z, belief_z, sensor.std, belief_solid_names)
     
     pcd_scan.update(z_p.T)
 
@@ -84,7 +86,8 @@ for t,u in enumerate(actions):
     visApp.redraw_all_scenes()
     
     step_end = time.time()
-    time.sleep(max(dt - (step_end - step_start),0))
+    # time.sleep(max(dt - (step_end - step_start),0))
+    keyboard.wait('space')
 
 print('finished')
 visApp.redraw_all_scenes()
