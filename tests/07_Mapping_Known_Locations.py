@@ -65,17 +65,17 @@ visApp.setup_default_camera("belief")
 visApp.redraw("belief")
 
 time.sleep(5)
-dt = 0.1
+dt = 0.2
 # keyboard.wait('space')
 for t,u in enumerate(actions):
     step_start = time.time()
     
     drone.move(u)
     
-    z, solid_names, z_p = drone.scan(world, project_scan = True)
-    belief_z, belief_solid_names = simulated_sensor.sense(drone.pose, belief, 10)
+    z, z_ids, z_p = drone.scan(world, project_scan = True)
+    belief_z, belief_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
 
-    vanila_filter(belief, z, belief_z, sensor.std, belief_solid_names)
+    vanila_filter(belief, z, belief_z, belief_z_ids, sensor.std, sensor.max_range)
     
     pcd_scan.update(z_p.T)
 

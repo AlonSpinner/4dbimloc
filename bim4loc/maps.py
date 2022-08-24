@@ -7,18 +7,18 @@ from collections import namedtuple
 
 class Map:
     def __init__(self, solids_list : list[IfcSolid]) -> None:
-        self.solid_names = [s.name for s in solids_list] #can extract later from dictionary but we will need it constantly
-        self.solids : dict[str,IfcSolid] = dict(zip(self.solid_names,solids_list))
+        self.solids_iguid = [s.iguid for s in solids_list] #can extract later from dictionary but we will need it constantly
+        self.solids : dict[str,IfcSolid] = dict(zip(self.solids_iguid,solids_list))
 
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids.values()])
         all_points = o3d.utility.Vector3dVector(all_points)
         aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(all_points)
         return aabb.get_min_bound(), aabb.get_max_bound(), aabb.get_extent()
-                
-
+    
 SceneType = namedtuple('scene', ['vertices', 
                                 'triangles', 
+                                'iguids',
                                 'inc_v', 
                                 'inc_t'])
 
@@ -32,6 +32,7 @@ class RayCastingMap(Map):
         outputs:
             meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices [px,py,pz]
             meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles [id1,id2,id3]
+            meshes_iguid - array of shape (n_meshes, ) containing mesh ids
             inc_v - amounts of rows that contain a single mesh data in meshes_v
             inc_t - amounts of rows that contain a single mesh data in meshes_t
 
@@ -56,13 +57,15 @@ class RayCastingMap(Map):
         n = len(self.solids)
         meshes_v = np.zeros((n * inc_v,3), dtype = np.float64)
         meshes_t = np.zeros((n * inc_t,3), dtype = np.int32)
+        meshes_iguid = np.zeros((n), dtype = np.int32)
         for i_s, s in enumerate(self.solids.values()):
             v = np.asarray(s.geometry.vertices)
             t = np.asarray(s.geometry.triangles)
             meshes_v[i_s * inc_v : i_s * inc_v + v.shape[0]] = v
             meshes_t[i_s * inc_t : i_s * inc_t + t.shape[0]] = t
+            meshes_iguid[i_s] = s.iguid
 
-        return SceneType(meshes_v, meshes_t, inc_v, inc_t)
+        return SceneType(meshes_v, meshes_t, meshes_iguid ,inc_v, inc_t)
 
 
 

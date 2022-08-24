@@ -7,6 +7,7 @@ NO_HIT = 2161354
 
 @njit(parallel = True, cache = True)
 def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
+                    meshes_iguid : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
     '''
@@ -14,6 +15,7 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
         rays - array of shape (n_rays, 6) containing [origin,direction]
         meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices [px,py,pz]
         meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles [id1,id2,id3]
+        meshes_iguid - array of shape (n_meshes, ) containing mesh ids
         max_hits - after max_hits stop raytracing for ray.
                         this is an assumption that allows us to allocate size
 
@@ -54,10 +56,10 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                         pass
                     elif ii == 0:
                         z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][1:]))
-                        z_ids[i_r] = np.hstack((np.array([i_m]), z_ids[i_r][1:]))
+                        z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][1:]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
-                        z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([i_m]), z_ids[i_r][ii:-1]))
+                        z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
             
             if finished_mesh:
                 break
@@ -105,28 +107,6 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
 
     z = np.dot(edge2,qvec) * inv_det
     return z
-
-
-# @njit(parallel = True, cache = True) #nested lists are not supported in numba
-def ids2names(z_ids : np.ndarray, solid_names : list[str]) -> list[list[str]]:
-    '''
-    input:
-        z_ids - array of shape (n_rays, max_hits) containing meshes ids
-                as provided in meshes_v and meshes_t
-        solid_names - numpy array of strings to replace integers of z_ids
-
-    output:
-        outputs are ordered: closest hit to furtherst hit
-        z_names
-    '''
-
-    out = [['' for _ in range(z_ids.shape[1])] for _ in range(z_ids.shape[0])]
-    for i_r in range(z_ids.shape[0]):
-        for i_h in range(z_ids.shape[1]):
-            id = z_ids[i_r, i_h]
-            out[i_r][i_h] = '' if id == NO_HIT else solid_names[id]
-    return out
-
 
 if __name__ == "__main__":
     #simple test to show functionality and speed

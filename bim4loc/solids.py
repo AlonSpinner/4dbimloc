@@ -21,6 +21,7 @@ class o3dSolid:
 
 @dataclass()
 class IfcSolid(o3dSolid):
+    iguid : int
     schedule : r_1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
@@ -44,7 +45,10 @@ class IfcSolid(o3dSolid):
     def set_existance_belief_and_shader(self, belief : float) -> None:
         self.existance_belief = belief #probablity
         self.logOdds_existence_belief = r_utils.p2logodds(self.existance_belief)
-        self.material.base_color = np.array([1, 0, 0, belief])
+        if belief > 0.9:
+            self.material.base_color = np.array([0, 1, 0, belief])
+        else:
+            self.material.base_color = np.array([1, 0, 0, belief])
 
     def clone(self) -> 'IfcSolid':
         mat = rendering.MaterialRecord()
@@ -56,6 +60,7 @@ class IfcSolid(o3dSolid):
         
         return IfcSolid(
             name = self.name,
+            iguid = self.iguid,
             geometry = mesh,
             material = mat,
             schedule = deepcopy(self.schedule),
@@ -186,7 +191,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
     settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
 
     solids = []
-    for product in products:
+    for ii, product in enumerate(products):
         if product.is_a("IfcOpeningElement"): continue
         if product.Representation: #has shape
             shape = ifcopenshell.geom.create_shape(settings, inst=product)
@@ -209,6 +214,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,
+                                iguid = ii, #internal unique integer to use with numpy
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),

@@ -35,9 +35,9 @@ visApp.add_solid(pcd_scan)
 time.sleep(1)
 for a in actions:
     drone.move(a)
-    z, z_solid_names, p = drone.scan(world, project_scan = True)
+    z, z_ids, p = drone.scan(world, project_scan = True)
     for s in world.solids.values():
-        if s.name in z_solid_names:
+        if s.iguid in z_ids:
             s.material.base_color = (1,0,0,1)
         else:
             s.material.base_color = np.hstack((s.ifc_color,1))

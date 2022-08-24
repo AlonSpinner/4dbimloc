@@ -42,14 +42,14 @@ class Drone:
         world_p - MX3 matrix
         '''
 
-        z, solid_names = self.sensor.sense(self.pose, m)
+        z, z_ids = self.sensor.sense(self.pose, m)
         
         if project_scan:
             drone_p = np.vstack((z * np.cos(self.sensor.angles), 
                         z * np.sin(self.sensor.angles),
                         np.zeros_like(z)))
             world_p = self.pose.transform_from(drone_p)
-            return z, solid_names, world_p
+            return z, z_ids, world_p
         else:
-            return z, solid_names
+            return z, z_ids
 

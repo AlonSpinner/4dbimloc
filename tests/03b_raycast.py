@@ -6,6 +6,7 @@ from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayCastingMap
+from bim4loc.geometry.raytracer import NO_HIT
 import time
 import keyboard
 
@@ -39,16 +40,16 @@ visApp.add_solid(line_scan)
 time.sleep(1)
 for a in actions:
     drone.move(a)
-    z, z_solid_names = sensor.sense(drone.pose, world, n_hits = 20)
+    z, z_ids = sensor.sense(drone.pose, world, n_hits = 20)
     
     z_flat = np.array([])
     angles_flat = np.array([])
-    z_solid_names_flat = []
-    for zi,ai,ni in zip(z, sensor.angles, z_solid_names):
+    z_ids_flat = []
+    for zi,ai,zidi in zip(z, sensor.angles, z_ids):
         zi_valid = zi[zi < sensor.max_range]
         z_flat = np.hstack((z_flat, zi_valid))
         angles_flat = np.hstack((angles_flat,np.full_like(zi_valid, ai)))
-        [z_solid_names_flat.append(_) for _ in ni if _ !='']
+        [z_ids_flat.append(_) for _ in zidi if _ != NO_HIT]
 
     drone_p = np.vstack((z_flat * np.cos(angles_flat), 
             z_flat * np.sin(angles_flat),
@@ -56,7 +57,7 @@ for a in actions:
     p = drone.pose.transform_from(drone_p)
     
     for s in world.solids.values():
-        if s.name in z_solid_names_flat:
+        if s.iguid in z_ids_flat:
             s.material.base_color = (1,0,0,1)
         else:
             s.material.base_color = np.hstack((s.ifc_color,1))

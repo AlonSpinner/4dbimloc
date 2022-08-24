@@ -40,21 +40,15 @@ class Lidar1D(Sensor):
 
     def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10):
         rays = self.get_rays(pose)
-
+        
+        z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
+        
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
-            z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
-            z_names = raytracer.ids2names(z_ids, m.solid_names)
-            
             z_values = z_values[:,0]
-            z_names = [zi_names[0] for zi_names in z_names]
-        else:
-            z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
-            z_names = raytracer.ids2names(z_ids, m.solid_names)
         
         z_values[z_values > self.max_range] = self.max_range
-        # z_names[z_values > self.max_range] = '' #need to change later
 
-        return z_values, z_names
+        return z_values, z_ids
             
     def get_rays(self, pose : Pose2z) -> np.ndarray:
         return np.vstack([(pose.x,pose.y,pose.z,
