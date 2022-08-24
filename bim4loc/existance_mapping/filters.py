@@ -2,7 +2,7 @@
 from bim4loc.maps import Map
 from bim4loc.random.utils import p2logodds, logodds2p
 from bim4loc.geometry.raytracer import NO_HIT
-import bim4loc.random.one_dim as r_1d
+import bim4loc.random.one_dim as r1d
 from typing import Literal
 import numpy as np
 
@@ -20,9 +20,9 @@ def inverse_existence_model(m : Literal["⬛","⬜"],
     std - range sensor standard deviation
     '''
     if m == "⬛":
-        return r_1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
+        return r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
     elif m == "⬜":
-        return 1 - r_1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
+        return 1 - r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
 
 def vanila_filter(m : Map, 
                   world_z : np.ndarray, 
@@ -40,7 +40,6 @@ def vanila_filter(m : Map,
                 np.array of shape (n_rays, max_hits)
                 a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer       
     '''
-
     
     for wz, bz, bzid in zip(world_z, belief_z, belief_z_ids):
         for bzi,bzidi in zip(bz, bzid):
