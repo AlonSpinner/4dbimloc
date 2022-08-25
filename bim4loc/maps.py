@@ -10,6 +10,15 @@ class Map:
         self.solids_iguid = [s.iguid for s in solids_list] #can extract later from dictionary but we will need it constantly
         self.solids : dict[str,IfcSolid] = dict(zip(self.solids_iguid,solids_list))
 
+    def update_solids_existance(self, existance : np.ndarray) -> None:
+        '''
+        existance : np.ndarray[iguid, existance probablity]
+        '''
+        for i in range(len(existance)):
+            iguid = existance[i,0]
+            existance_belief = existance[i,1] #probability
+            self.solids[iguid].set_existance_belief_and_shader(existance_belief)
+
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids.values()])
         all_points = o3d.utility.Vector3dVector(all_points)

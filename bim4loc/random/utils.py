@@ -3,6 +3,7 @@ from typing import Union
 
 EPS = 1e-16
 
+
 def p2logodds(p) -> Union[float,np.ndarray]:
     return np.log(p / max(1 - p,EPS))
 

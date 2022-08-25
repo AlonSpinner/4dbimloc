@@ -5,26 +5,54 @@ from bim4loc.geometry.raytracer import NO_HIT
 import bim4loc.random.one_dim as r1d
 from typing import Literal
 import numpy as np
+from numba import njit
 
-def inverse_existence_model(m : Literal["⬛","⬜"], 
-                            wz : np.ndarray, 
-                            bz : np.ndarray, 
-                            std, 
-                            pseudo = True) -> np.ndarray:
+@njit(parallel = True, cache = True)
+def forward_measurement_model(wz : np.ndarray, 
+                              bz : np.ndarray, 
+                              std, 
+                              pseudo = True) -> np.ndarray:
     '''
-    returns the probability of m given two range measurements
-    m = "⬛"- exists
-    m = "⬜" - doesnt exist
-    wz - world measurement
-    bz - belief measurement
-    std - range sensor standard deviation
-    '''
-    if m == "⬛":
-        return r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
-    elif m == "⬜":
-        return 1 - r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
+    input:
+    wz - world range measurement
+    bz - belief range measurement
+    std - range sensor standard deviation (equivalent for both sensors)
+    pseudo - if True, doesnt normalize gaussian (p ~ exp(-0.5 * (wz - bz)**2 / std**2))
 
-def vanila_filter(m : Map, 
+    output:
+    probabilty of measuring wz : p(wz|bz,m)
+
+    in the future:
+    sigma = f(bz)
+    sigma = f(angle of ray hit)
+    '''
+
+    return r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
+
+def f(world_z, belief_z, sensor_std, pm):
+    '''
+    inputs:
+    world_z - single range measurement from real-world-sensor
+    belief_z - single range measurement from simulated sensor
+    sensor_std - both of real and simulated senosr (must be equivalent)
+    pm - belief_m - probablity that solid m does exist
+    
+    outputs:
+    p(m|z) = p(z|m)p(m) / p(z)
+    
+    Algorithm:
+    p(z|m) ~ N(bz,sigma)
+    p(m) ~ prior
+    p(z) = p(z|m)p(m)+ p(z|~m)p(~m) (via marginalization)    
+    '''
+
+    pzm = r1d.Gaussian._pdf(mu = belief_z, sigma = sensor_std, x = world_z)
+    pm 
+    
+    pmz = pzm * pm / (pzm * pm + (1 - pzm) * (1 - pm))
+
+# @njit(parallel = True, cache = True)
+def vanila_inverse(m : Map, 
                   world_z : np.ndarray, 
                   belief_z : np.ndarray, 
                   belief_z_ids : np.ndarray,
@@ -41,16 +69,21 @@ def vanila_filter(m : Map,
                 a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer       
     '''
     
-    for wz, bz, bzid in zip(world_z, belief_z, belief_z_ids):
-        for bzi,bzidi in zip(bz, bzid):
-            if bzidi == NO_HIT:
-                continue
-            if bzi < (wz - 1*sensor_std): #free
-                p = logodds2p(m.solids[bzidi].logOdds_existence_belief + p2logodds(0.1))
-            elif abs(wz-bzi) < 1*sensor_std:
-                p = logodds2p(m.solids[bzidi].logOdds_existence_belief + p2logodds(0.9))
-            else: #wz + 3*sensor_std < bz, cant say nothing about bz
-                continue
-        # p = logodds2p(m.solids[bsn].logOdds_existence_belief + p2logodds(inverse_existence_model("⬛", wz, bz, sensor_std, pseudo = True)))
+    T = 3 * sensor_std
+    L09 = p2logodds(0.9)
+    L01 = p2logodds(0.1)
 
-            m.solids[bzidi].set_existance_belief_and_shader(p)
+    for wz, bz_i, bzid_i in zip(world_z, belief_z, belief_z_ids):
+
+        for bz_ij,bzid_ij in zip(bz_i, bzid_i):
+
+            if bzid_ij == NO_HIT:
+                continue
+            if wz < bz_ij - T: #wz had hit something before bzid
+                break
+            elif wz < bz_ij + T: #wz has hit bzid
+                p = logodds2p(m.solids[bzid_ij].logOdds_existence_belief + L09)
+            else: #wz has hit something after bzid, making us think bzid does not exist
+                p = logodds2p(m.solids[bzid_ij].logOdds_existence_belief + L01)
+
+            m.solids[bzid_ij].set_existance_belief_and_shader(p)
