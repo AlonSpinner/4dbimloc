@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit
 from numba import prange
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def forward(wz : np.ndarray, 
             sz : np.ndarray, 
             std : float, 
@@ -31,25 +31,31 @@ def inverse(world_z, simulated_z, pms, sensor_std):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
-    belief_z - single range measurement from simulated sensor
-    sensor_std - both of real and simulated senosr (must be equivalent)
-    pm - belief_m - probablity that solid m does exist
+    belief_z - np.ndarray
+    sensor_std - sensor std
+    pms -np.ndarray
     
     outputs:
     p(m|z) = p(z|m)p(m) / p(z)
     
     Algorithm:
     p(z|m) ~ N(bz,sigma)
-    p(m) ~ prior
-    p(z) = p(z|m)p(m)+ p(z|~m)p(~m) (via marginalization)    
+    p(m) ~ prior  
     '''
 
     pz = pz(world_z, simulated_z, pms, sensor_std)
+    pmz = np.zeros_like(pms)
+    for i in prange(simulated_z.shape[0]):
+        simulated_z[i] = forward(world_z, simulated_z[i], sensor_std) * pms[i]
+    
+
+    
     pmz = pz
 
     return pmz
 
-def pz(world_z, simulated_z, pms, sensor_std):
+# @njit(parallel = True, cache = True)
+def pz(wz, sz_i, szid_i, logodds_beliefs, sensor_std):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
@@ -57,19 +63,23 @@ def pz(world_z, simulated_z, pms, sensor_std):
     sensor_std - both of real and simulated senosr (must be equivalent)
     pm - belief_m - probablity that solid m does exist
     '''
+    N_maxhits = sz_i.size
 
     p = 0.0
     pierced_meshes_probability = 1.0
-    for i in prange(simulated_z.shape[0]):
-        sz_i = simulated_z[i]
-        pm_i = pms[i]
+    for j in prange(N_maxhits):
+        sz_ij = sz_i[j]
+        szid_ij = szid_i[j]
+        if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+            break
 
-        w_i = pierced_meshes_probability * pm_i
-        f_i = forward(world_z, sz_i, sensor_std)
+        pm_ij = logodds2p(logodds_beliefs[szid_ij])
+
+        w_i = pierced_meshes_probability * pm_ij
+        f_i = forward(wz, sz_ij, sensor_std, pseudo = True)
 
         p += (w_i * f_i)
-        pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_i)
-    
+        pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_ij)
     return p
 
 

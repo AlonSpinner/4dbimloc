@@ -55,8 +55,8 @@ def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     if ii == max_hits: #new z is the biggest, throw it away
                         pass
                     elif ii == 0:
-                        z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][1:]))
-                        z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][1:]))
+                        z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
+                        z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
