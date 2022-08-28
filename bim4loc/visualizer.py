@@ -203,7 +203,7 @@ class VisApp():
     def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
         if not scene_widget.scene.has_geometry(solid.name):
-            logging.warning(f'geometry "{solid.name}" does not exist in scene')
+            logging.warning(f'geometry "{solid.name}" does not exist in scene {scene_name}')
             return
 
         def _update_solid(scene_widget, solid: o3dSolid) -> None:

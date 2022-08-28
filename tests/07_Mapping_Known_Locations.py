@@ -6,7 +6,7 @@ from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar1D
-from bim4loc.random.utils import p2logodds
+from bim4loc.random.utils import p2logodds, logodds2p
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
 import time
@@ -77,7 +77,7 @@ for t,u in enumerate(actions):
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
 
     filters.vanila_inverse(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
-    belief.update_solids_beliefs(logodds_beliefs)
+    belief.update_solids_beliefs(logodds2p(logodds_beliefs))
     
     pcd_scan.update(z_p.T)
 

@@ -1,7 +1,6 @@
 import numpy as np
 import open3d as o3d
 from bim4loc.solids import IfcSolid
-from bim4loc.random.utils import logodds2p
 from typing import Union
 from collections import namedtuple
 
@@ -9,10 +8,9 @@ class Map:
     def __init__(self, solids : list[IfcSolid]) -> None:
         self.solids : list[IfcSolid] = solids #ordered array of solids!
 
-    def update_solids_beliefs(self, logodds_beliefs) -> None:
+    def update_solids_beliefs(self, beliefs) -> None:
         #this may be expensive, and its only for visuals
-        for ii, logodds in enumerate(logodds_beliefs):
-            p = logodds2p(logodds)
+        for ii, p in enumerate(beliefs):
             self.solids[ii].set_existance_belief_and_shader(p)    
 
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
