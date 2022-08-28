@@ -27,35 +27,8 @@ def forward(wz : np.ndarray,
 
     return r1d.Gaussian._pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-def inverse(world_z, simulated_z, pms, sensor_std):
-    '''
-    inputs:
-    world_z - single range measurement from real-world-sensor
-    belief_z - np.ndarray
-    sensor_std - sensor std
-    pms -np.ndarray
-    
-    outputs:
-    p(m|z) = p(z|m)p(m) / p(z)
-    
-    Algorithm:
-    p(z|m) ~ N(bz,sigma)
-    p(m) ~ prior  
-    '''
-
-    pz = pz(world_z, simulated_z, pms, sensor_std)
-    pmz = np.zeros_like(pms)
-    for i in prange(simulated_z.shape[0]):
-        simulated_z[i] = forward(world_z, simulated_z[i], sensor_std) * pms[i]
-    
-
-    
-    pmz = pz
-
-    return pmz
-
 # @njit(parallel = True, cache = True)
-def pz(wz, sz_i, szid_i, logodds_beliefs, sensor_std):
+def p_ij(wz, sz_i, szid_i, beliefs, sensor_std):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
@@ -65,7 +38,7 @@ def pz(wz, sz_i, szid_i, logodds_beliefs, sensor_std):
     '''
     N_maxhits = sz_i.size
 
-    p = 0.0
+    p_ij = np.zeros_like(sz_i)
     pierced_meshes_probability = 1.0
     for j in prange(N_maxhits):
         sz_ij = sz_i[j]
@@ -73,14 +46,18 @@ def pz(wz, sz_i, szid_i, logodds_beliefs, sensor_std):
         if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
             break
 
-        pm_ij = logodds2p(logodds_beliefs[szid_ij])
+        pm_ij = beliefs[szid_ij]
 
-        w_i = pierced_meshes_probability * pm_ij
-        f_i = forward(wz, sz_ij, sensor_std, pseudo = True)
+        w_ij = pierced_meshes_probability * pm_ij
+        f_ij = forward(wz, sz_ij, sensor_std, pseudo = True)
 
-        p += (w_i * f_i)
+        p_ij[j] = w_ij * f_ij
+
+        #update pierced meshes probability for next iteration
         pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_ij)
-    return p
+    
+    pi = np.sum(p_ij) #includes j
+    return p_ij, pi
 
 
 @njit(parallel = True, cache = True)

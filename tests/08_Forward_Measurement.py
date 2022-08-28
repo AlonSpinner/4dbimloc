@@ -19,7 +19,7 @@ solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
 drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.05; 
+sensor = Lidar1D(); sensor.std = 10.0; 
 sensor.piercing = False
 sensor.max_range = 20.0
 sensor.angles = np.array([0, 0.1])
@@ -59,7 +59,7 @@ visApp.add_solid(pcd_scan_world, "simulation")
 
 def calcualte_lines(simulated_z, angles, drone_pose):
     z_flat = simulated_z.flatten()
-    angles_flat = np.matlib.repmat(angles, 1 , simulated_z.shape[1]).flatten()
+    angles_flat = np.matlib.repmat(angles, simulated_z.shape[1] , 1).T.flatten()
 
     drone_p = np.vstack((z_flat * np.cos(angles_flat), 
                     z_flat * np.sin(angles_flat),
@@ -71,11 +71,12 @@ def calcualte_lines(simulated_z, angles, drone_pose):
     line_ids[:,1] = np.arange(world_p.shape[1])
     return world_p, line_ids
 
+beliefs = np.array([0.0,0.7,0.7])
 while True:
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10)
 
-    print(filters.pz(z[0], simulated_z[0], simulated_z_ids[0], beliefs, sensor.std))
+    print(filters.p_ij(z[0], simulated_z[0], simulated_z_ids[0], beliefs, sensor.std))
     simulation.update_solids_beliefs(beliefs)
     
     pcd_scan_world.update(z_p.T)
