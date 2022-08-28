@@ -123,3 +123,7 @@ if __name__ == "__main__":
         ray_triangle_intersection(ray, triangle)
     e = time.time()
     print((e-s)/N)
+
+
+    raytrace(ray.reshape((1,6)),triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+    raytrace.parallel_diagnostics()

@@ -6,6 +6,7 @@ import bim4loc.random.one_dim as r1d
 from typing import Literal
 import numpy as np
 from numba import njit
+from numba import prange
 
 @njit(parallel = True, cache = True)
 def forward_measurement_model(wz : np.ndarray, 
@@ -74,18 +75,29 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
     outputs:
         logodds_beliefs - updated logodds_beliefs
     '''
-    
+    N_rays = world_z.shape[0]
+    N_maxhits = simulated_z.shape[1]
+
     T = 3 * sensor_std
     L09 = p2logodds(0.9)
     L01 = p2logodds(0.1)
 
-    for wz, bz_i, bzid_i in zip(world_z, simulated_z, simulated_z_ids):
-        for bz_ij,bzid_ij in zip(bz_i, bzid_i):
-            if bzid_ij == NO_HIT:
-                continue
-            if wz < bz_ij - T: #wz had hit something before bzid
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        bz_i = simulated_z[i]
+        bzid_i =  simulated_z_ids[i]
+        
+        for j in prange(N_maxhits):
+            bz_ij = bz_i[j]
+            bzid_ij = bzid_i[j]
+            if bzid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
-            elif wz < bz_ij + T: #wz has hit bzid
+            if wz_i < bz_ij - T: #wz had hit something before bzid
+                break
+            elif wz_i < bz_ij + T: #wz has hit bzid
                 logodds_beliefs[bzid_ij] += L09
             else: #wz has hit something after bzid, making us think bzid does not exist
                 logodds_beliefs[bzid_ij] += L01
+
+# if __name__ == '__main__':
+vanila_inverse.parallel_diagnostics(level=4)
