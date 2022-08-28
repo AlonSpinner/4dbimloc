@@ -13,6 +13,8 @@ import time
 import logging
 import keyboard
 
+np.random.seed(25)
+
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -37,8 +39,8 @@ simulated_sensor.piercing = True
 
 belief_solids = [s.clone() for s in solids]
 belief = RayCastingMap(belief_solids)
-belief.logodds_beliefs[:] = p2logodds(0.5)
-belief.update_solids_beliefs()
+logodds_beliefs = np.full(len(belief.solids), p2logodds(0.5))
+belief.update_solids_beliefs(logodds_beliefs)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -47,7 +49,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #create world scene
 visApp = VisApp()
-[visApp.add_solid(s,"world") for s in world.solids.values()]
+[visApp.add_solid(s,"world") for s in world.solids]
 visApp.redraw("world")
 visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
@@ -57,7 +59,7 @@ visApp.add_solid(pcd_scan, "world")
 
 #create belief window
 visApp.add_scene("belief", "world")
-[visApp.add_solid(s,"belief") for s in belief.solids.values()]
+[visApp.add_solid(s,"belief") for s in belief.solids]
 visApp.redraw("belief")
 visApp.show_axes(True,"belief")
 visApp.setup_default_camera("belief")
@@ -74,12 +76,12 @@ for t,u in enumerate(actions):
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
 
-    filters.vanila_inverse(belief.logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
-    belief.update_solids_beliefs()
+    filters.vanila_inverse(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    belief.update_solids_beliefs(logodds_beliefs)
     
     pcd_scan.update(z_p.T)
 
-    [visApp.update_solid(s,"belief") for s in belief.solids.values()]
+    [visApp.update_solid(s,"belief") for s in belief.solids]
     visApp.update_solid(drone.solid,"world")
     visApp.update_solid(pcd_scan,"world")
     

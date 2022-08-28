@@ -6,19 +6,17 @@ from typing import Union
 from collections import namedtuple
 
 class Map:
-    def __init__(self, solids_list : list[IfcSolid]) -> None:
-        solids_iguid = [s.iguid for s in solids_list] #can extract later from dictionary but we will need it constantly
-        self.solids : dict[str,IfcSolid] = dict(zip(solids_iguid,solids_list))
-        self.logodds_beliefs : np.ndarray = np.full(len(solids_list),p2logodds(1.0))
+    def __init__(self, solids : list[IfcSolid]) -> None:
+        self.solids : list[IfcSolid] = solids
 
-    def update_solids_beliefs(self) -> None:
+    def update_solids_beliefs(self, logodds_beliefs) -> None:
         #this may be expensive, and its only for visuals
-        for iguid, logodds in enumerate(self.logodds_beliefs):
+        for ii, logodds in enumerate(logodds_beliefs):
             p = logodds2p(logodds)
-            self.solids[iguid].set_existance_belief_and_shader(p)    
+            self.solids[ii].set_existance_belief_and_shader(p)    
 
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
-        all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids.values()])
+        all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids])
         all_points = o3d.utility.Vector3dVector(all_points)
         aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(all_points)
         return aabb.get_min_bound(), aabb.get_max_bound(), aabb.get_extent()
@@ -49,7 +47,7 @@ class RayCastingMap(Map):
         '''
         max_vertices = 0
         max_triangles = 0
-        for s in self.solids.values():
+        for s in self.solids:
             n_v = (np.asarray(s.geometry.vertices)).shape[0]
             n_t = (np.asarray(s.geometry.triangles)).shape[0]
 
@@ -65,12 +63,12 @@ class RayCastingMap(Map):
         meshes_v = np.zeros((n * inc_v,3), dtype = np.float64)
         meshes_t = np.zeros((n * inc_t,3), dtype = np.int32)
         meshes_iguid = np.zeros((n), dtype = np.int32)
-        for i_s, s in enumerate(self.solids.values()):
+        for i_s, s in enumerate(self.solids):
             v = np.asarray(s.geometry.vertices)
             t = np.asarray(s.geometry.triangles)
             meshes_v[i_s * inc_v : i_s * inc_v + v.shape[0]] = v
             meshes_t[i_s * inc_t : i_s * inc_t + t.shape[0]] = t
-            meshes_iguid[i_s] = s.iguid
+            meshes_iguid[i_s] = i_s
 
         return SceneType(meshes_v, meshes_t, meshes_iguid ,inc_v, inc_t)
 

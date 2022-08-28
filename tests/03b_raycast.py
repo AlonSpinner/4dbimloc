@@ -56,8 +56,8 @@ for a in actions:
             np.zeros_like(z_flat)))
     p = drone.pose.transform_from(drone_p)
     
-    for s in world.solids.values():
-        if s.iguid in z_ids_flat:
+    for s in world.solids:
+        if s in z_ids_flat:
             s.material.base_color = (1,0,0,1)
         else:
             s.material.base_color = np.hstack((s.ifc_color,1))
@@ -67,7 +67,7 @@ for a in actions:
     line_ids[:,1] = np.arange(p.shape[1])
     line_scan.update(p.T, line_ids)
 
-    [visApp.update_solid(s) for s in world.solids.values()]
+    [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
     visApp.update_solid(line_scan)

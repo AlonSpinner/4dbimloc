@@ -26,14 +26,14 @@ turn_right = Pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 visApp = VisApp()
-for s in world.solids.values():
+for s in world.solids:
     visApp.add_solid(s,"world")
 visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
 visApp.add_O3DVisualizer('o3d_window','o3d_scene')
-for s in world.solids.values():
+for s in world.solids:
         visApp.O3DVis_add_solid(s,"o3d_scene")
 visApp.redraw('o3d_scene')
 visApp.O3DVis_reset_camera('o3d_window')
@@ -65,7 +65,7 @@ for a in actions:
     visApp.update_solid(pcd_scan)
     visApp.update_solid(line_scan)
 
-    [visApp.update_solid(s) for s in world.solids.values()]
+    [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
 

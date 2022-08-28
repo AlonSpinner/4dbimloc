@@ -21,7 +21,6 @@ class o3dSolid:
 
 @dataclass()
 class IfcSolid(o3dSolid):
-    iguid : int
     schedule : r_1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
@@ -50,7 +49,6 @@ class IfcSolid(o3dSolid):
         
         return IfcSolid(
             name = self.name,
-            iguid = self.iguid,
             geometry = mesh,
             material = mat,
             schedule = deepcopy(self.schedule),
@@ -181,8 +179,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
     settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
 
     solids = []
-    iguid = 0
-    for ii, product in enumerate(products):
+    for product in products:
         if product.is_a("IfcOpeningElement"): continue
         if product.Representation: #has shape
             shape = ifcopenshell.geom.create_shape(settings, inst=product)
@@ -205,12 +202,10 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,
-                                iguid = iguid, #internal unique integer to use with numpy
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),
                                 ifc_color = ifc_color,                                
                                 ))
-            iguid += 1 # <-------------------icrement iguid
 
     return solids
