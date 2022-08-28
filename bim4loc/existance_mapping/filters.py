@@ -99,5 +99,11 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
             else: #wz has hit something after bzid, making us think bzid does not exist
                 logodds_beliefs[bzid_ij] += L01
 
-# if __name__ == '__main__':
-vanila_inverse.parallel_diagnostics(level=4)
+if __name__ == '__main__':
+    vanila_inverse(logodds_beliefs = np.array([0.5]),
+                    world_z = np.array([0.5]), 
+                    simulated_z = np.array([[0.5]]),
+                    simulated_z_ids = np.array([[0]]),
+                    sensor_std = 0.2,
+                    sensor_max_range = 100.0)
+    vanila_inverse.parallel_diagnostics()
