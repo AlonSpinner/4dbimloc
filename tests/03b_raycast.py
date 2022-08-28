@@ -6,7 +6,7 @@ from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar1D
 from bim4loc.maps import RayCastingMap
-from bim4loc.geometry.raytracer import NO_HIT
+from bim4loc.geometry.raycaster import NO_HIT
 import time
 import keyboard
 

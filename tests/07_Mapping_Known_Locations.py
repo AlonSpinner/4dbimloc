@@ -6,6 +6,7 @@ from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar1D
+from bim4loc.random.utils import p2logodds
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
 import time
@@ -35,16 +36,14 @@ simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
 
 belief_solids = [s.clone() for s in solids]
-for s in belief_solids:
-    s.set_existance_belief_and_shader(0.5)
 belief = RayCastingMap(belief_solids)
+belief.logodds_beliefs[:] = p2logodds(0.5)
+belief.update_solids_beliefs()
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
 turn_right = Pose2z(0,0,-np.pi/8,0)
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + 4 * [turn_right]
-
-Z_STD = 0.005
 
 #create world scene
 visApp = VisApp()
@@ -65,7 +64,7 @@ visApp.setup_default_camera("belief")
 visApp.redraw("belief")
 
 time.sleep(1)
-dt = 0.2
+dt = 0
 # keyboard.wait('space')
 for t,u in enumerate(actions):
     step_start = time.time()
@@ -73,9 +72,10 @@ for t,u in enumerate(actions):
     drone.move(u)
     
     z, z_ids, z_p = drone.scan(world, project_scan = True)
-    belief_z, belief_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
+    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
 
-    filters.vanila_inverse(belief, z, belief_z, belief_z_ids, sensor.std, sensor.max_range)
+    filters.vanila_inverse(belief.logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    belief.update_solids_beliefs()
     
     pcd_scan.update(z_p.T)
 

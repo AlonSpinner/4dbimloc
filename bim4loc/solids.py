@@ -25,8 +25,6 @@ class IfcSolid(o3dSolid):
     schedule : r_1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
-    existance_belief : float = 0.0
-    logOdds_existence_belief : float = 0.0
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -35,16 +33,8 @@ class IfcSolid(o3dSolid):
 
     def is_complete(self, time : float) -> bool:
         return (time > self.completion_time)
-    
-    def set_existance_belief_by_schedule(self, time : float, set_shader = False) -> None:
-        self.existance_belief = self.schedule.cdf(time)
-        self.logOdds_existence_belief = r_utils.p2logodds(self.existance_belief)
-        if set_shader:
-            self.material.base_color = np.array([1, 0, 0, self.existance_belief])
 
     def set_existance_belief_and_shader(self, belief : float) -> None:
-        self.existance_belief = belief #probablity
-        self.logOdds_existence_belief = r_utils.p2logodds(self.existance_belief)
         if belief > 0.9:
             self.material.base_color = np.array([0, 1, 0, belief])
         else:
@@ -191,6 +181,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
     settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
 
     solids = []
+    iguid = 0
     for ii, product in enumerate(products):
         if product.is_a("IfcOpeningElement"): continue
         if product.Representation: #has shape
@@ -214,11 +205,12 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,
-                                iguid = ii, #internal unique integer to use with numpy
+                                iguid = iguid, #internal unique integer to use with numpy
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),
                                 ifc_color = ifc_color,                                
                                 ))
+            iguid += 1 # <-------------------icrement iguid
 
     return solids

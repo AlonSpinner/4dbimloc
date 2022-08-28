@@ -1,7 +1,6 @@
-from bim4loc.maps import Map, RayCastingMap
-import open3d as o3d
+from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.poses import Pose2z
-import bim4loc.geometry.raytracer as raytracer
+import bim4loc.geometry.raycaster as raycaster
 import numpy as np
 from typing import Union
 
@@ -41,7 +40,7 @@ class Lidar1D(Sensor):
     def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10):
         rays = self.get_rays(pose)
         
-        z_values, z_ids = raytracer.raytrace(rays, *m.scene, n_hits)
+        z_values, z_ids = raycaster.raytrace(rays, *m.scene, n_hits)
         
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
             z_values = z_values[:,0]

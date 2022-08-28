@@ -13,11 +13,12 @@ current_time = 5.0
 for s in solids:
     if isinstance(s.schedule,Gaussian): #should be all of 'em
         s.set_random_completion_time()
-        # if s.is_complete(current_time):
-                # visApp.add_solid(s)
-        s.set_existance_belief_by_schedule(current_time, set_shader = True)
+        s.set_existance_belief_and_shader(s.schedule.cdf(current_time))
+        visApp.add_solid(s)
         
-[visApp.add_solid(s) for s in solids]
+        # if s.is_complete(current_time):
+        #         visApp.add_solid(s)
+        
 visApp.redraw()
 visApp.show_axes()
 visApp.setup_default_camera()

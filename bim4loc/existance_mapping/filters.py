@@ -1,7 +1,7 @@
 
 from bim4loc.maps import Map
 from bim4loc.random.utils import p2logodds, logodds2p
-from bim4loc.geometry.raytracer import NO_HIT
+from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.random.one_dim as r1d
 from typing import Literal
 import numpy as np
@@ -51,39 +51,41 @@ def f(world_z, belief_z, sensor_std, pm):
     
     pmz = pzm * pm / (pzm * pm + (1 - pzm) * (1 - pm))
 
-# @njit(parallel = True, cache = True)
-def vanila_inverse(m : Map, 
+@njit(parallel = True, cache = True)
+def vanila_inverse(logodds_beliefs : np.ndarray, 
                   world_z : np.ndarray, 
-                  belief_z : np.ndarray, 
-                  belief_z_ids : np.ndarray,
+                  simulated_z : np.ndarray, 
+                  simulated_z_ids : np.ndarray,
                   sensor_std : float,
-                  sensor_max_range : float,) -> None:
+                  sensor_max_range : float) -> np.ndarray:
     '''
-    world_z - range measurements from real-world-sensor 
-                np.array of shape (n_rays)
-    belief_z - range measurements from simulated sensor rays
-                np.array of shape (n_rays, max_hits)
-                if hit that was not detected, value is set to sensor_max_range
-    belief_z_ids - iguids of solids that were hit from simulated rays
-                np.array of shape (n_rays, max_hits)
-                a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer       
+    inputs: 
+    
+        logodds_beliefs : one dimensional np.ndarray where indcies are iguids of solids
+        world_z - range measurements from real-world-sensor 
+                    np.array of shape (n_rays)
+        simulated_z - range measurements from simulated sensor rays
+                    np.array of shape (n_rays, max_hits)
+                    if hit that was not detected, value is set to sensor_max_range
+        simulated_z_ids - iguids of solids that were hit from simulated rays
+                    np.array of shape (n_rays, max_hits)
+                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+    
+    outputs:
+        logodds_beliefs - updated logodds_beliefs
     '''
     
     T = 3 * sensor_std
     L09 = p2logodds(0.9)
     L01 = p2logodds(0.1)
 
-    for wz, bz_i, bzid_i in zip(world_z, belief_z, belief_z_ids):
-
+    for wz, bz_i, bzid_i in zip(world_z, simulated_z, simulated_z_ids):
         for bz_ij,bzid_ij in zip(bz_i, bzid_i):
-
             if bzid_ij == NO_HIT:
                 continue
             if wz < bz_ij - T: #wz had hit something before bzid
                 break
             elif wz < bz_ij + T: #wz has hit bzid
-                p = logodds2p(m.solids[bzid_ij].logOdds_existence_belief + L09)
+                logodds_beliefs[bzid_ij] += L09
             else: #wz has hit something after bzid, making us think bzid does not exist
-                p = logodds2p(m.solids[bzid_ij].logOdds_existence_belief + L01)
-
-            m.solids[bzid_ij].set_existance_belief_and_shader(p)
+                logodds_beliefs[bzid_ij] += L01

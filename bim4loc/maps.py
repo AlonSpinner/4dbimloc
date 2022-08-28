@@ -1,23 +1,21 @@
-from re import S
 import numpy as np
 import open3d as o3d
 from bim4loc.solids import IfcSolid
+from bim4loc.random.utils import logodds2p, p2logodds
 from typing import Union
 from collections import namedtuple
 
 class Map:
     def __init__(self, solids_list : list[IfcSolid]) -> None:
-        self.solids_iguid = [s.iguid for s in solids_list] #can extract later from dictionary but we will need it constantly
-        self.solids : dict[str,IfcSolid] = dict(zip(self.solids_iguid,solids_list))
+        solids_iguid = [s.iguid for s in solids_list] #can extract later from dictionary but we will need it constantly
+        self.solids : dict[str,IfcSolid] = dict(zip(solids_iguid,solids_list))
+        self.logodds_beliefs : np.ndarray = np.full(len(solids_list),p2logodds(1.0))
 
-    def update_solids_existance(self, existance : np.ndarray) -> None:
-        '''
-        existance : np.ndarray[iguid, existance probablity]
-        '''
-        for i in range(len(existance)):
-            iguid = existance[i,0]
-            existance_belief = existance[i,1] #probability
-            self.solids[iguid].set_existance_belief_and_shader(existance_belief)
+    def update_solids_beliefs(self) -> None:
+        #this may be expensive, and its only for visuals
+        for iguid, logodds in enumerate(self.logodds_beliefs):
+            p = logodds2p(logodds)
+            self.solids[iguid].set_existance_belief_and_shader(p)    
 
     def bounds(self) -> Union[np.ndarray, np.ndarray, np.ndarray]:
         all_points = np.vstack([np.asarray(o.geometry.vertices) for o in self.solids.values()])
@@ -47,7 +45,7 @@ class RayCastingMap(Map):
 
             to clarify: 
             each mesh is contained of inc_v vertices and inc_t triangles
-            if a triangle is [0,0,0] we will ignore it
+            if a triangle is [0,0,0] we will ignore it (and understand we finished with the mesh)
         '''
         max_vertices = 0
         max_triangles = 0
