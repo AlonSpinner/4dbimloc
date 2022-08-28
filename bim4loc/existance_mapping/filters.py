@@ -1,36 +1,33 @@
-
-from bim4loc.maps import Map
 from bim4loc.random.utils import p2logodds, logodds2p
 from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.random.one_dim as r1d
-from typing import Literal
 import numpy as np
 from numba import njit
 from numba import prange
 
 @njit(parallel = True, cache = True)
-def forward_measurement_model(wz : np.ndarray, 
-                              bz : np.ndarray, 
-                              std, 
-                              pseudo = True) -> np.ndarray:
+def forward(wz : np.ndarray, 
+            sz : np.ndarray, 
+            std : float, 
+            pseudo = True) -> np.ndarray:
     '''
     input:
     wz - world range measurement
-    bz - belief range measurement
+    sz - simulated range measurement
     std - range sensor standard deviation (equivalent for both sensors)
-    pseudo - if True, doesnt normalize gaussian (p ~ exp(-0.5 * (wz - bz)**2 / std**2))
+    pseudo - if True, doesnt normalize gaussian (p ~ exp(-0.5 * (wz - sz)**2 / std**2))
 
     output:
-    probabilty of measuring wz : p(wz|bz,m)
+    probabilty of measuring wz : p(wz|sz,m)
 
     in the future:
-    sigma = f(bz)
+    sigma = f(sz)
     sigma = f(angle of ray hit)
     '''
 
-    return r1d.Gaussian._pdf(mu = bz, sigma = std, x =  wz, pseudo = pseudo)
+    return r1d.Gaussian._pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-def f(world_z, belief_z, sensor_std, pm):
+def inverse(world_z, simulated_z, pms, sensor_std):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
@@ -47,10 +44,34 @@ def f(world_z, belief_z, sensor_std, pm):
     p(z) = p(z|m)p(m)+ p(z|~m)p(~m) (via marginalization)    
     '''
 
-    pzm = r1d.Gaussian._pdf(mu = belief_z, sigma = sensor_std, x = world_z)
-    pm 
+    pz = pz(world_z, simulated_z, pms, sensor_std)
+    pmz = pz
+
+    return pmz
+
+def pz(world_z, simulated_z, pms, sensor_std):
+    '''
+    inputs:
+    world_z - single range measurement from real-world-sensor
+    belief_z - np.ndarray
+    sensor_std - both of real and simulated senosr (must be equivalent)
+    pm - belief_m - probablity that solid m does exist
+    '''
+
+    p = 0.0
+    pierced_meshes_probability = 1.0
+    for i in prange(simulated_z.shape[0]):
+        sz_i = simulated_z[i]
+        pm_i = pms[i]
+
+        w_i = pierced_meshes_probability * pm_i
+        f_i = forward(world_z, sz_i, sensor_std)
+
+        p += (w_i * f_i)
+        pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_i)
     
-    pmz = pzm * pm / (pzm * pm + (1 - pzm) * (1 - pm))
+    return p
+
 
 @njit(parallel = True, cache = True)
 def vanila_inverse(logodds_beliefs : np.ndarray, 
@@ -84,20 +105,22 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
 
     for i in prange(N_rays):
         wz_i = world_z[i]
-        bz_i = simulated_z[i]
-        bzid_i =  simulated_z_ids[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
         
         for j in prange(N_maxhits):
-            bz_ij = bz_i[j]
-            bzid_ij = bzid_i[j]
-            if bzid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+            sz_ij = sz_i[j]
+            szid_ij = szid_i[j]
+            if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
-            if wz_i < bz_ij - T: #wz had hit something before bzid
+            if wz_i < sz_ij - T: #wz had hit something before bzid
                 break
-            elif wz_i < bz_ij + T: #wz has hit bzid
-                logodds_beliefs[bzid_ij] += L09
+            elif wz_i < sz_ij + T: #wz has hit bzid
+                logodds_beliefs[szid_ij] += L09
             else: #wz has hit something after bzid, making us think bzid does not exist
-                logodds_beliefs[bzid_ij] += L01
+                logodds_beliefs[szid_ij] += L01
+
+    return logodds_beliefs
 
 if __name__ == '__main__':
     vanila_inverse(logodds_beliefs = np.array([0.5]),
