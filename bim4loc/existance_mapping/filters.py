@@ -1,12 +1,21 @@
 from bim4loc.random.utils import p2logodds, logodds2p
 from bim4loc.geometry.raycaster import NO_HIT
-import bim4loc.random.one_dim as r1d
+import bim4loc.random.one_dim as r_1d
 import numpy as np
 from numba import njit
 from numba import prange
 
-# @njit(parallel = True, cache = True)
-def forward(wz : np.ndarray, 
+EPS = 1e-16
+
+@njit(cache = True)
+def binary_variable_update(prior, update):
+    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)
+    return np.reciprocal(1.0 + prior/max((1.0 - prior),EPS) * (1.0 - update)/max(update,EPS))
+
+
+gaussian_pdf = r_1d.Gaussian._pdf #extract for numba performance
+@njit(cache = True)
+def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
             sz : np.ndarray, 
             std : float, 
             pseudo = True) -> np.ndarray:
@@ -25,10 +34,10 @@ def forward(wz : np.ndarray,
     sigma = f(angle of ray hit)
     '''
 
-    return r1d.Gaussian._pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
+    return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-# @njit(parallel = True, cache = True)
-def p_ij(wz, sz_i, szid_i, beliefs, sensor_std):
+@njit(parallel = True, cache = True)
+def compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
@@ -49,7 +58,7 @@ def p_ij(wz, sz_i, szid_i, beliefs, sensor_std):
         pm_ij = beliefs[szid_ij]
 
         w_ij = pierced_meshes_probability * pm_ij
-        f_ij = forward(wz, sz_ij, sensor_std, pseudo = True)
+        f_ij = forward(wz_i, sz_ij, sensor_std, pseudo = True)
 
         p_ij[j] = w_ij * f_ij
 
@@ -58,6 +67,28 @@ def p_ij(wz, sz_i, szid_i, beliefs, sensor_std):
     
     pi = np.sum(p_ij) #includes j
     return p_ij, pi
+
+def vanila_forward(beliefs : np.ndarray, 
+                  world_z : np.ndarray, 
+                  simulated_z : np.ndarray, 
+                  simulated_z_ids : np.ndarray,
+                  sensor_std : float,
+                  sensor_max_range : float) -> np.ndarray:
+
+    N_rays = world_z.shape[0]
+    N_maxhits = simulated_z.shape[1]
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+        p_ij, p_i = compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std)
+
+        for j in prange(N_maxhits):
+            if szid_i[j] == NO_HIT:
+                break
+            szid_ij = szid_i[j]
+            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij], p_ij[j]/p_i)
 
 
 @njit(parallel = True, cache = True)

@@ -37,7 +37,7 @@ class Lidar1D(Sensor):
         self.std = std
         self.piercing = True
 
-    def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10):
+    def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10, noisy = True):
         rays = self.get_rays(pose)
         
         z_values, z_ids = raycaster.raytrace(rays, *m.scene, n_hits)
@@ -45,6 +45,9 @@ class Lidar1D(Sensor):
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
             z_values = z_values[:,0]
         
+        if noisy:
+            z_values = np.random.normal(z_values, self.std)
+
         z_values[z_values > self.max_range] = self.max_range
 
         return z_values, z_ids
