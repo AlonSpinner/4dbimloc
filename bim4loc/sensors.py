@@ -15,26 +15,17 @@ class Sensor():
         '''
         pass
 
-    @staticmethod
-    def forward_existence_model(z : str, m : str) -> float: #to be overwritten
-        '''
-        z - meaurement "⬜" or "⬛"
-        m - cell state "⬜" or "⬛"
-        
-        returns probablity of achieving measurement z
-        '''
-        pass
-
-
 class Lidar1D(Sensor):
     def __init__(self,
                 angles : np.ndarray = np.linspace(-np.pi/2, np.pi/2, num = 36), 
                 max_range : float = 10.0,
-                std : float = None):
+                std : float = 0.0,
+                bias : float = 0.0):
         
         self.angles = angles
         self.max_range = max_range
         self.std = std
+        self.bias = bias
         self.piercing = True
 
     def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10, noisy = True):
@@ -46,7 +37,7 @@ class Lidar1D(Sensor):
             z_values = z_values[:,0]
         
         if noisy:
-            z_values = np.random.normal(z_values, self.std)
+            z_values = np.random.normal(z_values + self.bias, self.std)
 
         z_values[z_values > self.max_range] = self.max_range
 

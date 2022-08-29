@@ -21,7 +21,7 @@ drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
 sensor = Lidar1D(); sensor.std = 0.5; 
 sensor.piercing = False
 sensor.max_range = 20.0
-sensor.angles = np.array([0, 0.1])
+sensor.angles = np.array([0])
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
@@ -39,8 +39,6 @@ visApp.redraw("world")
 visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
-pcd_scan_world = PcdSolid()
-visApp.add_solid(pcd_scan_world, "world")
 
 #create belief window
 visApp.add_scene("simulation", "world")
@@ -52,7 +50,7 @@ visApp.redraw("simulation")
 line_scan = LinesSolid()
 visApp.add_solid(line_scan, "simulation")
 pcd_scan_simulation = PcdSolid()
-visApp.add_solid(pcd_scan_world, "simulation")
+visApp.add_solid(pcd_scan_simulation, "simulation")
 
 def calcualte_lines(simulated_z, angles, drone_pose):
     z_flat = simulated_z.flatten()
@@ -76,6 +74,9 @@ visApp.add_solid(bullet, "world")
 
 shot_counter = 0
 move_1unit_left = Pose2z(0.0, 1.0, 0.0, 0.0)
+drone.sensor.bias = 1.0
+drone.sensor.std = 0.01
+simulated_sensor.std = 0.01
 while True:
     keyboard.wait('space')
     z, z_ids, z_p = drone.scan(world, project_scan = True)
@@ -87,17 +88,16 @@ while True:
         visApp.update_solid(bullet,"world")
         time.sleep(0.1)
 
-    filters.vanila_forward(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    print(filters.compute_p_ij(z[0], simulated_z[0], simulated_z_ids[0], beliefs, 2.0))
+    filters.vanila_forward(beliefs, z, simulated_z, simulated_z_ids, 2.0, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     
-    pcd_scan_world.update(z_p.T)
     line_p, line_ids = calcualte_lines(simulated_z, simulated_sensor.angles, drone.pose)
     line_scan.update(line_p.T, line_ids)
     pcd_scan_simulation.update(line_p.T)
 
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     visApp.update_solid(drone.solid,"world")
-    visApp.update_solid(pcd_scan_world,"world")
     visApp.update_solid(line_scan, "simulation")
     visApp.update_solid(pcd_scan_simulation,"simulation")
 

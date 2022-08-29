@@ -65,9 +65,12 @@ def compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std):
         #update pierced meshes probability for next iteration
         pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_ij)
     
-    pi = np.sum(p_ij) #includes j
-    return p_ij, pi
+    p_i = np.sum(p_ij) + 0.1
+    p_ij = p_ij/p_i
+    
+    return p_ij, p_i
 
+@njit(parallel = True, cache = True)
 def vanila_forward(beliefs : np.ndarray, 
                   world_z : np.ndarray, 
                   simulated_z : np.ndarray, 
@@ -88,7 +91,7 @@ def vanila_forward(beliefs : np.ndarray,
             if szid_i[j] == NO_HIT:
                 break
             szid_ij = szid_i[j]
-            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij], p_ij[j]/p_i)
+            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij],p_ij[j])
 
 
 @njit(parallel = True, cache = True)
