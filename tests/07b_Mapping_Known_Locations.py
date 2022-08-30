@@ -66,9 +66,9 @@ visApp.setup_default_camera("simulation")
 visApp.redraw("simulation")
 
 time.sleep(1)
-dt = 0
-keyboard.wait('space')
+dt = 0.0
 for t,u in enumerate(actions):
+    # keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
@@ -89,7 +89,6 @@ for t,u in enumerate(actions):
     
     step_end = time.time()
     time.sleep(max(dt - (step_end - step_start),0))
-    keyboard.wait('space')
 
 print('finished')
 visApp.redraw_all_scenes()

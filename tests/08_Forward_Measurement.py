@@ -76,7 +76,7 @@ visApp.add_solid(bullet, "world")
 
 shot_counter = 0
 move_1unit_left = Pose2z(0.0, 1.0, 0.0, 0.0)
-drone.sensor.bias = 0.0
+drone.sensor.bias = 2.0
 drone.sensor.std = 0.01
 simulated_sensor.std = 0.01
 while True:

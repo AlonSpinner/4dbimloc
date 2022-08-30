@@ -1,4 +1,4 @@
-from bim4loc.random.utils import p2logodds, logodds2p
+from bim4loc.random.utils import p2logodds, p2odds, negate
 from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.random.one_dim as r_1d
 import numpy as np
@@ -9,13 +9,8 @@ EPS = 1e-16
 
 @njit(cache = True)
 def binary_variable_update(current, update):
-    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)
-    n_update = 1.0 - update
-    n_current = 1.0 - current
-    update = max(update,EPS)
-    current = max(current,EPS)
-    
-    return np.reciprocal(1.0 + n_current/current * n_update/update)
+    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)    
+    return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
 
 gaussian_pdf = r_1d.Gaussian._pdf #extract for numba performance
 @njit(cache = True)
@@ -72,7 +67,7 @@ def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
             szid_ijp1 = sz_i[j+1]
             belief_ijp1 = beliefs[szid_i[j+1]]
 
-            c[j] = belief_ijp1/(1.0 - belief_ij)*c[j+1] + \
+            c[j] = belief_ijp1/max(negate(belief_ij),EPS)* c[j+1] + \
                 +b[j] * forward(wz_i, szid_ijp1, sensor_std, pseudo = True) * belief_ijp1
 
     pz_ij = np.zeros(valid_hits)
@@ -107,8 +102,8 @@ def new_vanila_forward(beliefs : np.ndarray,
                 break
             szid_ij = szid_i[j]
             d = pz_ij[j] * beliefs[szid_ij]
-            e = npz_ij[j] * (1.0 - beliefs[szid_ij])
-            beliefs[szid_ij] = d / (d + e)
+            e = npz_ij[j] * negate(beliefs[szid_ij]) #Can be that npz and pz are both 0!?
+            beliefs[szid_ij] = d / max(d + e, EPS)
     
     return beliefs
 
