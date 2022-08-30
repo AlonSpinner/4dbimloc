@@ -37,10 +37,10 @@ drone.mount_sensor(sensor)
 simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
 
-belief_solids = [s.clone() for s in solids]
-belief = RayCastingMap(belief_solids)
-logodds_beliefs = np.full(len(belief.solids), p2logodds(0.5))
-belief.update_solids_beliefs(logodds_beliefs)
+simulation_solids = [s.clone() for s in solids]
+simulation = RayCastingMap(simulation_solids)
+logodds_beliefs = np.full(len(simulation.solids), p2logodds(0.5))
+simulation.update_solids_beliefs(logodds_beliefs)
 
 straight = Pose2z(0.5,0,0,0)
 turn_left = Pose2z(0,0,np.pi/8,0)
@@ -57,13 +57,13 @@ visApp.add_solid(drone.solid, "world")
 pcd_scan = PcdSolid()
 visApp.add_solid(pcd_scan, "world")
 
-#create belief window
-visApp.add_scene("belief", "world")
-[visApp.add_solid(s,"belief") for s in belief.solids]
-visApp.redraw("belief")
-visApp.show_axes(True,"belief")
-visApp.setup_default_camera("belief")
-visApp.redraw("belief")
+#create simulation window
+visApp.add_scene("simulation", "world")
+[visApp.add_solid(s,"simulation") for s in simulation.solids]
+visApp.redraw("simulation")
+visApp.show_axes(True,"simulation")
+visApp.setup_default_camera("simulation")
+visApp.redraw("simulation")
 
 time.sleep(1)
 dt = 0
@@ -74,14 +74,14 @@ for t,u in enumerate(actions):
     drone.move(u)
     
     z, z_ids, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, belief, 10)
+    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10)
 
     filters.vanila_inverse(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
-    belief.update_solids_beliefs(logodds2p(logodds_beliefs))
+    simulation.update_solids_beliefs(logodds2p(logodds_beliefs))
     
     pcd_scan.update(z_p.T)
 
-    [visApp.update_solid(s,"belief") for s in belief.solids]
+    [visApp.update_solid(s,"simulation") for s in simulation.solids]
     visApp.update_solid(drone.solid,"world")
     visApp.update_solid(pcd_scan,"world")
     
