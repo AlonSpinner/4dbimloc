@@ -40,50 +40,77 @@ def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
 
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-def new_ray_forward(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
     N_maxhits = sz_i.size
     valid_hits = 0
     for j in prange(N_maxhits):
-        if szid_ij == NO_HIT:
+        if szid_i[j] == NO_HIT:
             break
         valid_hits += 1
 
-    a = np.zeros(valid_hits + 1)
-    b = np.zeros(valid_hits + 1)
-    for k in prange(1, valid_hits + 1):
-        if k == 1:
-            a[k] = 0.0
-            b[k] = 1.0
+    a = np.zeros(valid_hits) #a[j] holds partial probability of hitting cell j-1
+    b = np.zeros(valid_hits) #b[j] holds product of previous cells being empty
+    for j in prange(0, valid_hits):        
+        if j == 0:
+            a[j] = 0.0 #forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
+            b[j] = 1.0 # - belief_ij
+        else:
+            sz_ijm1 = sz_i[j -1]
+            belief_ijm1 = beliefs[szid_i[j - 1]]
+            a[j] = a[j-1] + b[j-1] * forward(wz_i, sz_ijm1, sensor_std, pseudo = True) * belief_ijm1
+            b[j] = b[j-1] * (1.0 - belief_ijm1)
 
-        j = k -1
+    c = np.zeros(valid_hits) #c[j] holds the partial probabiltiy that cells beyond were hit even though j should be hit
+    for j in prange(valid_hits - 1, -1, -1):
+        if j == valid_hits - 1:
+            #if all cells are empty (we assume c[j] is not. its confusing)
+            c[j] = b[j] * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+        else:
+            sz_ij = sz_i[j]
+            belief_ij = beliefs[szid_i[j]]
+
+            szid_ijp1 = sz_i[j+1]
+            belief_ijp1 = beliefs[szid_i[j+1]]
+
+            c[j] = belief_ijp1/(1.0 - belief_ij)*c[j+1] + \
+                +b[j] * forward(wz_i, szid_ijp1, sensor_std, pseudo = True) * belief_ijp1
+
+    pz_ij = np.zeros(valid_hits)
+    npz_ij = np.zeros(valid_hits)
+    for j in prange(valid_hits):
         sz_ij = sz_i[j]
-        szid_ij = szid_i[j]
+        belief_ij = beliefs[szid_i[j]]
 
-        belief_ij = beliefs[szid_ij]
-        a[k] = a[k-1] + b[k-1] * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
-        b[k] = b[k-1] * (1.0 -belief_ij)
-
-    c = np.zeros(valid_hits + 1)
-    for k in prange(valid_hits + 1, 0, -1):
-
-        j = k -1
-        szid_ij = szid_i[j]
-        belief_ij = beliefs[szid_ij]
-
-        c[k] = belief_ij/(1.0 - belief_ij)*c[k] + \
-            +b[k] * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
-
-    pz_ij = np.zeros_like(sz_i)
-    npz_ij = np.zeros_like(sz_i)
-    for k in prange(1, valid_hits + 1):
-        j = k -1
-        szid_ij = szid_i[j]
-        beliefs[szid_ij] = c[k]
-
-        pz_ij[j] = a[k] + b[k] * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-        npz_ij[j] = a[k] + c[k]
+        pz_ij[j] = a[j] + b[j] * forward(wz_i, sz_ij, sensor_std, pseudo = True)
+        npz_ij[j] = a[j] + c[j]
 
     return pz_ij, npz_ij
+
+def new_vanila_forward(beliefs : np.ndarray, 
+                  world_z : np.ndarray, 
+                  simulated_z : np.ndarray, 
+                  simulated_z_ids : np.ndarray,
+                  sensor_std : float,
+                  sensor_max_range : float) -> np.ndarray:
+
+    N_rays = world_z.shape[0]
+    N_maxhits = simulated_z.shape[1]
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+        pz_ij, npz_ij = new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
+
+        for j in prange(N_maxhits):
+            if szid_i[j] == NO_HIT:
+                break
+            szid_ij = szid_i[j]
+            d = pz_ij[j] * beliefs[szid_ij]
+            e = npz_ij[j] * (1.0 - beliefs[szid_ij])
+            beliefs[szid_ij] = d / (d + e)
+    
+    return beliefs
 
 # @njit(parallel = True, cache = True)
 def forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):

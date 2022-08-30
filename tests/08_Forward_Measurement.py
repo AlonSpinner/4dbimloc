@@ -80,7 +80,7 @@ drone.sensor.bias = 2.0
 drone.sensor.std = 0.01
 simulated_sensor.std = 0.01
 while True:
-    keyboard.wait('space')
+    # keyboard.wait('space')
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
@@ -90,7 +90,7 @@ while True:
         visApp.update_solid(bullet,"world")
         time.sleep(0.1)
 
-    filters.vanila_forward(beliefs, z, simulated_z, simulated_z_ids, 1, sensor.max_range)
+    filters.new_vanila_forward(beliefs, z, simulated_z, simulated_z_ids, 1, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     
     line_p, line_ids = calcualte_lines(simulated_z, simulated_sensor.angles, drone.pose)
@@ -111,7 +111,7 @@ while True:
 
     visApp.redraw_all_scenes()
 
-    temp1, temp2 = filters.forward_ray(z[0], simulated_z[0], simulated_z_ids[0], beliefs, 1, simulated_sensor.max_range)
+    temp1, temp2 = filters.new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], beliefs, 1, simulated_sensor.max_range)
     print(f"pz_ij:\n {temp1}")
     print(f"pz_ij/p_i:\n {temp1/temp2}")
     print(f" beliefs:\n {beliefs}")
