@@ -9,7 +9,7 @@ class Map:
         self.solids : list[IfcSolid] = solids #ordered array of solids!
 
     def update_solids_beliefs(self, beliefs) -> None:
-        #this may be expensive, and its only for visuals
+        #this is only for visuals. beliefs are not stored inside the map object!
         for ii, p in enumerate(beliefs):
             self.solids[ii].set_existance_belief_and_shader(p)    
 

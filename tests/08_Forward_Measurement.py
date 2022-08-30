@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.matlib
+from numpy.matlib import repmat
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_NINE_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
@@ -13,6 +13,8 @@ from copy import deepcopy
 import time
 import logging
 import keyboard
+
+np.set_printoptions(precision=3)
 
 solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
@@ -54,7 +56,7 @@ visApp.add_solid(pcd_scan_simulation, "simulation")
 
 def calcualte_lines(simulated_z, angles, drone_pose):
     z_flat = simulated_z.flatten()
-    angles_flat = np.matlib.repmat(angles, simulated_z.shape[1] , 1).T.flatten()
+    angles_flat = repmat(angles, simulated_z.shape[1] , 1).T.flatten()
 
     drone_p = np.vstack((z_flat * np.cos(angles_flat), 
                     z_flat * np.sin(angles_flat),
@@ -74,7 +76,7 @@ visApp.add_solid(bullet, "world")
 
 shot_counter = 0
 move_1unit_left = Pose2z(0.0, 1.0, 0.0, 0.0)
-drone.sensor.bias = 1.0
+drone.sensor.bias = 2.0
 drone.sensor.std = 0.01
 simulated_sensor.std = 0.01
 while True:
@@ -88,8 +90,7 @@ while True:
         visApp.update_solid(bullet,"world")
         time.sleep(0.1)
 
-    print(filters.compute_p_ij(z[0], simulated_z[0], simulated_z_ids[0], beliefs, 2.0))
-    filters.vanila_forward(beliefs, z, simulated_z, simulated_z_ids, 2.0, sensor.max_range)
+    filters.vanila_forward(beliefs, z, simulated_z, simulated_z_ids, 1, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     
     line_p, line_ids = calcualte_lines(simulated_z, simulated_sensor.angles, drone.pose)
@@ -109,3 +110,8 @@ while True:
             time.sleep(0.1)
 
     visApp.redraw_all_scenes()
+
+    temp1, temp2 = filters.forward_ray(z[0], simulated_z[0], simulated_z_ids[0], beliefs, 1, simulated_sensor.max_range)
+    print(f"pz_ij:\n {temp1}")
+    print(f"pz_ij/p_i:\n {temp1/temp2}")
+    print(f" beliefs:\n {beliefs}")

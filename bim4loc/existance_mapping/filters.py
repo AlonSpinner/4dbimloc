@@ -8,10 +8,14 @@ from numba import prange
 EPS = 1e-16
 
 @njit(cache = True)
-def binary_variable_update(prior, update):
+def binary_variable_update(current, update):
     #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)
-    return np.reciprocal(1.0 + prior/max((1.0 - prior),EPS) * (1.0 - update)/max(update,EPS))
-
+    n_update = 1.0 - update
+    n_current = 1.0 - current
+    update = max(update,EPS)
+    current = max(current,EPS)
+    
+    return np.reciprocal(1.0 + n_current/current * n_update/update)
 
 gaussian_pdf = r_1d.Gaussian._pdf #extract for numba performance
 @njit(cache = True)
@@ -36,8 +40,53 @@ def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
 
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-@njit(parallel = True, cache = True)
-def compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std):
+def new_ray_forward(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+    N_maxhits = sz_i.size
+    valid_hits = 0
+    for j in prange(N_maxhits):
+        if szid_ij == NO_HIT:
+            break
+        valid_hits += 1
+
+    a = np.zeros(valid_hits + 1)
+    b = np.zeros(valid_hits + 1)
+    for k in prange(1, valid_hits + 1):
+        if k == 1:
+            a[k] = 0.0
+            b[k] = 1.0
+
+        j = k -1
+        sz_ij = sz_i[j]
+        szid_ij = szid_i[j]
+
+        belief_ij = beliefs[szid_ij]
+        a[k] = a[k-1] + b[k-1] * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
+        b[k] = b[k-1] * (1.0 -belief_ij)
+
+    c = np.zeros(valid_hits + 1)
+    for k in prange(valid_hits + 1, 0, -1):
+
+        j = k -1
+        szid_ij = szid_i[j]
+        belief_ij = beliefs[szid_ij]
+
+        c[k] = belief_ij/(1.0 - belief_ij)*c[k] + \
+            +b[k] * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
+
+    pz_ij = np.zeros_like(sz_i)
+    npz_ij = np.zeros_like(sz_i)
+    for k in prange(1, valid_hits + 1):
+        j = k -1
+        szid_ij = szid_i[j]
+        beliefs[szid_ij] = c[k]
+
+        pz_ij[j] = a[k] + b[k] * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+        npz_ij[j] = a[k] + c[k]
+
+    return pz_ij, npz_ij
+
+# @njit(parallel = True, cache = True)
+def forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
     '''
     inputs:
     world_z - single range measurement from real-world-sensor
@@ -47,30 +96,31 @@ def compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std):
     '''
     N_maxhits = sz_i.size
 
-    p_ij = np.zeros_like(sz_i)
+    pz_ij = np.zeros_like(sz_i)
     pierced_meshes_probability = 1.0
+    pdf_sum = 0.0
     for j in prange(N_maxhits):
         sz_ij = sz_i[j]
         szid_ij = szid_i[j]
         if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
             break
 
-        pm_ij = beliefs[szid_ij]
-
-        w_ij = pierced_meshes_probability * pm_ij
+        belief_ij = beliefs[szid_ij]
         f_ij = forward(wz_i, sz_ij, sensor_std, pseudo = True)
 
-        p_ij[j] = w_ij * f_ij
+        pz_ij[j] = pierced_meshes_probability * f_ij * belief_ij + temp
+        temp = pz_ij
 
         #update pierced meshes probability for next iteration
-        pierced_meshes_probability = pierced_meshes_probability * (1.0 - pm_ij)
+        pierced_meshes_probability = pierced_meshes_probability * (1.0 - belief_ij)
     
-    p_i = np.sum(p_ij) + 0.1
-    p_ij = p_ij/p_i
+    pz_max_range = pierced_meshes_probability * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    pz_random = 1/sensor_max_range
+    pz_i = np.sum(pz_ij) + pz_random + pz_max_range
     
-    return p_ij, p_i
+    return pz_ij, pz_i
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def vanila_forward(beliefs : np.ndarray, 
                   world_z : np.ndarray, 
                   simulated_z : np.ndarray, 
@@ -85,14 +135,14 @@ def vanila_forward(beliefs : np.ndarray,
         wz_i = world_z[i]
         sz_i = simulated_z[i]
         szid_i =  simulated_z_ids[i]
-        p_ij, p_i = compute_p_ij(wz_i, sz_i, szid_i, beliefs, sensor_std)
+        pz_ij, pz_i = forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
 
         for j in prange(N_maxhits):
             if szid_i[j] == NO_HIT:
                 break
             szid_ij = szid_i[j]
-            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij],p_ij[j])
-
+            inv_pz_ij = pz_ij[j]/pz_i# * beliefs[szid_ij]/pz_i
+            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij],inv_pz_ij)
 
 @njit(parallel = True, cache = True)
 def vanila_inverse(logodds_beliefs : np.ndarray, 

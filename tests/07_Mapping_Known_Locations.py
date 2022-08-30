@@ -67,7 +67,7 @@ visApp.redraw("belief")
 
 time.sleep(1)
 dt = 0
-# keyboard.wait('space')
+keyboard.wait('space')
 for t,u in enumerate(actions):
     step_start = time.time()
     
@@ -89,7 +89,7 @@ for t,u in enumerate(actions):
     
     step_end = time.time()
     time.sleep(max(dt - (step_end - step_start),0))
-    # keyboard.wait('space')
+    keyboard.wait('space')
 
 print('finished')
 visApp.redraw_all_scenes()
