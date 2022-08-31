@@ -44,7 +44,7 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         valid_hits += 1
 
     inv_eta_i = 0
-    Pjbar = 1.0
+    Pjbar = 1.0 #<--- initalized with negate(P(random_hit))
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
         belief_ij = beliefs[szid_i[j]]
@@ -53,7 +53,6 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         Pjbar = Pjbar * negate(belief_ij)
     #add probabity to miss all obstacles
     inv_eta_i += Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-    # inv_eta_i = 1.0 / inv_eta_i
     
     Pjbar = 1.0
     inv_eta = 0.0
@@ -70,9 +69,8 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         inv_eta = inv_eta + a_temp
     
     inv_eta = inv_eta + Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-    eta = 1.0 / inv_eta
-    pz_ij = p_ij_wave * eta
-    return pz_ij
+    pz_ij = p_ij_wave / inv_eta
+    return pz_ij, inv_eta_i
 
 def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
     N_maxhits = sz_i.size
