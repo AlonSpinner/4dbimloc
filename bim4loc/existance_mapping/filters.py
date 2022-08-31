@@ -53,7 +53,7 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         Pjbar = Pjbar * negate(belief_ij)
     #add probabity to miss all obstacles
     inv_eta_i += Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-    
+
     Pjbar = 1.0
     inv_eta = 0.0
     p_ij_wave = np.zeros(valid_hits)

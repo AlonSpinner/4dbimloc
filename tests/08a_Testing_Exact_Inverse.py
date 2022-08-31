@@ -44,12 +44,12 @@ visApp.add_solid(drone.solid, "world")
 
 drone.sensor.bias = 0.0
 drone.sensor.std = 0.000001
-simulated_sensor.std = 1.0
+simulated_sensor.std = 0.5
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
-bias = np.linspace(-3, 6, N)
-beliefs = [0.5, 0.5, 0.5]
+bias = np.linspace(0, 6, N)
+beliefs = [1.0, 0, 0]
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):
@@ -57,17 +57,19 @@ for i, b in enumerate(bias):
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
-    # pz_ij_new, temp2 = filters.new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
-    #                     beliefs, simulated_sensor.std, simulated_sensor.max_range)
-    # print(f"pz_ij_new:\n {pz_ij_new}")
-
     pz_ij_newnew, pz = filters.new_new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
                         beliefs, simulated_sensor.std, simulated_sensor.max_range)
-
     history_pz_ij[i] = np.hstack((pz_ij_newnew, pz))
-    print(f"pz_ij_newnew:\n {pz_ij_newnew}")
-    # print(f"npz_ij:\n {temp1/temp2}")
-    # print(f" beliefs:\n {beliefs}")
+    
+    # pz_ij, npz_ij = filters.new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
+    #                     beliefs, simulated_sensor.std, simulated_sensor.max_range)
+    # for j in range(len(beliefs)):
+    #     d = pz_ij[j] * beliefs[j]
+    #     e = npz_ij[j] * (1.0 - beliefs[j]) #Can be that npz and pz are both 0!?
+    #     history_pz_ij[i,j] = d / max(d + e, 1e-16)
+    # history_pz_ij[3] = 0.0
+
+    print(f"pz_ij:\n {history_pz_ij[:3]}")
 
 def plot_solid_on_xz(ax, solid : IfcSolid, color):
     v = np.asarray(solid.geometry.vertices)[:,[0,2]]
