@@ -35,6 +35,45 @@ def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
 
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
+def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+    N_maxhits = sz_i.size
+    valid_hits = 0
+    for j in prange(N_maxhits):
+        if szid_i[j] == NO_HIT:
+            break
+        valid_hits += 1
+
+    inv_eta_i = 0
+    Pjbar = 1.0
+    for j in prange(valid_hits):
+        sz_ij = sz_i[j]
+        belief_ij = beliefs[szid_i[j]]
+        
+        inv_eta_i += Pjbar * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
+        Pjbar = Pjbar * negate(belief_ij)
+    #add probabity to miss all obstacles
+    inv_eta_i += Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    # inv_eta_i = 1.0 / inv_eta_i
+    
+    Pjbar = 1.0
+    inv_eta = 0.0
+    p_ij_wave = np.zeros(valid_hits)
+    for j in prange(valid_hits):
+        sz_ij = sz_i[j]
+        belief_ij = beliefs[szid_i[j]]
+
+        Pjplus = Pjbar * belief_ij
+        Pjbar = Pjbar * negate(belief_ij)
+        
+        a_temp = Pjplus * forward(wz_i, sz_ij, sensor_std, pseudo = True)
+        p_ij_wave[j] = belief_ij * inv_eta_i + a_temp
+        inv_eta = inv_eta + a_temp
+    
+    inv_eta = inv_eta + Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    eta = 1.0 / inv_eta
+    pz_ij = p_ij_wave * eta
+    return pz_ij
+
 def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
     N_maxhits = sz_i.size
     valid_hits = 0
