@@ -7,14 +7,12 @@ from numba import prange
 
 EPS = 1e-16
 
-@njit(cache = True)
-def binary_variable_update(current, update):
-    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)    
-    return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
+#extract for numba performance
+gaussian_pdf = r_1d.Gaussian._pdf 
+exponentialT_pdf  = r_1d.ExponentialT._pdf
 
-gaussian_pdf = r_1d.Gaussian._pdf #extract for numba performance
 @njit(cache = True)
-def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
+def forward_sensor_model(wz : np.ndarray, #wrapper for Gaussian_pdf
             sz : np.ndarray, 
             std : float, 
             pseudo = True) -> np.ndarray:
@@ -35,7 +33,14 @@ def forward(wz : np.ndarray, #wrapper for Gaussian_pdf
 
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+@njit(cache = True)
+def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+    '''
+    based on the awesome papers "Autonomous Exploration with Exact Inverse Sensor Models"
+    and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
+    by Evan Kaufman et al.
+    
+    '''
     N_maxhits = sz_i.size
     valid_hits = 0
     for j in prange(N_maxhits):
@@ -43,14 +48,12 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
             break
         valid_hits += 1
 
-
-
     Pjbar = 1.0
     inv_eta = 0.0
-    p_ij_wave = np.zeros(valid_hits)
+    pj_z_i_wave = np.zeros(valid_hits)
 
     #random hit
-    inv_eta = inv_eta + r_1d.ExponentialT._pdf(0.01 * sensor_max_range , \
+    inv_eta = inv_eta + exponentialT_pdf(0.01 * sensor_max_range , \
                                                 sensor_max_range, wz_i)
 
     #solids
@@ -61,89 +64,23 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         Pjplus = Pjbar * belief_ij
         Pjbar = Pjbar * negate(belief_ij)
         
-        a_temp = Pjplus * forward(wz_i, sz_ij, sensor_std, pseudo = True)
-        p_ij_wave[j] = belief_ij * inv_eta + a_temp
+        a_temp = Pjplus * forward_sensor_model(wz_i, sz_ij, sensor_std, pseudo = True)
+        pj_z_i_wave[j] = belief_ij * inv_eta + a_temp
         inv_eta = inv_eta + a_temp
     
     #max range hit
-    inv_eta = inv_eta + Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    inv_eta = inv_eta + Pjbar * forward_sensor_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
     
-    pz_ij = p_ij_wave / inv_eta
-    return pz_ij, inv_eta
+    pj_z_i = pj_z_i_wave / inv_eta
+    return pj_z_i, inv_eta
 
-def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
-    N_maxhits = sz_i.size
-    valid_hits = 0
-    for j in prange(N_maxhits):
-        if szid_i[j] == NO_HIT:
-            break
-        valid_hits += 1
-
-    a = np.zeros(valid_hits) #a[j] holds partial probability of hitting cell j-1
-    b = np.zeros(valid_hits) #b[j] holds product of previous cells being empty
-    for j in prange(0, valid_hits):        
-        if j == 0:
-            a[j] = 0.0 #forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
-            b[j] = 1.0 # - belief_ij
-        else:
-            sz_ijm1 = sz_i[j -1]
-            belief_ijm1 = beliefs[szid_i[j - 1]]
-            a[j] = a[j-1] + b[j-1] * forward(wz_i, sz_ijm1, sensor_std, pseudo = True) * belief_ijm1
-            b[j] = b[j-1] * (1.0 - belief_ijm1)
-
-    c = np.zeros(valid_hits) #c[j] holds the partial probabiltiy that cells beyond were hit even though j should be hit
-    for j in prange(valid_hits - 1, -1, -1):
-        if j == valid_hits - 1:
-            #if all cells are empty (we assume c[j] is not. its confusing)
-            c[j] = b[j] * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-        else:
-            sz_ij = sz_i[j]
-            belief_ij = beliefs[szid_i[j]]
-
-            szid_ijp1 = sz_i[j+1]
-            belief_ijp1 = beliefs[szid_i[j+1]]
-            c[j] = belief_ijp1/max(negate(belief_ij),EPS)* c[j+1] + \
-                +b[j] * forward(wz_i, szid_ijp1, sensor_std, pseudo = True) * belief_ijp1
-
-    pz_ij = np.zeros(valid_hits)
-    npz_ij = np.zeros(valid_hits)
-    for j in prange(valid_hits):
-        sz_ij = sz_i[j]
-        belief_ij = beliefs[szid_i[j]]
-
-        pz_ij[j] = a[j] + b[j] * forward(wz_i, sz_ij, sensor_std, pseudo = True)
-        npz_ij[j] = a[j] + c[j]
-
-    return pz_ij, npz_ij
-
-def new_vanila_forward(beliefs : np.ndarray, 
-                  world_z : np.ndarray, 
-                  simulated_z : np.ndarray, 
-                  simulated_z_ids : np.ndarray,
-                  sensor_std : float,
-                  sensor_max_range : float) -> np.ndarray:
-
-    N_rays = world_z.shape[0]
-    N_maxhits = simulated_z.shape[1]
-
-    for i in prange(N_rays):
-        wz_i = world_z[i]
-        sz_i = simulated_z[i]
-        szid_i =  simulated_z_ids[i]
-        pz_ij, npz_ij = new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
-
-        for j in prange(N_maxhits):
-            if szid_i[j] == NO_HIT:
-                break
-            szid_ij = szid_i[j]
-            d = pz_ij[j] * beliefs[szid_ij]
-            e = npz_ij[j] * negate(beliefs[szid_ij]) #Can be that npz and pz are both 0!?
-            beliefs[szid_ij] = d / max(d + e, EPS)
-    
-    return beliefs
+@njit(cache = True)
+def binary_variable_update(current, update):
+    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)    
+    return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
 
 @njit(parallel = True, cache = True)
-def vanila_inverse(logodds_beliefs : np.ndarray, 
+def exact(beliefs : np.ndarray, 
                   world_z : np.ndarray, 
                   simulated_z : np.ndarray, 
                   simulated_z_ids : np.ndarray,
@@ -151,16 +88,56 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
                   sensor_max_range : float) -> np.ndarray:
     '''
     inputs: 
-    
-        logodds_beliefs : one dimensional np.ndarray where indcies are iguids of solids
+        beliefs : one dimensional np.ndarray sorted same as solids
         world_z - range measurements from real-world-sensor 
                     np.array of shape (n_rays)
         simulated_z - range measurements from simulated sensor rays
                     np.array of shape (n_rays, max_hits)
                     if hit that was not detected, value is set to sensor_max_range
-        simulated_z_ids - iguids of solids that were hit from simulated rays
+        simulated_z_ids - ids of solids that were hit from simulated rays
                     np.array of shape (n_rays, max_hits)
                     a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+        sensor_std - standard deviation of sensor
+        sensor_max_range - max range of sensor
+    
+    outputs:
+        beliefs - updated beliefs
+    '''
+
+    N_rays = world_z.shape[0]
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+
+        pj_zi, _ = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
+        for j, p in enumerate(pj_zi):
+            szid_ij = szid_i[j]
+            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij], p)
+        
+    return beliefs
+
+@njit(parallel = True, cache = True)
+def approx(logodds_beliefs : np.ndarray, 
+                  world_z : np.ndarray, 
+                  simulated_z : np.ndarray, 
+                  simulated_z_ids : np.ndarray,
+                  sensor_std : float,
+                  sensor_max_range : float) -> np.ndarray:
+    '''
+    inputs: 
+        logodds_beliefs : one dimensional np.ndarray sorted same as solids
+        world_z - range measurements from real-world-sensor 
+                    np.array of shape (n_rays)
+        simulated_z - range measurements from simulated sensor rays
+                    np.array of shape (n_rays, max_hits)
+                    if hit that was not detected, value is set to sensor_max_range
+        simulated_z_ids - ids of solids that were hit from simulated rays
+                    np.array of shape (n_rays, max_hits)
+                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+        sensor_std - standard deviation of sensor
+        sensor_max_range - max range of sensor
     
     outputs:
         logodds_beliefs - updated logodds_beliefs
@@ -180,7 +157,7 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
         for j in prange(N_maxhits):
             sz_ij = sz_i[j]
             szid_ij = szid_i[j]
-            if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+            if szid_ij == NO_HIT or sz_ij > sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
             if wz_i < sz_ij - T: #wz had hit something before bzid
                 break
@@ -192,10 +169,10 @@ def vanila_inverse(logodds_beliefs : np.ndarray,
     return logodds_beliefs
 
 if __name__ == '__main__':
-    vanila_inverse(logodds_beliefs = np.array([0.5]),
+    approx(logodds_beliefs = np.array([0.5]),
                     world_z = np.array([0.5]), 
                     simulated_z = np.array([[0.5]]),
                     simulated_z_ids = np.array([[0]]),
                     sensor_std = 0.2,
                     sensor_max_range = 100.0)
-    vanila_inverse.parallel_diagnostics()
+    approx.parallel_diagnostics()

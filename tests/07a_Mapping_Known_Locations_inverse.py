@@ -63,12 +63,11 @@ visApp.add_scene("simulation", "world")
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
-visApp.redraw("simulation")
 
 time.sleep(1)
 dt = 0
-keyboard.wait('space')
 for t,u in enumerate(actions):
+    keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
@@ -76,7 +75,7 @@ for t,u in enumerate(actions):
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10)
 
-    filters.vanila_inverse(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    filters.approx(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(logodds2p(logodds_beliefs))
     
     pcd_scan.update(z_p.T)
@@ -89,7 +88,6 @@ for t,u in enumerate(actions):
     
     step_end = time.time()
     time.sleep(max(dt - (step_end - step_start),0))
-    keyboard.wait('space')
 
 print('finished')
 visApp.redraw_all_scenes()

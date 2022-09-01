@@ -90,7 +90,7 @@ while True:
         visApp.update_solid(bullet,"world")
         time.sleep(0.1)
 
-    filters.new_vanila_forward(beliefs, z, simulated_z, simulated_z_ids, simulated_sensor.std , sensor.max_range)
+    filters.exact(beliefs, z, simulated_z, simulated_z_ids, simulated_sensor.std , sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     
     line_p, line_ids = calcualte_lines(simulated_z, simulated_sensor.angles, drone.pose)
@@ -110,14 +110,3 @@ while True:
             time.sleep(0.1)
 
     visApp.redraw_all_scenes()
-
-    pz_ij_new, temp2 = filters.new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
-                        beliefs, simulated_sensor.std, simulated_sensor.max_range)
-    print(f"pz_ij_new:\n {pz_ij_new}")
-
-    pz_ij_newnew = filters.new_new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
-                        beliefs, simulated_sensor.std, simulated_sensor.max_range)
-
-    print(f"pz_ij_newnew:\n {pz_ij_newnew}")
-    # print(f"npz_ij:\n {temp1/temp2}")
-    # print(f" beliefs:\n {beliefs}")

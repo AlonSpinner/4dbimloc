@@ -58,18 +58,10 @@ for i, b in enumerate(bias):
     z, z_ids, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
-    pz_ij_newnew, pz = filters.new_new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
+    pj_z_i, pz = filters.inverse_sensor_model(z[0], simulated_z[0], simulated_z_ids[0], \
                         beliefs, simulated_sensor.std, simulated_sensor.max_range)
-    history_pz_ij[i] = np.hstack((pz_ij_newnew, pz))
+    history_pz_ij[i] = np.hstack((pj_z_i, pz))
     
-    # pz_ij, npz_ij = filters.new_forward_ray(z[0], simulated_z[0], simulated_z_ids[0], \
-    #                     beliefs, simulated_sensor.std, simulated_sensor.max_range)
-    # for j in range(len(beliefs)):
-    #     d = pz_ij[j] * beliefs[j]
-    #     e = npz_ij[j] * (1.0 - beliefs[j]) #Can be that npz and pz are both 0!?
-    #     history_pz_ij[i,j] = d / max(d + e, 1e-16)
-    # history_pz_ij[i,3] = d + e
-
     print(f"pz_ij:\n {history_pz_ij[:3]}")
 
 def plot_solid_on_xz(ax, solid : IfcSolid, color):
