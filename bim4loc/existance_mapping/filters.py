@@ -43,20 +43,17 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
             break
         valid_hits += 1
 
-    inv_eta_i = 0
-    Pjbar = 1.0 #<--- initalized with negate(P(random_hit))
-    for j in prange(valid_hits):
-        sz_ij = sz_i[j]
-        belief_ij = beliefs[szid_i[j]]
-        
-        inv_eta_i += Pjbar * forward(wz_i, sz_ij, sensor_std, pseudo = True) * belief_ij
-        Pjbar = Pjbar * negate(belief_ij)
-    #add probabity to miss all obstacles
-    inv_eta_i += Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+
 
     Pjbar = 1.0
     inv_eta = 0.0
     p_ij_wave = np.zeros(valid_hits)
+
+    #random hit
+    inv_eta = inv_eta + r_1d.ExponentialT._pdf(0.01 * sensor_max_range , \
+                                                sensor_max_range, wz_i)
+
+    #solids
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
         belief_ij = beliefs[szid_i[j]]
@@ -68,9 +65,11 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         p_ij_wave[j] = belief_ij * inv_eta + a_temp
         inv_eta = inv_eta + a_temp
     
+    #max range hit
     inv_eta = inv_eta + Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    
     pz_ij = p_ij_wave / inv_eta
-    return pz_ij, inv_eta_i
+    return pz_ij, inv_eta
 
 def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
     N_maxhits = sz_i.size
@@ -142,65 +141,6 @@ def new_vanila_forward(beliefs : np.ndarray,
             beliefs[szid_ij] = d / max(d + e, EPS)
     
     return beliefs
-
-# @njit(parallel = True, cache = True)
-def forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
-    '''
-    inputs:
-    world_z - single range measurement from real-world-sensor
-    belief_z - np.ndarray
-    sensor_std - both of real and simulated senosr (must be equivalent)
-    pm - belief_m - probablity that solid m does exist
-    '''
-    N_maxhits = sz_i.size
-
-    pz_ij = np.zeros_like(sz_i)
-    pierced_meshes_probability = 1.0
-    pdf_sum = 0.0
-    for j in prange(N_maxhits):
-        sz_ij = sz_i[j]
-        szid_ij = szid_i[j]
-        if szid_ij == NO_HIT: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
-            break
-
-        belief_ij = beliefs[szid_ij]
-        f_ij = forward(wz_i, sz_ij, sensor_std, pseudo = True)
-
-        pz_ij[j] = pierced_meshes_probability * f_ij * belief_ij + temp
-        temp = pz_ij
-
-        #update pierced meshes probability for next iteration
-        pierced_meshes_probability = pierced_meshes_probability * (1.0 - belief_ij)
-    
-    pz_max_range = pierced_meshes_probability * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
-    pz_random = 1/sensor_max_range
-    pz_i = np.sum(pz_ij) + pz_random + pz_max_range
-    
-    return pz_ij, pz_i
-
-# @njit(parallel = True, cache = True)
-def vanila_forward(beliefs : np.ndarray, 
-                  world_z : np.ndarray, 
-                  simulated_z : np.ndarray, 
-                  simulated_z_ids : np.ndarray,
-                  sensor_std : float,
-                  sensor_max_range : float) -> np.ndarray:
-
-    N_rays = world_z.shape[0]
-    N_maxhits = simulated_z.shape[1]
-
-    for i in prange(N_rays):
-        wz_i = world_z[i]
-        sz_i = simulated_z[i]
-        szid_i =  simulated_z_ids[i]
-        pz_ij, pz_i = forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
-
-        for j in prange(N_maxhits):
-            if szid_i[j] == NO_HIT:
-                break
-            szid_ij = szid_i[j]
-            inv_pz_ij = pz_ij[j]/pz_i# * beliefs[szid_ij]/pz_i
-            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij],inv_pz_ij)
 
 @njit(parallel = True, cache = True)
 def vanila_inverse(logodds_beliefs : np.ndarray, 

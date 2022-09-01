@@ -45,11 +45,12 @@ visApp.add_solid(drone.solid, "world")
 drone.sensor.bias = 0.0
 drone.sensor.std = 0.000001
 simulated_sensor.std = 0.5
+simulated_sensor.max_range = 20.0
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
 bias = np.linspace(-3, 6, N)
-beliefs = [0.5, 0.5, 0.5]
+beliefs = [1.0, 0.5, 0.5]
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):

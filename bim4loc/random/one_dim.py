@@ -90,7 +90,6 @@ class GaussianT(Distribution1D):
             if u <= pz:
                 samples[k] = z*self.sigma + self.mu #take z and unnormalize it
                 k += 1
-                continue
         
         return samples
 
@@ -130,7 +129,6 @@ class Uniform(Distribution1D):
             return 1/self.l * ((self.a < x) & (x < self.b))
 
     def cdf(self,x : float): #cumulative distibution function
-        # https://en.wikipedia.org/wiki/Normal_distribution
         #returns integral from [-inf,x]
         return (x-self.a)/self.l * ((self.a < x) & (x < self.b)) + 1.0 * (self.b <= x)
 
@@ -148,6 +146,50 @@ class Uniform(Distribution1D):
         axes[1].set_title('pdf(t)')
         return fig,axes
 
+class ExponentialT(Distribution1D):
+    #from probablistic robotics (Thrun, Burgard, Fox) p. 154
+    #chapter 6.3  - Beam Models of Range Finders
+    def __init__(self, lamBda : float, maxX : float) -> None:
+        self.lamBda : float = lamBda
+        self.maxX = maxX
+
+    def sample(self, n : int = 1) -> np.ndarray:
+        #did not verify this
+        samples = np.zeros(n)
+        k = 0
+        while k < n:
+            x =  np.random.exponential(1/self.lamBda)
+            if x < self.maxX:
+                samples[k] = x
+                k += 1
+        return samples
+
+    def pdf(self,x : np.ndarray) -> np.ndarray:
+            return self._pdf(self.lamBda, self.maxX, x)
+
+    def cdf(self,x : float): #cumulative distibution function
+        #returns integral from [-inf,x]
+        return 1.0 - np.exp(-self.lamBda*x)
+
+    def plot(self, dt = 0.1) -> Tuple[plt.Figure, plt.Axes]:
+        tmin = 0
+        tmax = self.maxX
+        t = np.array(np.arange(tmin,tmax,dt))
+        dydt = self.pdf(t)
+        y = self.cdf(t)
+
+        fig, axes = plt.subplots(1,2)
+        axes[0].plot(t,y)
+        axes[0].set_title('cdf(t)')
+        axes[1].plot(t,dydt)
+        axes[1].set_title('pdf(t)')
+        return fig,axes
+
+    @staticmethod
+    @njit(cache = True)
+    def _pdf(lamBda : float, maxX : float, x : np.ndarray) -> np.ndarray:
+        eta = 1.0/(1.0 - np.exp(-lamBda*maxX))
+        return eta * lamBda * np.exp(-lamBda*x) * (x < maxX)
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------- ASSISTING FUNCTIONS -----------------------------------------------------
