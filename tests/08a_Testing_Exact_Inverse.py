@@ -48,8 +48,8 @@ simulated_sensor.std = 0.5
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
-bias = np.linspace(0, 6, N)
-beliefs = [1.0, 0, 0]
+bias = np.linspace(-3, 6, N)
+beliefs = [0.5, 0.5, 0.5]
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):
@@ -67,7 +67,7 @@ for i, b in enumerate(bias):
     #     d = pz_ij[j] * beliefs[j]
     #     e = npz_ij[j] * (1.0 - beliefs[j]) #Can be that npz and pz are both 0!?
     #     history_pz_ij[i,j] = d / max(d + e, 1e-16)
-    # history_pz_ij[3] = 0.0
+    # history_pz_ij[i,3] = d + e
 
     print(f"pz_ij:\n {history_pz_ij[:3]}")
 

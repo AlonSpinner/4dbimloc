@@ -65,7 +65,7 @@ def new_new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_rang
         Pjbar = Pjbar * negate(belief_ij)
         
         a_temp = Pjplus * forward(wz_i, sz_ij, sensor_std, pseudo = True)
-        p_ij_wave[j] = belief_ij * inv_eta_i + a_temp
+        p_ij_wave[j] = belief_ij * inv_eta + a_temp
         inv_eta = inv_eta + a_temp
     
     inv_eta = inv_eta + Pjbar * forward(wz_i, sensor_max_range, sensor_std, pseudo = True)
@@ -103,7 +103,6 @@ def new_forward_ray(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
 
             szid_ijp1 = sz_i[j+1]
             belief_ijp1 = beliefs[szid_i[j+1]]
-
             c[j] = belief_ijp1/max(negate(belief_ij),EPS)* c[j+1] + \
                 +b[j] * forward(wz_i, szid_ijp1, sensor_std, pseudo = True) * belief_ijp1
 
