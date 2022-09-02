@@ -53,8 +53,8 @@ def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_ran
     pj_z_i_wave = np.zeros(valid_hits)
 
     #random hit
-    inv_eta = inv_eta + exponentialT_pdf(0.01 * sensor_max_range , \
-                                                sensor_max_range, wz_i)
+    # inv_eta = inv_eta + exponentialT_pdf(0.01 * sensor_max_range , \
+                                                # sensor_max_range, wz_i)
 
     #solids
     for j in prange(valid_hits):
@@ -71,12 +71,12 @@ def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_ran
     #max range hit
     inv_eta = inv_eta + Pjbar * forward_sensor_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
     
-    pj_z_i = pj_z_i_wave / inv_eta
+    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
     return pj_z_i, inv_eta
 
 @njit(cache = True)
 def binary_variable_update(current, update):
-    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping)    
+    #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping
     return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
 
 @njit(parallel = True, cache = True)
