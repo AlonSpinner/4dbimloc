@@ -22,7 +22,7 @@ solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
 drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.5; 
+sensor = Lidar1D(); sensor.std = 0.1; 
 sensor.piercing = False
 sensor.max_range = 1000.0
 sensor.angles = np.array([0])
@@ -50,7 +50,7 @@ simulated_sensor.max_range = 20.0
 N = 1000
 history_pz_ij = np.zeros((N,4))
 bias = np.linspace(-3, 6, N)
-beliefs = [1.0, 0.5, 0.5]
+beliefs = [0.5, 0.5, 0.5]
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):

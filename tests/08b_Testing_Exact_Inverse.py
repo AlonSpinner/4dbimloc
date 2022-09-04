@@ -88,7 +88,7 @@ while True:
         p_bullet = (1 - t) * drone.pose.t + t * z_p
         bullet.update(p_bullet.T)
         visApp.update_solid(bullet,"world")
-        time.sleep(0.1)
+        time.sleep(0.03)
 
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, simulated_sensor.std , sensor.max_range)
     simulation.update_solids_beliefs(beliefs)

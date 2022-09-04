@@ -56,8 +56,8 @@ class IfcSolid(o3dSolid):
             )
 
 class PcdSolid(o3dSolid):
-    def __init__(self, pcd : np.ndarray = None):
-        self.name = 'pcd'
+    def __init__(self, name : str = 'pcd', pcd : np.ndarray = None):
+        self.name = name
         
         if pcd is None:
             pcd = [[0,0,0]]

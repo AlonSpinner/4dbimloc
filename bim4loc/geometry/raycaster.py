@@ -6,7 +6,7 @@ EPS = 1e-16
 NO_HIT = 2161354
 
 @njit(parallel = True, cache = True)
-def raytrace(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
+def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     meshes_iguid : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
@@ -125,5 +125,5 @@ if __name__ == "__main__":
     print((e-s)/N)
 
 
-    raytrace(ray.reshape((1,6)),triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
-    raytrace.parallel_diagnostics()
+    raycast(ray.reshape((1,6)),triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+    raycast.parallel_diagnostics()

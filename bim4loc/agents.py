@@ -45,9 +45,7 @@ class Drone:
         z, z_ids = self.sensor.sense(self.pose, m)
         
         if project_scan:
-            drone_p = np.vstack((z * np.cos(self.sensor.angles), 
-                        z * np.sin(self.sensor.angles),
-                        np.zeros_like(z)))
+            drone_p = self.sensor.scan_to_points(self.sensor.angles, z)
             world_p = self.pose.transform_from(drone_p)
             return z, z_ids, world_p
         else:
