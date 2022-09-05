@@ -5,6 +5,7 @@ import teaserpp_python
 from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 from bim4loc.geometry.poses import Pose2z
+import open3d as o3d
 
 def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, scan_to_points):
 
@@ -39,7 +40,21 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, s
     dst = dst[:, bools]
     weights = weights[bools]
 
-    R, t = weighted_registration(src, dst, np.ones_like(weights))
+    # R, t = weighted_registration(src, dst, np.ones_like(weights))
+    # src_T = R @ src + t
+
+    o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    # src.estiamte_normals()
+    o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    # dst.estiamte_normals()
+    # loss = o3d.pipelines.registration.TukeyLoss(k = 0.3)
+    p2l = o3d.pipelines.registration.TransformationEstimationPointToPoint(False)
+    trans_init = np.eye(4)
+    threshold = 2
+    reg_p2l = o3d.pipelines.registration.registration_icp(
+        o3d_src, o3d_dst, threshold, trans_init, p2l)
+    T = reg_p2l.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
     src_T = R @ src + t
 
     # solver_params = teaserpp_python.RobustRegistrationSolver.Params()

@@ -29,7 +29,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.1;  sensor.angles = np.linspace(-np.pi, np.pi, 10)
+sensor = Lidar1D(); sensor.std = 0.1;  sensor.angles = np.linspace(-np.pi, np.pi, 36)
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
@@ -79,8 +79,9 @@ for t,u in enumerate(actions):
     
     z, z_ids, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    simulated_drone.pose = drone.pose.compose(Pose2z(1.0,0,0/8,0))
+    simulated_drone.pose = drone.pose.compose(Pose2z(0.0,0,np.pi/8,0))
     simulated_drone.solid.update_geometry(simulated_drone.pose)
+
     simulated_z, simulated_z_ids, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
 
     world_scan.update(z_p.T)
