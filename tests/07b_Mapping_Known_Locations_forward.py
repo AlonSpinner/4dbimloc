@@ -74,7 +74,7 @@ for t,u in enumerate(actions):
     drone.move(u)
     
     z, z_ids, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10)
+    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)

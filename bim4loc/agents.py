@@ -35,14 +35,14 @@ class Drone:
         self.pose = self.pose.compose(a)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : RayCastingMap, project_scan = False) -> Union[np.ndarray, np.ndarray, list[str]]:
+    def scan(self, m : RayCastingMap, project_scan = False, noisy = True) -> Union[np.ndarray, np.ndarray, list[str]]:
         '''
         output:
         z - 1D array
         world_p - MX3 matrix
         '''
 
-        z, z_ids = self.sensor.sense(self.pose, m)
+        z, z_ids = self.sensor.sense(self.pose, m, noisy = noisy)
         
         if project_scan:
             drone_p = self.sensor.scan_to_points(self.sensor.angles, z)

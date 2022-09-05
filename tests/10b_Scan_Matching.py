@@ -81,7 +81,7 @@ for t,u in enumerate(actions):
 
     simulated_drone.pose = drone.pose.compose(Pose2z(0,0,np.pi/8,0))
     simulated_drone.solid.update_geometry(simulated_drone.pose)
-    simulated_z, simulated_z_ids, simulated_z_p = simulated_drone.scan(simulation, project_scan = True)
+    simulated_z, simulated_z_ids, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
 
     world_scan.update(z_p.T)
     simulation_scan.update(simulated_z_p.T)
