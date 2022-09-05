@@ -29,7 +29,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.1;  sensor.angles = np.linspace(-np.pi, np.pi, 36)
+sensor = Lidar1D(); sensor.std = 0.1;  sensor.angles = np.linspace(-np.pi, np.pi, 10)
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
@@ -77,9 +77,9 @@ for t,u in enumerate(actions):
     
     drone.move(u)
     
-    z, z_ids, z_p = drone.scan(world, project_scan = True)
+    z, z_ids, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    simulated_drone.pose = drone.pose.compose(Pose2z(0,0,np.pi/8,0))
+    simulated_drone.pose = drone.pose.compose(Pose2z(1.0,0,0/8,0))
     simulated_drone.solid.update_geometry(simulated_drone.pose)
     simulated_z, simulated_z_ids, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
 
@@ -93,6 +93,7 @@ for t,u in enumerate(actions):
     visApp.redraw_all_scenes()
     scan_matcher.scan_match(z, simulated_z, simulated_z_ids, 
                 beliefs, 
+                simulated_drone.pose, drone.pose,
                 simulated_sensor.get_scan_to_points())
     
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)    

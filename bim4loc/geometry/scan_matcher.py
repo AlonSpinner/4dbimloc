@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import teaserpp_python
 from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
+from bim4loc.geometry.poses import Pose2z
 
-def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points):
+def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, scan_to_points):
 
     #weight of each point pair ~ probability of hitting the solid / max range
     pzi_j = compute_weights(szid_i, beliefs)
@@ -25,18 +26,25 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points):
         weights[km * n : (km+1) * n] = pzi_j[:,km]
                 
     # src = qwz_i_bloated
-    # dst = qsz_i
+    # dst = pose.transform_from(qsz_i) #sensor system to world system
     
+    # src = pose_real.transform_from(qwz_i)
+    # dst = pose.transform_from(qsz_i[:,:n])
     src = qwz_i
     dst = qsz_i[:,:n]
     weights = weights[:n]
     
-    R, t = weighted_registration(src, dst, weights)
+    bools = np.linalg.norm(src - dst, axis = 0) < 4.0
+    src = src[:, bools]
+    dst = dst[:, bools]
+    weights = weights[bools]
+
+    R, t = weighted_registration(src, dst, np.ones_like(weights))
     src_T = R @ src + t
 
     # solver_params = teaserpp_python.RobustRegistrationSolver.Params()
-    # solver_params.cbar2 = 10
-    # solver_params.noise_bound = 0.3
+    # solver_params.cbar2 = 4
+    # solver_params.noise_bound = 0.01
     # solver_params.estimate_scaling = False
     # solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
     # solver_params.rotation_gnc_factor = 1.4
@@ -56,6 +64,8 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points):
     ax.scatter(dst[0,:], dst[1,:], color = 'blue')
     ax.scatter(src[0,:], src[1,:], color = 'red')
     ax.scatter(src_T[0,:], src_T[1,:], color = 'purple', marker = 'x')
+    for s, d in zip(src.T, dst.T):
+        ax.plot([s[0], d[0]], [s[1], d[1]], color = 'black')
     ax.axis('equal')
     ax.legend(['dst', 'src', 'src_T'])
     ax.set_title('red -> blue = purple')
