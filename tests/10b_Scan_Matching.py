@@ -24,8 +24,8 @@ solids = ifc_converter(IFC_PATH)
 constructed_solids = []
 for s in solids:
     s.set_random_completion_time()
-    if s.completion_time < current_time:
-        constructed_solids.append(s.clone())
+    # if s.completion_time < current_time:
+    constructed_solids.append(s.clone())
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
@@ -93,7 +93,7 @@ for t,u in enumerate(actions):
     visApp.redraw_all_scenes()
     scan_matcher.scan_match(z, simulated_z, simulated_z_ids, 
                 beliefs, 
-                simulated_sensor.get_scan_to_points(), sensor.std, sensor.max_range)
+                simulated_sensor.get_scan_to_points())
     
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)    
     simulation.update_solids_beliefs(beliefs)

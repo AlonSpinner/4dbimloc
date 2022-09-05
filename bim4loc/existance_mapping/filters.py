@@ -30,7 +30,6 @@ def forward_sensor_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     sigma = f(sz)
     sigma = f(angle of ray hit)
     '''
-
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 @njit(cache = True)

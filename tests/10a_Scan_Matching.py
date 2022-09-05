@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import teaserpp_python
 from bim4loc.sensors import Lidar1D
 import os
-from bim4loc.geometry.scan_matcher import icp
+from bim4loc.geometry.scan_matcher import weighted_registration
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 DATA_PATH = os.path.join(DIR_PATH, '10a_data')
@@ -41,15 +41,15 @@ solver = teaserpp_python.RobustRegistrationSolver(solver_params)
 src = pwz_i
 dst = psz_i[:,:n]
 
-solver.solve(src, dst)
-solution = solver.getSolution()
-print("Solution is:", solution)
-src_T = solution.rotation @ src + solution.translation.reshape(-1,1)
+# solver.solve(src, dst)
+# solution = solver.getSolution()
+# print("Solution is:", solution)
+# src_T = solution.rotation @ src + solution.translation.reshape(-1,1)
 
-# T = icp(src, dst, np.ones(src.shape[1]))
-# R = T[:3,:3]
-# t = T[:3,3]
-# src_T = R @ src + t.reshape(-1,1)
+T = weighted_registration(src, dst, np.ones(src.shape[1]))
+R = T[:3,:3]
+t = T[:3,3]
+src_T = R @ src + t.reshape(-1,1)
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
