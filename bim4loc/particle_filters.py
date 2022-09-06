@@ -34,7 +34,7 @@ class vanila:
             self.particles[i] = self.particles[i].compose(whiten_u)
             
             #create target distribution
-            zhat, _ = self.sensor.sense(self.particles[i],self.m)
+            zhat, _ = self.sensor.sense(self.particles[i],self.m, noisy = False)
 
             self.weights[i] *= gauss_likelihood(z.reshape(-1,1), zhat.reshape(-1,1), z_cov, pseudo = False)
 

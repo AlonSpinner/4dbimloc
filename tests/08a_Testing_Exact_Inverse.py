@@ -6,7 +6,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import IfcSolid, PcdSolid, LinesSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
@@ -22,10 +22,9 @@ solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
 drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.1; 
+sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.1; 
 sensor.piercing = False
 sensor.max_range = 1000.0
-sensor.angles = np.array([0])
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)

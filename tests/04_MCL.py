@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid, ArrowSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 from bim4loc.particle_filters import vanila
 import time
@@ -16,7 +16,8 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
+sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,36), angles_v = np.array([0.0])); 
+sensor.std = 0.1; sensor.piercing = False
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
 
@@ -44,7 +45,7 @@ for i in range(Nparticles):
 
 pf_sensor = copy.copy(drone.sensor); pf_sensor.std = None
 pf = vanila(pf_sensor, model , inital_poses)
-Z_COV = np.kron(np.eye(drone.sensor.angles.size),drone.sensor.std**2)
+Z_COV = np.kron(np.eye(drone.sensor._angles_u.size),drone.sensor.std**2)
 U_COV = 0.01 * np.diag([0.1,0.1,np.radians(0.1),0.0])
 
 visApp = VisApp()
@@ -61,7 +62,7 @@ visApp.add_solid(pcd_scan)
 time.sleep(0.1)
 for t,u in enumerate(actions):
     drone.move(u)
-    z, _, z_p = drone.scan(world, project_scan = True)
+    z, _, z_p = drone.scan(world, project_scan = True, noisy = True)
 
     pf.step(z, Z_COV, u, U_COV)
     if t % 3 == 0:

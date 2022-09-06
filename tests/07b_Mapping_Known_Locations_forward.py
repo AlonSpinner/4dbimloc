@@ -5,8 +5,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar1D
-from bim4loc.random.utils import p2logodds, logodds2p
+from bim4loc.sensors import Lidar
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
 import time
@@ -29,7 +28,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.5; 
+sensor = Lidar(); sensor.std = 0.5; 
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
@@ -63,7 +62,6 @@ visApp.add_scene("simulation", "world")
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
-visApp.redraw("simulation")
 
 time.sleep(1)
 dt = 0.0

@@ -9,7 +9,7 @@ class Sensor():
     def __init__(self):
         pass
 
-    def sense(self, pose : Pose2z) -> Union[np.ndarray,list[str]]: #to be overwritten
+    def sense(self, pose : Pose2z, noisy = True) -> Union[np.ndarray,list[str]]: #to be overwritten
         '''
         returns np.ndarray of measurement values
         returns list of viewed solid names

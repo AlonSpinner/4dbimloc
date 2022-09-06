@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 EPS = 1e-16
 
@@ -21,4 +21,5 @@ def p2logodds(p):
 
 @njit(cache = True)
 def logodds2p(l):
+    l[l > 5.0] = 5.0 #big enough
     return  np.exp(l) / (1 + np.exp(l))
