@@ -47,8 +47,9 @@ class Lidar(Sensor):
         
         z_values, z_ids, z_normals = raycaster.raycast(rays, *m.scene, n_hits)
         
-        if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
+        if self.piercing == False:
             z_values = z_values[:,0]
+            z_normals = z_normals[:,0]
         
         if noisy:
             z_values = np.random.normal(z_values + self.bias, self.std)

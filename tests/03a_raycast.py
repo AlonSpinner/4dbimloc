@@ -9,6 +9,8 @@ from bim4loc.maps import RayCastingMap
 import time
 import keyboard
 
+import open3d as o3d
+
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
 sensor = Lidar(); sensor.std = 0.05; sensor.piercing = False
@@ -29,10 +31,10 @@ visApp.setup_default_camera("world")
 visApp.show_axes()
 
 visApp.add_solid(drone.solid)
-pcd_scan = PcdSolid()
+pcd_scan = PcdSolid(shader = "normals")
 visApp.add_solid(pcd_scan)
-
 time.sleep(1)
+
 for a in actions:
     # keyboard.wait('space')
     drone.move(a)
@@ -43,10 +45,10 @@ for a in actions:
         else:
             s.material.base_color = np.hstack((s.ifc_color,1))
 
-    pcd_scan.update(p.T)
+    pcd_scan.update(p.T, z_normals)
+    # pcd_scan.geometry.estimate_normals()
+    # o3d.visualization.draw_geometries([pcd_scan.geometry],  point_show_normal=True)
 
     [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
-
-    # time.sleep(1)

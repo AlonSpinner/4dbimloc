@@ -4,10 +4,10 @@ import numpy as np
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
-import bim4loc.random.utils as r_utils
 from bim4loc.geometry.poses import Pose2z
 from importlib import import_module
 from copy import deepcopy
+from typing import Literal
 
 @dataclass(frozen = False)
 class o3dSolid:
@@ -56,7 +56,8 @@ class IfcSolid(o3dSolid):
             )
 
 class PcdSolid(o3dSolid):
-    def __init__(self, name : str = 'pcd', pcd : np.ndarray = None):
+    def __init__(self, name : str = 'pcd', pcd : np.ndarray = None,
+                    shader : Literal["defaultUnlit", "normals"] = "defaultUnlit"):
         self.name = name
         
         if pcd is None:
@@ -64,17 +65,20 @@ class PcdSolid(o3dSolid):
             self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
 
         mat = rendering.MaterialRecord()
-        mat.shader = "defaultUnlit"
+        mat.shader = shader
         mat.point_size = 10.0
         mat.base_color = [1.0, 0.8, 0.0, 1.0]
         self.material = mat
 
-    def update(self, pcd : np.ndarray) -> None:
+    def update(self, pcd : np.ndarray, normals = None) -> None:
         '''
         input:
         pcd - 3Xm matrix
+        normals - 3Xm matrix
         '''
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
+        if normals is not None:
+            self.geometry.normals = o3d.utility.Vector3dVector(normals)
 
 class LinesSolid(o3dSolid):
     def __init__(self, pts : np.ndarray = None, indicies : np.ndarray = None):
