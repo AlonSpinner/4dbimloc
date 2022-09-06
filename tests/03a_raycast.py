@@ -4,14 +4,14 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 import time
 import keyboard
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar1D(); sensor.std = 0.05; sensor.piercing = False
+sensor = Lidar(); sensor.std = 0.05; sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
