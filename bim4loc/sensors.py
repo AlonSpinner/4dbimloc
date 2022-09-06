@@ -89,7 +89,7 @@ class Lidar(Sensor):
 
             for n_i in range(n):
                  i,j = n2ij(n_i, Nv)
-                 qz[:, n_i * m : (n_i + 1) * m] = z[n_i,:] * spherical_coordiantes(angles_u[i], angles_v[j])
+                 qz[:, n_i * m : (n_i + 1) * m] = z[n_i,:] * spherical_coordiantes(angles_u[i], angles_v[j]).reshape(3,1)
             return qz
         else:
             n = z.shape[0] #amount of lasers in scan

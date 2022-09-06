@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.raycaster import NO_HIT
 import time
@@ -12,9 +12,8 @@ import keyboard
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-# sensor = Lidar1D(angles = np.linspace(-np.pi/2,np.pi/2,3))
-sensor = Lidar1D()
-sensor.std = 0.05; sensor.piercing = True; sensor.max_range = 1000.0
+sensor = Lidar()
+sensor.std = 0.05; sensor.piercing = True; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
 
@@ -39,28 +38,22 @@ visApp.add_solid(line_scan)
 
 time.sleep(1)
 for a in actions:
+    keyboard.wait('space')
+    
     drone.move(a)
-    z, z_ids = sensor.sense(drone.pose, world, n_hits = 20)
+    z, z_ids = sensor.sense(drone.pose, world, n_hits = 10)
     
-    z_flat = np.array([])
-    angles_flat = np.array([])
-    z_ids_flat = []
-    for zi,ai,zidi in zip(z, sensor.angles, z_ids):
-        zi_valid = zi[zi < sensor.max_range]
-        z_flat = np.hstack((z_flat, zi_valid))
-        angles_flat = np.hstack((angles_flat,np.full_like(zi_valid, ai)))
-        [z_ids_flat.append(_) for _ in zidi if _ != NO_HIT]
-
-    drone_p = np.vstack((z_flat * np.cos(angles_flat), 
-            z_flat * np.sin(angles_flat),
-            np.zeros_like(z_flat)))
+    drone_p = sensor.scan_to_points(z)
     p = drone.pose.transform_from(drone_p)
+
     
-    for s in world.solids:
-        if s in z_ids_flat:
-            s.material.base_color = (1,0,0,1)
+    z_ids_flat = z_ids.flatten()
+    for s_i in range(len(world.solids)):
+        if s_i in z_ids_flat:
+            world.solids[s_i].material.base_color = (1,0,0,1)
         else:
-            s.material.base_color = np.hstack((s.ifc_color,1))
+            world.solids[s_i].material.base_color = np.hstack((s.ifc_color,1))
+
     pcd_scan.update(p.T)
     p = np.hstack((drone.pose.t, p))
     line_ids = np.zeros((p.shape[1],2), dtype = int)
@@ -71,6 +64,3 @@ for a in actions:
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
     visApp.update_solid(line_scan)
-
-    # time.sleep(1)
-    keyboard.wait('space')

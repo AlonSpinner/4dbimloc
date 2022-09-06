@@ -4,15 +4,14 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 import time
 import keyboard
 
 full_solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar1D(angles = np.array([0.2]))
-# sensor = Lidar1D()
+sensor = Lidar(angles_u = np.array([0.2]), angles_v = np.array([0.0]))
 sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
@@ -49,11 +48,6 @@ time.sleep(1)
 for a in actions:
     drone.move(a)
     z, z_solid_names, p = drone.scan(world, project_scan = True)
-    # for s in world.solids.values():
-    #     if s.name in z_solid_names:
-    #         s.material.base_color = (1,0,0,1)
-    #     else:
-    #         s.material.base_color = np.hstack((s.ifc_color,1))
 
     #show rays
     p = np.hstack((drone.pose.t, p))
