@@ -45,7 +45,7 @@ class Lidar(Sensor):
     def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10, noisy = True):
         rays = self.transform_rays(pose)
         
-        z_values, z_ids = raycaster.raycast(rays, *m.scene, n_hits)
+        z_values, z_ids, z_normals = raycaster.raycast(rays, *m.scene, n_hits)
         
         if self.piercing == False: #not piercing, n_hits == 1 by definition. ignores input
             z_values = z_values[:,0]
@@ -55,7 +55,7 @@ class Lidar(Sensor):
 
         z_values[z_values > self.max_range] = self.max_range
 
-        return z_values, z_ids
+        return z_values, z_ids, z_normals
     
     def transform_rays(self, pose : Pose2z) -> np.ndarray:
         #returns rays in world system to be used by raycaster.
@@ -68,7 +68,7 @@ class Lidar(Sensor):
         return self._scan_to_points(self._angles_u, self._angles_v, z)
     
     def get_scan_to_points(self):
-        return partial(self.scan_to_points, self)
+        return partial(self._scan_to_points, self._angles_u, self._angles_v)
 
     @staticmethod
     def _scan_to_points(angles_u, angles_v, z):

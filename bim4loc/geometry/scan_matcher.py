@@ -4,10 +4,9 @@ import matplotlib.pyplot as plt
 import teaserpp_python
 from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
-from bim4loc.geometry.poses import Pose2z
 import open3d as o3d
 
-def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, scan_to_points):
+def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points, errT):
 
     #weight of each point pair ~ probability of hitting the solid / max range
     pzi_j = compute_weights(szid_i, beliefs)
@@ -44,11 +43,11 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, s
     # src_T = R @ src + t
 
     o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
-    # src.estiamte_normals()
+    o3d_src.estimate_normals()
     o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
-    # dst.estiamte_normals()
-    # loss = o3d.pipelines.registration.TukeyLoss(k = 0.3)
-    p2l = o3d.pipelines.registration.TransformationEstimationPointToPoint(False)
+    # o3d_dst.estimate_normals()
+    loss = o3d.pipelines.registration.TukeyLoss(k = 0.3)
+    p2l = o3d.pipelines.registration.TransformationEstimationPointToPlane(loss)
     trans_init = np.eye(4)
     threshold = 2
     reg_p2l = o3d.pipelines.registration.registration_icp(
@@ -56,6 +55,7 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, s
     T = reg_p2l.transformation
     R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
     src_T = R @ src + t
+    print(np.linalg.norm(T[:2,[0,1]] - errT[:2,[0,1]]))
 
     # solver_params = teaserpp_python.RobustRegistrationSolver.Params()
     # solver_params.cbar2 = 4
@@ -79,8 +79,6 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, pose : Pose2z, pose_real : Pose2z, s
     ax.scatter(dst[0,:], dst[1,:], color = 'blue')
     ax.scatter(src[0,:], src[1,:], color = 'red')
     ax.scatter(src_T[0,:], src_T[1,:], color = 'purple', marker = 'x')
-    for s, d in zip(src.T, dst.T):
-        ax.plot([s[0], d[0]], [s[1], d[1]], color = 'black')
     ax.axis('equal')
     ax.legend(['dst', 'src', 'src_T'])
     ax.set_title('red -> blue = purple')

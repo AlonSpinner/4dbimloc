@@ -34,6 +34,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
 
     z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
+    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
@@ -49,7 +50,8 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     finished_mesh = True
                     break
                 
-                z = ray_triangle_intersection(ray, triangle)
+                z, n = ray_triangle_intersection(ray, triangle)
+                n = n.reshape((1,3))
                 if z != NO_HIT and z > 0:
                     ii = np.searchsorted(z_values[i_r], z)
                     if ii == max_hits: #new z is the biggest, throw it away
@@ -57,9 +59,11 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
                     elif ii == 0:
                         z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
+                        z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
+                        z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
             
             if finished_mesh:
                 break
@@ -69,10 +73,10 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
         z_values[i_r] = z_values[i_r][i_sorted]
         z_ids[i_r] = z_ids[i_r][i_sorted]
     
-    return z_values, z_ids
+    return z_values, z_ids, z_normals
 
 @njit(fastmath = True, cache = True)
-def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
+def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
 
@@ -89,24 +93,27 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray) -> float:
     dir = ray[3:]
     edge1 = triangle[1] - triangle[0]
     edge2 = triangle[2] - triangle[0]
+    n = np.zeros(3)
 
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
     if det < EPS: #abs(det) < EPS if we want internal intersection
-        return NO_HIT
+        return NO_HIT, n
     
     inv_det = 1.0/det
     tvec  = eye - triangle[0]
     u = np.dot(tvec, pvec) * inv_det
     if u < 0 or u > 1.0:
-        return NO_HIT
+        return NO_HIT, n
     qvec = np.cross(tvec,edge1)
     v = np.dot(dir,qvec) * inv_det
     if v < 0 or u + v > 1.0:
-        return NO_HIT
+        return NO_HIT, n
 
     z = np.dot(edge2,qvec) * inv_det
-    return z
+    n = np.cross(edge1,edge2)
+    n = n/np.linalg.norm(n)
+    return z, n
 
 if __name__ == "__main__":
     #simple test to show functionality and speed

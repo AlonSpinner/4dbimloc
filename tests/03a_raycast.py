@@ -34,9 +34,9 @@ visApp.add_solid(pcd_scan)
 
 time.sleep(1)
 for a in actions:
-    keyboard.wait('space')
+    # keyboard.wait('space')
     drone.move(a)
-    z, z_ids, p = drone.scan(world, project_scan = True)
+    z, z_ids, z_normals, p = drone.scan(world, project_scan = True)
     for s in world.solids:
         if s in z_ids:
             s.material.base_color = (1,0,0,1)

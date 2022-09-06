@@ -2,16 +2,15 @@ from numba import prange
 import numpy as np
 import matplotlib.pyplot as plt
 import teaserpp_python
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 import os
 from bim4loc.geometry.scan_matcher import weighted_registration
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 DATA_PATH = os.path.join(DIR_PATH, '10a_data')
 
-sensor = Lidar1D(); 
+sensor = Lidar(); 
 sensor.std = 0.1;  
-sensor.angles = np.linspace(-np.pi, np.pi, 36)
 scan_to_points = sensor.get_scan_to_points()
 sz_i = np.load(os.path.join(DATA_PATH,"scan_match - sz_i.npy"))
 wz_i = np.load(os.path.join(DATA_PATH,"scan_match - wz_i.npy"))

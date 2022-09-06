@@ -5,7 +5,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar1D
+from bim4loc.sensors import Lidar
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy, copy
 import time
@@ -29,7 +29,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = Pose2z(3,3,0, 1.5))
-sensor = Lidar1D(); sensor.std = 0.1;  sensor.angles = np.linspace(-np.pi, np.pi, 36)
+sensor = Lidar(); sensor.std = 0.1
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
@@ -79,7 +79,8 @@ for t,u in enumerate(actions):
     
     z, z_ids, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    simulated_drone.pose = drone.pose.compose(Pose2z(0.0,0,np.pi/8,0))
+    errT = Pose2z(0.0,0,np.pi/8,0)
+    simulated_drone.pose = drone.pose.compose(errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 
     simulated_z, simulated_z_ids, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
@@ -94,10 +95,10 @@ for t,u in enumerate(actions):
     visApp.redraw_all_scenes()
     scan_matcher.scan_match(z, simulated_z, simulated_z_ids, 
                 beliefs, 
-                simulated_drone.pose, drone.pose,
-                simulated_sensor.get_scan_to_points())
+                simulated_sensor.get_scan_to_points(),
+                errT.inverse().Exp())
     
-    filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)    
+    # filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)    
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     visApp.redraw_all_scenes()
