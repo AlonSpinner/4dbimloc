@@ -40,8 +40,8 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     # R, t = point2plane_registration(src, dst, normals, 
                                 # np.eye(4), threshold = 0.5, k = sensor_std)
     # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.5)
-    R, t = teaser_registration(src, dst)
-    # R, t = point2point_ransac(src, dst, normals)
+    # R, t = teaser_registration(src, dst)
+    R, t = point2point_ransac(src, dst, normals)
 
     plot(src, dst, R, t, False)
     return R,t
@@ -144,23 +144,23 @@ def find_correspondences(feats0, feats1, mutual_filter=True):
   return corres_idx0, corres_idx1
 
 def teaser_registration(src, dst):
-    # src_np = src
-    # src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
-    # src = src.voxel_down_sample(0.2)
-    # src = estimate_normals(src)
-    # src_fpfh = compute_fpfh(src); src_fpfh = np.array(src_fpfh.data).T
+    src_np = src
+    src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    src = src.voxel_down_sample(0.2)
+    src = estimate_normals(src)
+    src_fpfh = compute_fpfh(src); src_fpfh = np.array(src_fpfh.data).T
 
-    # dst_np = dst
-    # dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
-    # dst = dst.voxel_down_sample(0.2)
-    # dst = estimate_normals(dst)
-    # dst_fpfh = compute_fpfh(dst); dst_fpfh = np.array(dst_fpfh.data).T
+    dst_np = dst
+    dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    dst = dst.voxel_down_sample(0.2)
+    dst = estimate_normals(dst)
+    dst_fpfh = compute_fpfh(dst); dst_fpfh = np.array(dst_fpfh.data).T
 
-    # src_corrs, dst_corrs = find_correspondences(
-    # src_fpfh, dst_fpfh, mutual_filter=True)
+    src_corrs, dst_corrs = find_correspondences(
+    src_fpfh, dst_fpfh, mutual_filter=True)
 
-    # src = src_np[:, src_corrs]
-    # dst = dst_np[:, dst_corrs]
+    src = src_np[:, src_corrs]
+    dst = dst_np[:, dst_corrs]
     plot(src, dst, plot_correspondences = True)
 
     teaser_solver_params = teaserpp_python.RobustRegistrationSolver.Params()

@@ -81,7 +81,7 @@ for t,u in enumerate(actions):
     
     z, z_ids, _, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    errT = Pose2z(1.0,0,np.pi/8,0)
+    errT = Pose2z(1.0,0,0 *np.pi/8,0)
     simulated_drone.pose = drone.pose.compose(errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 
@@ -95,11 +95,12 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals, 
+    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals, 
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points(),
                 errT.inverse().Exp())
+    print(Pose2z.from_Rt(R,t).compose(errT).Log())
     
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
