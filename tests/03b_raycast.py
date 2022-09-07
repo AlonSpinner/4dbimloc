@@ -30,7 +30,7 @@ visApp.setup_default_camera("world")
 visApp.show_axes()
 
 visApp.add_solid(drone.solid)
-pcd_scan = PcdSolid()
+pcd_scan = PcdSolid(shader = "normals")
 # pcd_scan.material.point_size = 5.0
 visApp.add_solid(pcd_scan)
 line_scan = LinesSolid()
@@ -41,7 +41,7 @@ for a in actions:
     keyboard.wait('space')
     
     drone.move(a)
-    z, z_ids = sensor.sense(drone.pose, world, n_hits = 10)
+    z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10)
     
     drone_p = sensor.scan_to_points(z)
     p = drone.pose.transform_from(drone_p)
@@ -54,7 +54,7 @@ for a in actions:
         else:
             world.solids[s_i].material.base_color = np.hstack((s.ifc_color,1))
 
-    pcd_scan.update(p.T)
+    pcd_scan.update(p.T, z_normals.reshape(-1,3))
     p = np.hstack((drone.pose.t, p))
     line_ids = np.zeros((p.shape[1],2), dtype = int)
     line_ids[:,1] = np.arange(p.shape[1])

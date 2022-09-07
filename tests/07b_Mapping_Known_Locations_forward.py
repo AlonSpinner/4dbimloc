@@ -12,7 +12,7 @@ import time
 import logging
 import keyboard
 
-np.random.seed(25)
+np.random.seed(24)
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -71,8 +71,8 @@ for t,u in enumerate(actions):
     
     drone.move(u)
     
-    z, z_ids, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    z, z_ids, _, z_p  = drone.scan(world, project_scan = True)
+    simulated_z, simulated_z_ids, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)

@@ -47,7 +47,7 @@ visApp.add_solid(line_scan)
 time.sleep(1)
 for a in actions:
     drone.move(a)
-    z, z_solid_names, p = drone.scan(world, project_scan = True)
+    z, z_solid_names, z_normals, p = drone.scan(world, project_scan = True)
 
     #show rays
     p = np.hstack((drone.pose.t, p))

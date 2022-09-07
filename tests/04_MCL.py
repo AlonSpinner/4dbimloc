@@ -62,7 +62,7 @@ visApp.add_solid(pcd_scan)
 time.sleep(0.1)
 for t,u in enumerate(actions):
     drone.move(u)
-    z, _, z_p = drone.scan(world, project_scan = True, noisy = True)
+    z, _, _, z_p = drone.scan(world, project_scan = True, noisy = True)
 
     pf.step(z, Z_COV, u, U_COV)
     if t % 3 == 0:
