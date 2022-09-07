@@ -4,6 +4,7 @@ from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 import open3d as o3d
 from numba import njit, prange
+from scipy.spatial import cKDTree
 
 #import teaser only if installed
 import importlib
@@ -39,7 +40,8 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     # R, t = point2plane_registration(src, dst, normals, 
                                 # np.eye(4), threshold = 0.5, k = sensor_std)
     # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.5)
-    R, t = point2point_ransac(src, dst, np.eye(4))
+    R, t = teaser_registration(src, dst)
+    # R, t = point2point_ransac(src, dst, normals)
 
     plot(src, dst, R, t, False)
     return R,t
@@ -63,47 +65,42 @@ def compute_weights(simulated_z_ids, beliefs):
 
     return pzij
 
-def teaser_registration(src, dst):
-    teaser_solver_params = teaserpp_python.RobustRegistrationSolver.Params()
-    teaser_solver_params.cbar2 = 4
-    teaser_solver_params.noise_bound = 0.01
-    teaser_solver_params.estimate_scaling = False
-    teaser_solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
-    teaser_solver_params.rotation_gnc_factor = 1.4
-    teaser_solver_params.rotation_max_iterations = 1000
-    teaser_solver_params.rotation_cost_threshold = 1e-12
-    solver = teaserpp_python.RobustRegistrationSolver(teaser_solver_params)
+def estimate_normals(o3d_pcd, voxel_size = 0.2):
+    o3d_pcd.estimate_normals(
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2.0,
+                                             max_nn=30))
+    return o3d_pcd
 
-    solver.solve(src, dst)
-    solution = solver.getSolution()
-    return solution.rotation, solution.translation.reshape(-1,1)
+def compute_fpfh(o3d_pcd, voxel_size = 0.2):
+    #http://www.open3d.org/docs/release/python_example/pipelines/index.html#icp-registration-py
+    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+        o3d_pcd,
+        o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 5.0,
+                                            max_nn=100))
+    return pcd_fpfh
 
-def point2point_ransac(src, dst, T0, 
+def point2point_ransac(src, dst, normals, 
                         threshold = 0.5, 
                         RANASC_max_iterations = 1000,
                         RANSAC_confidence = 0.99):
-    def preprocess_point_cloud(pcd, voxel_size = 0.2):
-        #http://www.open3d.org/docs/release/python_example/pipelines/index.html#icp-registration-py
-        pcd_down = pcd.voxel_down_sample(voxel_size)
-        pcd_down.estimate_normals(
-            o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2.0,
-                                                max_nn=30))
-        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-            pcd_down,
-            o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 5.0,
-                                                max_nn=100))
-        return (pcd_down, pcd_fpfh)
 
     src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    src = src.voxel_down_sample(0.2)
+    src = estimate_normals(src)
+    src_fpfh = compute_fpfh(src)
+    
     dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
-    src, src_fpfh = preprocess_point_cloud(src)
-    dst, dst_fpfh = preprocess_point_cloud(dst)
+    # dst.normals = o3d.utility.Vector3dVector(normals)
+    dst = dst.voxel_down_sample(0.2)
+    dst = estimate_normals(dst)
+    dst_fpfh = compute_fpfh(dst)
+    
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         src,
         dst,
         src_fpfh,
         dst_fpfh,
-        mutual_filter = False,
+        mutual_filter = True,
         max_correspondence_distance = threshold,
         estimation_method=o3d.pipelines.registration.
         TransformationEstimationPointToPoint(False), #without scaling
@@ -119,6 +116,66 @@ def point2point_ransac(src, dst, T0,
     T =  result.transformation
     R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
     return R, t
+
+def find_knn_cpu(feat0, feat1, knn=1, return_distance=False):
+  feat1tree = cKDTree(feat1)
+  dists, nn_inds = feat1tree.query(feat0, k=knn, n_jobs=-1)
+  if return_distance:
+    return nn_inds, dists
+  else:
+    return nn_inds
+
+def find_correspondences(feats0, feats1, mutual_filter=True):
+  nns01 = find_knn_cpu(feats0, feats1, knn=1, return_distance=False)
+  corres01_idx0 = np.arange(len(nns01))
+  corres01_idx1 = nns01
+
+  if not mutual_filter:
+    return corres01_idx0, corres01_idx1
+
+  nns10 = find_knn_cpu(feats1, feats0, knn=1)
+  corres10_idx1 = np.arange(len(nns10))
+  corres10_idx0 = nns10
+
+  mutual_filter = (corres10_idx0[corres01_idx1] == corres01_idx0)
+  corres_idx0 = corres01_idx0[mutual_filter]
+  corres_idx1 = corres01_idx1[mutual_filter]
+
+  return corres_idx0, corres_idx1
+
+def teaser_registration(src, dst):
+    # src_np = src
+    # src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    # src = src.voxel_down_sample(0.2)
+    # src = estimate_normals(src)
+    # src_fpfh = compute_fpfh(src); src_fpfh = np.array(src_fpfh.data).T
+
+    # dst_np = dst
+    # dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    # dst = dst.voxel_down_sample(0.2)
+    # dst = estimate_normals(dst)
+    # dst_fpfh = compute_fpfh(dst); dst_fpfh = np.array(dst_fpfh.data).T
+
+    # src_corrs, dst_corrs = find_correspondences(
+    # src_fpfh, dst_fpfh, mutual_filter=True)
+
+    # src = src_np[:, src_corrs]
+    # dst = dst_np[:, dst_corrs]
+    plot(src, dst, plot_correspondences = True)
+
+    teaser_solver_params = teaserpp_python.RobustRegistrationSolver.Params()
+    teaser_solver_params.cbar2 = 1
+    teaser_solver_params.noise_bound = 0.01
+    teaser_solver_params.estimate_scaling = False
+    teaser_solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
+    teaser_solver_params.rotation_gnc_factor = 1.4
+    teaser_solver_params.rotation_max_iterations = 10000
+    teaser_solver_params.rotation_cost_threshold = 1e-16
+    solver = teaserpp_python.RobustRegistrationSolver(teaser_solver_params)
+
+    solver.solve(src, dst)
+    solution = solver.getSolution()
+    return solution.rotation, solution.translation.reshape(-1,1)
 
 def point2point_registration(src, dst, T0, threshold = 0.5):
     o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
@@ -174,7 +231,8 @@ def weighted_registration(src, dst, weights):
     t = dst_bar - R @ src_bar
     return R, t
 
-def plot(src, dst, R, t, threeD = False):
+def plot(src, dst, R = np.eye(3), t = np.zeros((3,1)), 
+            threeD = False, plot_correspondences = False):
     src_T = R @ src + t
 
     fig = plt.figure()
@@ -190,7 +248,11 @@ def plot(src, dst, R, t, threeD = False):
         ax.scatter(dst[0,:], dst[1,:], color = 'blue')
         ax.scatter(src[0,:], src[1,:], color = 'red')
         ax.scatter(src_T[0,:], src_T[1,:], color = 'purple', marker = 'x')
+        if plot_correspondences:
+            for s,d in zip(src.T,dst.T):
+                ax.plot([s[0],d[0]], [s[1],d[1]], color = 'black')
         ax.axis('equal')
+    ax.grid('on')
     ax.legend(['dst', 'src', 'src_T'])
     ax.set_title('red -> blue = purple')
     plt.draw()
