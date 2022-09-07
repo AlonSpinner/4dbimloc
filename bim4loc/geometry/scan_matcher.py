@@ -1,110 +1,110 @@
-from numba import prange
 import numpy as np
 import matplotlib.pyplot as plt
-# import teaserpp_python
 from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 import open3d as o3d
+from numba import njit, prange
+
+#import teaser only if installed
+import importlib
+teaser_loader = importlib.util.find_spec("teaserpp_python")
+if teaser_loader is not None:
+    import teaserpp_python
+
+THRESHOLD_WEIGHT_FILTER = 0.4
 
 def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals, 
-                beliefs, scan_to_points, errT):
-
-    #weight of each point pair ~ probability of hitting the solid / max range
-    pzi_j = compute_weights(simulated_z_ids, beliefs)
-    
+                beliefs,
+                sensor_std, sensor_max_range,
+                scan_to_points, errT):
+ 
     #convert scan to points
-    qwz_i = scan_to_points(world_z)
+    qw = scan_to_points(world_z)
+    qs = scan_to_points(simulated_z)
 
-    n = world_z.shape[0] #amount of lasers in scan
-    m = world_z.shape[1] #amount of hits per laser
-    qsz_i = np.zeros((3, n * m))
-    qwz_i_bloated = np.zeros_like(qsz_i)
-    weights = np.zeros(n * m)
+    #prep to filter
+    fw_ids = world_z < sensor_max_range
+    pzi_j = compute_weights(simulated_z_ids, beliefs)
+    qs_weight = pzi_j.flatten()
+    fs_ids = qs_weight > THRESHOLD_WEIGHT_FILTER
 
-    for km in prange(m): #this is wierd, but we loop over amount of hits
-        qsz_i[:, km * n : (km+1) * n] = scan_to_points(sz_i[:,km])
-        qwz_i_bloated[:, km * n : (km+1) * n] = qwz_i #<---- why we loop over amount of hits
-        weights[km * n : (km+1) * n] = pzi_j[:,km]
-                
-    # src = qwz_i_bloated
-    # dst = pose.transform_from(qsz_i) #sensor system to world system
-    
-    # src = pose_real.transform_from(qwz_i)
-    # dst = pose.transform_from(qsz_i[:,:n])
-    src = qwz_i
-    dst = qsz_i[:,:n]
-    normals = szn_i[:,0,:]
-    weights = weights[:n]
-    
-    # bools = np.linalg.norm(src - dst, axis = 0) < 4.0
-    # src = src[:, bools]
-    # dst = dst[:, bools]
-    # normals = normals[bools,:]
-    # weights = weights[bools]
+    src = qw[:, fw_ids]; 
+    dst = qs[:, fs_ids]; 
+    normals = simulated_z_normals.reshape(-1, 3)[fs_ids]
 
-    # R, t = weighted_registration(src, dst, np.ones_like(weights))
-    # src_T = R @ src + t
+    #kill third dimension?
+    # src[2,:] = 0.0
+    # dst[2,:] = 0.0
 
-    o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
-    o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
-    o3d_dst.normals = o3d.utility.Vector3dVector(normals)
-    loss = o3d.pipelines.registration.TukeyLoss(k = 3.0)
-    p2l = o3d.pipelines.registration.TransformationEstimationPointToPlane(loss)
-    trans_init = errT#np.eye(4)
-    threshold = 2
-    reg_p2l = o3d.pipelines.registration.registration_icp(
-        o3d_src, o3d_dst, threshold, trans_init, p2l)
-    T = reg_p2l.transformation
-    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
-    src_T = R @ src + t
-    print(np.linalg.norm(T[:2,[0,1]] - errT[:2,[0,1]]))
+    # R, t = point2plane_registration(src, dst, normals, 
+    #                             np.eye(4), threshold = 0.5, k = sensor_std)
+    R, t = point2point_registration(src, dst, errT, threshold = 3)
 
-    # solver_params = teaserpp_python.RobustRegistrationSolver.Params()
-    # solver_params.cbar2 = 4
-    # solver_params.noise_bound = 0.01
-    # solver_params.estimate_scaling = False
-    # solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
-    # solver_params.rotation_gnc_factor = 1.4
-    # solver_params.rotation_max_iterations = 1000
-    # solver_params.rotation_cost_threshold = 1e-12
-    # print("Parameters are:", solver_params)
+    plot(src, dst, R, t, True)
+    return R,t
 
-    # solver = teaserpp_python.RobustRegistrationSolver(solver_params)
-
-    # solver.solve(src, dst)
-    # solution = solver.getSolution()
-    # print("Solution is:", solution)
-    # src_T = solution.rotation @ src + solution.translation.reshape(-1,1)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(dst[0,:], dst[1,:], color = 'blue')
-    ax.scatter(src[0,:], src[1,:], color = 'red')
-    ax.scatter(src_T[0,:], src_T[1,:], color = 'purple', marker = 'x')
-    ax.axis('equal')
-    ax.legend(['dst', 'src', 'src_T'])
-    ax.set_title('red -> blue = purple')
-    plt.draw()
-    plt.show()
-
-def compute_weights(world_z, simulated_z_ids, beliefs):
+@njit(parallel = True, cache = True)
+def compute_weights(simulated_z_ids, beliefs):
+    #note: WE DO NOT USE WORLD_Z HERE AS WE CANNOT CORRELATE WORLD_Z TO SIMULATED_Z
     N_maxhits = simulated_z_ids.shape[1]
     N_rays = simulated_z_ids.shape[0]
     
-    pzi = np.zeros_like(simulated_z_ids, dtype = np.float32)
+    pzij = np.zeros_like(simulated_z_ids, dtype = np.float32)
     for i in prange(N_rays):
         Pbar = 1.0
         for j in prange(N_maxhits):
             if simulated_z_ids[i,j] == NO_HIT:
-                pzi[i,j] = Pbar #probablity for max hit
+                #don't use max range measurements!
                 break
             
-            pzi[i,j] = Pbar * beliefs[simulated_z_ids[i,j]] #multiply by probablity of hitting solid
+            pzij[i,j] = Pbar * beliefs[simulated_z_ids[i,j]]
             Pbar = Pbar * negate(beliefs[simulated_z_ids[i,j]])
 
-    return pzi
+    return pzij
 
-def weighted_registration(src, dst, weights) -> np.ndarray:
+def teaser_registration(src, dst):
+    teaser_solver_params = teaserpp_python.RobustRegistrationSolver.Params()
+    teaser_solver_params.cbar2 = 4
+    teaser_solver_params.noise_bound = 0.01
+    teaser_solver_params.estimate_scaling = False
+    teaser_solver_params.rotation_estimation_algorithm = teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
+    teaser_solver_params.rotation_gnc_factor = 1.4
+    teaser_solver_params.rotation_max_iterations = 1000
+    teaser_solver_params.rotation_cost_threshold = 1e-12
+    solver = teaserpp_python.RobustRegistrationSolver(teaser_solver_params)
+
+    solver.solve(src, dst)
+    solution = solver.getSolution()
+    return solution.rotation, solution.translation.reshape(-1,1)
+
+def point2point_registration(src, dst, T0, threshold = 0.5):
+    o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    
+    reg_p2p = o3d.pipelines.registration.registration_icp(
+                    o3d_src, o3d_dst, threshold, T0,
+                    o3d.pipelines.registration.TransformationEstimationPointToPoint())
+    
+    T = reg_p2p.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t
+
+def point2plane_registration(src, dst, normals, 
+                                T0, threshold = 0.5, k = 0.1):
+    o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    o3d_dst.normals = o3d.utility.Vector3dVector(normals)
+    
+    loss = o3d.pipelines.registration.TukeyLoss(k = k)
+    reg_p2l = o3d.pipelines.registration.registration_icp(
+                    o3d_src, o3d_dst, threshold, T0,
+                    o3d.pipelines.registration.TransformationEstimationPointToPlane(loss))
+    
+    T = reg_p2l.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t
+
+def weighted_registration(src, dst, weights):
     '''
     based on "Least Squares Rigid Motion Using SVD" 
     by Olga Sorkine-Hornung and Michael Rabinovich
@@ -130,6 +130,28 @@ def weighted_registration(src, dst, weights) -> np.ndarray:
     R = V @ np.diag([1.0, 1.0, np.linalg.det(V @ U.T)]) @ U.T
     t = dst_bar - R @ src_bar
     return R, t
+
+def plot(src, dst, R, t, threeD = False):
+    src_T = R @ src + t
+
+    fig = plt.figure()
+
+    if threeD:
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(dst[0,:], dst[1,:], dst[2,:], color = 'blue')
+        ax.scatter(src[0,:], src[1,:], src[2,:], color = 'red')
+        ax.scatter(src_T[0,:], src_T[1,:], src_T[2,:], color = 'purple', marker = 'x')
+        ax.axis('auto')
+    else:
+        ax = fig.add_subplot(111)
+        ax.scatter(dst[0,:], dst[1,:], color = 'blue')
+        ax.scatter(src[0,:], src[1,:], color = 'red')
+        ax.scatter(src_T[0,:], src_T[1,:], color = 'purple', marker = 'x')
+        ax.axis('equal')
+    ax.legend(['dst', 'src', 'src_T'])
+    ax.set_title('red -> blue = purple')
+    plt.draw()
+    plt.show()
 
 
 

@@ -4,34 +4,15 @@ import bim4loc.random.one_dim as r_1d
 import numpy as np
 from numba import njit
 from numba import prange
-from typing import Callable
+
+from bim4loc.sensors import Lidar
+forward_sensor_model = Lidar.forward_sensor_model
 
 EPS = 1e-16
 
 #extract for numba performance
 gaussian_pdf = r_1d.Gaussian._pdf 
 exponentialT_pdf  = r_1d.ExponentialT._pdf
-
-@njit(cache = True)
-def forward_sensor_model(wz : np.ndarray, #wrapper for Gaussian_pdf
-            sz : np.ndarray, 
-            std : float, 
-            pseudo = True) -> np.ndarray:
-    '''
-    input:
-    wz - world range measurement
-    sz - simulated range measurement
-    std - range sensor standard deviation (equivalent for both sensors)
-    pseudo - if True, doesnt normalize gaussian (p ~ exp(-0.5 * (wz - sz)**2 / std**2))
-
-    output:
-    probabilty of measuring wz : p(wz|sz,m)
-
-    in the future:
-    sigma = f(sz)
-    sigma = f(angle of ray hit)
-    '''
-    return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 @njit(cache = True)
 def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
