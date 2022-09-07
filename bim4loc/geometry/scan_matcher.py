@@ -37,10 +37,11 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     # dst[2,:] = 0.0
 
     # R, t = point2plane_registration(src, dst, normals, 
-    #                             np.eye(4), threshold = 0.5, k = sensor_std)
-    R, t = point2point_registration(src, dst, errT, threshold = 3)
+                                # np.eye(4), threshold = 0.5, k = sensor_std)
+    # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.5)
+    R, t = point2point_ransac(src, dst, np.eye(4))
 
-    plot(src, dst, R, t, True)
+    plot(src, dst, R, t, False)
     return R,t
 
 @njit(parallel = True, cache = True)
@@ -76,6 +77,48 @@ def teaser_registration(src, dst):
     solver.solve(src, dst)
     solution = solver.getSolution()
     return solution.rotation, solution.translation.reshape(-1,1)
+
+def point2point_ransac(src, dst, T0, 
+                        threshold = 0.5, 
+                        RANASC_max_iterations = 1000,
+                        RANSAC_confidence = 0.99):
+    def preprocess_point_cloud(pcd, voxel_size = 0.2):
+        #http://www.open3d.org/docs/release/python_example/pipelines/index.html#icp-registration-py
+        pcd_down = pcd.voxel_down_sample(voxel_size)
+        pcd_down.estimate_normals(
+            o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 2.0,
+                                                max_nn=30))
+        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+            pcd_down,
+            o3d.geometry.KDTreeSearchParamHybrid(radius=voxel_size * 5.0,
+                                                max_nn=100))
+        return (pcd_down, pcd_fpfh)
+
+    src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    src, src_fpfh = preprocess_point_cloud(src)
+    dst, dst_fpfh = preprocess_point_cloud(dst)
+    result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+        src,
+        dst,
+        src_fpfh,
+        dst_fpfh,
+        mutual_filter = False,
+        max_correspondence_distance = threshold,
+        estimation_method=o3d.pipelines.registration.
+        TransformationEstimationPointToPoint(False), #without scaling
+        ransac_n= 3,
+        checkers=[
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
+                0.9),
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                threshold)
+        ],
+        criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(
+            RANASC_max_iterations, RANSAC_confidence))
+    T =  result.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t
 
 def point2point_registration(src, dst, T0, threshold = 0.5):
     o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
