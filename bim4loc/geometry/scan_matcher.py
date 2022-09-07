@@ -6,7 +6,7 @@ from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 import open3d as o3d
 
-def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points, errT):
+def scan_match(wz_i, sz_i, szid_i, szn_i, beliefs, scan_to_points, errT):
 
     #weight of each point pair ~ probability of hitting the solid / max range
     pzi_j = compute_weights(szid_i, beliefs)
@@ -32,23 +32,24 @@ def scan_match(wz_i, sz_i, szid_i, beliefs, scan_to_points, errT):
     # dst = pose.transform_from(qsz_i[:,:n])
     src = qwz_i
     dst = qsz_i[:,:n]
+    normals = szn_i[:,0,:]
     weights = weights[:n]
     
-    bools = np.linalg.norm(src - dst, axis = 0) < 4.0
-    src = src[:, bools]
-    dst = dst[:, bools]
-    weights = weights[bools]
+    # bools = np.linalg.norm(src - dst, axis = 0) < 4.0
+    # src = src[:, bools]
+    # dst = dst[:, bools]
+    # normals = normals[bools,:]
+    # weights = weights[bools]
 
     # R, t = weighted_registration(src, dst, np.ones_like(weights))
     # src_T = R @ src + t
 
     o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
-    o3d_src.estimate_normals()
     o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
-    # o3d_dst.estimate_normals()
-    loss = o3d.pipelines.registration.TukeyLoss(k = 0.3)
+    o3d_dst.normals = o3d.utility.Vector3dVector(normals)
+    loss = o3d.pipelines.registration.TukeyLoss(k = 3.0)
     p2l = o3d.pipelines.registration.TransformationEstimationPointToPlane(loss)
-    trans_init = np.eye(4)
+    trans_init = errT#np.eye(4)
     threshold = 2
     reg_p2l = o3d.pipelines.registration.registration_icp(
         o3d_src, o3d_dst, threshold, trans_init, p2l)
