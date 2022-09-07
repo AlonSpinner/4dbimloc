@@ -65,8 +65,9 @@ visApp.setup_default_camera("simulation")
 
 time.sleep(1)
 dt = 0.0
+start_time = time.time()
 for t,u in enumerate(actions):
-    keyboard.wait('space')
+    # keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
@@ -74,7 +75,8 @@ for t,u in enumerate(actions):
     z, z_ids, _, z_p  = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
-    filters.exact(beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    filters.exact(beliefs, z, simulated_z, simulated_z_ids, 
+                    sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     
     pcd_scan.update(z_p.T)
@@ -85,8 +87,9 @@ for t,u in enumerate(actions):
     
     visApp.redraw_all_scenes()
     
-    step_end = time.time()
-    time.sleep(max(dt - (step_end - step_start),0))
+    # step_end = time.time()
+    # time.sleep(max(dt - (step_end - step_start),0))
 
-print('finished')
+end_time = time.time()
+print(f'finished in {end_time - start_time}')
 visApp.redraw_all_scenes()

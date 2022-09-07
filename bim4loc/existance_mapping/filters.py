@@ -4,6 +4,7 @@ import bim4loc.random.one_dim as r_1d
 import numpy as np
 from numba import njit
 from numba import prange
+from typing import Callable
 
 EPS = 1e-16
 
@@ -33,7 +34,8 @@ def forward_sensor_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 @njit(cache = True)
-def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range):
+def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
+                        sensor_std, sensor_max_range):
     '''
     based on the awesome papers "Autonomous Exploration with Exact Inverse Sensor Models"
     and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
@@ -112,7 +114,8 @@ def exact(beliefs : np.ndarray,
         sz_i = simulated_z[i]
         szid_i =  simulated_z_ids[i]
 
-        pj_zi, _ = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, sensor_std, sensor_max_range)
+        pj_zi, _ = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
+                                sensor_std, sensor_max_range)
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j]
             beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij], p)

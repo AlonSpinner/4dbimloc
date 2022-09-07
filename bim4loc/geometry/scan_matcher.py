@@ -1,21 +1,22 @@
 from numba import prange
 import numpy as np
 import matplotlib.pyplot as plt
-import teaserpp_python
+# import teaserpp_python
 from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 import open3d as o3d
 
-def scan_match(wz_i, sz_i, szid_i, szn_i, beliefs, scan_to_points, errT):
+def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals, 
+                beliefs, scan_to_points, errT):
 
     #weight of each point pair ~ probability of hitting the solid / max range
-    pzi_j = compute_weights(szid_i, beliefs)
+    pzi_j = compute_weights(simulated_z_ids, beliefs)
     
     #convert scan to points
-    qwz_i = scan_to_points(wz_i)
+    qwz_i = scan_to_points(world_z)
 
-    n = szid_i.shape[0] #amount of lasers in scan
-    m = szid_i.shape[1] #amount of hits per laser
+    n = world_z.shape[0] #amount of lasers in scan
+    m = world_z.shape[1] #amount of hits per laser
     qsz_i = np.zeros((3, n * m))
     qwz_i_bloated = np.zeros_like(qsz_i)
     weights = np.zeros(n * m)
@@ -86,20 +87,20 @@ def scan_match(wz_i, sz_i, szid_i, szn_i, beliefs, scan_to_points, errT):
     plt.draw()
     plt.show()
 
-def compute_weights(szid, beliefs):
-    N_maxhits = szid.shape[1]
-    N_rays = szid.shape[0]
+def compute_weights(world_z, simulated_z_ids, beliefs):
+    N_maxhits = simulated_z_ids.shape[1]
+    N_rays = simulated_z_ids.shape[0]
     
-    pzi = np.zeros_like(szid, dtype = np.float32)
+    pzi = np.zeros_like(simulated_z_ids, dtype = np.float32)
     for i in prange(N_rays):
         Pbar = 1.0
         for j in prange(N_maxhits):
-            if szid[i,j] == NO_HIT:
+            if simulated_z_ids[i,j] == NO_HIT:
                 pzi[i,j] = Pbar #probablity for max hit
                 break
             
-            pzi[i,j] = Pbar * beliefs[szid[i,j]]
-            Pbar = Pbar * negate(beliefs[szid[i,j]])
+            pzi[i,j] = Pbar * beliefs[simulated_z_ids[i,j]] #multiply by probablity of hitting solid
+            Pbar = Pbar * negate(beliefs[simulated_z_ids[i,j]])
 
     return pzi
 

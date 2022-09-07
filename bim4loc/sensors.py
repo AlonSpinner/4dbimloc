@@ -2,14 +2,13 @@ from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.poses import Pose2z
 import bim4loc.geometry.raycaster as raycaster
 import numpy as np
-from typing import Union
 from functools import partial
 
 class Sensor():
     def __init__(self):
         pass
 
-    def sense(self, pose : Pose2z, noisy = True) -> Union[np.ndarray,list[str]]: #to be overwritten
+    def sense(self, pose : Pose2z, noisy = True): #to be overwritten
         '''
         returns np.ndarray of measurement values
         returns list of viewed solid names
