@@ -13,7 +13,8 @@ import open3d as o3d
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = Pose2z(3,3,0,1.5))
-sensor = Lidar(); sensor.std = 0.05; sensor.piercing = False
+sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 5), angles_v = np.array([0])); 
+sensor.std = 0.05; sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
@@ -36,7 +37,7 @@ visApp.add_solid(pcd_scan)
 time.sleep(1)
 
 for a in actions:
-    # keyboard.wait('space')
+    keyboard.wait('space')
     drone.move(a)
     z, z_ids, z_normals, p = drone.scan(world, project_scan = True)
     for s in world.solids:
