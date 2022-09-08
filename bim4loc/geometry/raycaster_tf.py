@@ -1,15 +1,16 @@
 import numpy as np
-from numba import njit, prange
 from typing import Union
+import tensorflow as tf
 
 EPS = 1e-16
 NO_HIT = 2161354
+INF_RANGE = 1e6
 
-@njit(parallel = True, cache = True)
-def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
-                    meshes_iguid : np.ndarray,
+@tf.function
+def raycast(rays : tf.Tensor, meshes_v :  tf.Tensor, meshes_t :  tf.Tensor,
+                    meshes_iguid :  tf.Tensor,
                     inc_v : int = 60, inc_t : int = 20,
-                    max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
+                    max_hits : int = 10) -> Union[ tf.Tensor,  tf.Tensor]:
     '''
     input:
         rays - array of shape (n_rays, 6) containing [origin,direction]
@@ -32,52 +33,52 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
 
-    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
-    z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
-    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
+    z_values = tf.Variable(tf.fill((N_rays, max_hits), INF_RANGE))
+    z_ids = tf.Variable(tf.fill((N_rays, max_hits), NO_HIT))
+    z_normals = tf.Variable(tf.fill((N_rays, max_hits, 3), 0.0))
 
-    for i_r in prange(N_rays):
+    for i_r in tf.range(N_rays):
         ray = rays[i_r]
 
-        for i_m in prange(N_meshes):
+        for i_m in tf.range(N_meshes):
             finished_mesh = False
 
             m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]
             m_v = meshes_v[i_m * inc_v : (i_m + 1) * inc_v]
-            for i_t in prange(m_t.shape[0]):
+            for i_t in tf.range(m_t.shape[0]):
                 triangle = m_v[m_t[i_t]]
-                if triangle.sum() == 0: #empty triangle
+                if tf.reduce_sum(triangle) == 0: #empty triangle
                     finished_mesh = True
                     break
                 
                 z, n = ray_triangle_intersection(ray, triangle)
-                n = n.reshape((1,3))
+                n = tf.reshape(n,(1,3))
                 if z != NO_HIT and z > 0:
                     ii = np.searchsorted(z_values[i_r], z)
                     if ii == max_hits: #new z is the biggest, throw it away
                         pass
                     elif ii == 0:
-                        z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
-                        z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
-                        z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
+                        z_values[i_r].assign(tf.stack((tf.constant([z]), z_values[i_r][:-1])))
+                        z_ids[i_r].assign(tf.stack((tf.constant([meshes_iguid[i_m]]), z_ids[i_r][:-1])))
+                        z_normals[i_r].assign(tf.stack((n, z_normals[i_r][ii:-1])))
                     else:
-                        z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
-                        z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
-                        z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
+                        z_values[i_r].assign(tf.stack((z_values[i_r][:ii], tf.constant([z]), z_values[i_r][ii:-1])))
+                        z_ids[i_r].assign(tf.stack((z_ids[i_r][:ii], tf.constant([meshes_iguid[i_m]]), z_ids[i_r][ii:-1])))
+                        z_normals[i_r].assign(tf.stack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:])))
             
             if finished_mesh:
                 break
     
     return z_values, z_ids, z_normals
 
-@njit(fastmath = True, cache = True)
-def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
+@tf.function
+def ray_triangle_intersection(ray : tf.Tensor, triangle : tf.Tensor):
     '''
     based on https://github.com/substack/ray-triangle-intersection/blob/master/index.js
 
     input:
-        ray - np.array([x,y,z,vx,vy,vz])
-        triangle - np.array([[ax,ay,az],
+        ray ~ np.array([x,y,z,vx,vy,vz])
+        triangle ~ np.array([[ax,ay,az],
                             [bx,by,bz],
                             [cx,cy,cz]])
 
@@ -88,37 +89,37 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
     dir = ray[3:]
     edge1 = triangle[1] - triangle[0]
     edge2 = triangle[2] - triangle[0]
-    n = np.zeros(3)
+    n = tf.zeros(3)
 
-    pvec = np.cross(dir,edge2)
-    det = np.dot(edge1,pvec)
+    pvec = tf.linalg.cross(dir,edge2)
+    det = tf.tensordot(edge1,pvec,1)
     if det < EPS: #abs(det) < EPS if we want internal intersection
         return NO_HIT, n
     
     inv_det = 1.0/det
     tvec  = eye - triangle[0]
-    u = np.dot(tvec, pvec) * inv_det
-    if u < 0 or u > 1.0:
+    u = tf.tensordot(tvec, pvec,1) * inv_det
+    if u < 0.0 or u > 1.0:
         return NO_HIT, n
-    qvec = np.cross(tvec,edge1)
-    v = np.dot(dir,qvec) * inv_det
-    if v < 0 or u + v > 1.0:
+    qvec = tf.linalg.cross(tvec,edge1)
+    v = tf.tensordot(dir,qvec,1) * inv_det
+    if v < 0.0 or u + v > 1.0:
         return NO_HIT, n
 
-    z = np.dot(edge2,qvec) * inv_det
-    n = np.cross(edge1,edge2)
-    n = n/np.linalg.norm(n)
+    z = tf.tensordot(edge2,qvec,1) * inv_det
+    n = tf.linalg.cross(edge1,edge2)
+    n = n/tf.linalg.norm(n)
     return z, n
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
     import time
-    ray = np.array([0,0,0,1,0,0],dtype=float)
-    triangle = np.array([[2,-1,-1],
-                        [2,0,1],
-                        [2,1,-1]], dtype = float)
+    ray = tf.constant([0,0,0,1,0,0], dtype = tf.float64)
+    triangle = tf.constant([[2,-1,-1],
+                            [2,0,1],
+                            [2,1,-1]], dtype = tf.float64)
     
-    N = int(1e6)
+    N = int(1e4)
     ray_triangle_intersection(ray, triangle)
     s = time.time()
     for _ in range(N):
@@ -127,5 +128,7 @@ if __name__ == "__main__":
     print((e-s)/N)
 
 
-    raycast(ray.reshape((1,6)),triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
-    # raycast.parallel_diagnostics()
+    raycast(ray.reshape((1,6)),
+            triangle,np.array([[0,1,2]]),
+            tf.constant([0]), 3, 1, 1)
+    raycast.parallel_diagnostics()

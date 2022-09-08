@@ -11,7 +11,7 @@ from copy import deepcopy, copy
 import time
 import logging
 import keyboard
-import bim4loc.geometry.scan_matcher as scan_matcher
+import bim4loc.geometry.scan_matcher.scan_matcher as scan_matcher
 
 np.random.seed(25)
 
