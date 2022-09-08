@@ -118,14 +118,22 @@ if __name__ == "__main__":
                         [2,0,1],
                         [2,1,-1]], dtype = float)
     
-    N = int(1e6)
-    ray_triangle_intersection(ray, triangle)
+    # N = int(1e6)
+    # ray_triangle_intersection(ray, triangle)
+    # s = time.time()
+    # for _ in range(N):
+    #     ray_triangle_intersection(ray, triangle)
+    # e = time.time()
+    # print((e-s)/N)
+
+    ray = ray.reshape((1,6))
+    raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+    N = int(1e2)    
+    print('started')
     s = time.time()
     for _ in range(N):
-        ray_triangle_intersection(ray, triangle)
+        raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
     e = time.time()
     print((e-s)/N)
-
-
-    raycast(ray.reshape((1,6)),triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+    
     # raycast.parallel_diagnostics()
