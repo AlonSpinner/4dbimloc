@@ -61,9 +61,9 @@ class PcdSolid(o3dSolid):
         self.name = name
         
         if pcd is None:
-            pcd = [[0,0,0]]
-            self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
-
+            pcd = [[100,100,100]]
+        self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
+        
         mat = rendering.MaterialRecord()
         mat.shader = shader
         mat.point_size = 10.0
@@ -81,18 +81,23 @@ class PcdSolid(o3dSolid):
             self.geometry.normals = o3d.utility.Vector3dVector(normals)
 
 class LinesSolid(o3dSolid):
-    def __init__(self, pts : np.ndarray = None, indicies : np.ndarray = None):
+    def __init__(self, pts : np.ndarray = None, 
+                       indicies : np.ndarray = None,
+                       color : np.ndarray = np.array([1.0, 0.8, 0.0])):
+        
         self.name = 'lines'
-        self.color = np.array([1.0, 0.8, 0.0])
+        self.color = color
         
         if pts is None or indicies is None:
-            p0 = [[0.0, 0.0, 0.0],
+            pts = [[0.0, 0.0, 0.0],
                   [1.0, 0.0, 0.0]]
-            l0 = [[0,1]]
-            self.geometry = o3d.geometry.LineSet()
-            self.geometry.points = o3d.utility.Vector3dVector(p0)
-            self.geometry.lines = o3d.utility.Vector2iVector(l0)
-            self.geometry.colors = o3d.utility.Vector3dVector([self.color])
+            indicies = [[0,1]]
+
+        self.geometry = o3d.geometry.LineSet()
+        self.geometry.points = o3d.utility.Vector3dVector(pts)
+        self.geometry.lines = o3d.utility.Vector2iVector(indicies)
+        c = np.tile(self.color, (indicies.shape[0], 1))
+        self.geometry.colors = o3d.utility.Vector3dVector(c)
 
         mat = rendering.MaterialRecord()
         mat.shader = "unlitLine"
