@@ -81,7 +81,7 @@ for t,u in enumerate(actions):
     
     z, z_ids, _, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    errT = Pose2z(1.0,0,0 *np.pi/8,0)
+    errT = Pose2z(1.0,0,1 *np.pi/8,0)
     simulated_drone.pose = drone.pose.compose(errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 

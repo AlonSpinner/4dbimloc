@@ -56,8 +56,15 @@ class IfcSolid(o3dSolid):
             )
 
 class PcdSolid(o3dSolid):
-    def __init__(self, name : str = 'pcd', pcd : np.ndarray = None,
+    def __init__(self, name : str = 'pcd', 
+                    pcd : np.ndarray = None,
+                    color = [1.0, 0.8, 0.0, 1.0],
                     shader : Literal["defaultUnlit", "normals"] = "defaultUnlit"):
+        
+        '''
+        pcd - m X 3
+        '''
+        
         self.name = name
         
         if pcd is None:
@@ -67,7 +74,7 @@ class PcdSolid(o3dSolid):
         mat = rendering.MaterialRecord()
         mat.shader = shader
         mat.point_size = 10.0
-        mat.base_color = [1.0, 0.8, 0.0, 1.0]
+        mat.base_color = color
         self.material = mat
 
     def update(self, pcd : np.ndarray, normals = None) -> None:
@@ -81,17 +88,23 @@ class PcdSolid(o3dSolid):
             self.geometry.normals = o3d.utility.Vector3dVector(normals)
 
 class LinesSolid(o3dSolid):
-    def __init__(self, pts : np.ndarray = None, 
+    def __init__(self, name = 'lines',
+                       pts : np.ndarray = None, 
                        indicies : np.ndarray = None,
+                       line_width : float = 2.0,
                        color : np.ndarray = np.array([1.0, 0.8, 0.0])):
+        '''
+        pts - m X 3
+        indicies - m X 2
+        '''
         
-        self.name = 'lines'
+        self.name = name
         self.color = color
         
         if pts is None or indicies is None:
             pts = [[0.0, 0.0, 0.0],
                   [1.0, 0.0, 0.0]]
-            indicies = [[0,1]]
+            indicies = np.array([[0,1]])
 
         self.geometry = o3d.geometry.LineSet()
         self.geometry.points = o3d.utility.Vector3dVector(pts)
@@ -101,10 +114,10 @@ class LinesSolid(o3dSolid):
 
         mat = rendering.MaterialRecord()
         mat.shader = "unlitLine"
-        mat.line_width = 2 
+        mat.line_width = line_width 
         self.material = mat
 
-    def update(self, pts : np.ndarray = None, indicies : np.ndarray = None) -> None:
+    def update(self, pts : np.ndarray, indicies : np.ndarray) -> None:
         '''
         input:
         pcd - 3Xm matrix
@@ -114,6 +127,44 @@ class LinesSolid(o3dSolid):
         c = np.tile(self.color, (indicies.shape[0], 1))
         self.geometry.colors = o3d.utility.Vector3dVector(c)
 
+class ParticlesSolid(o3dSolid):
+    def __init__(self, name = 'particles', 
+                       poses : list[Pose2z] = None, 
+                       scale = 0.4,
+                       line_width = 4.0,
+                       line_color : np.ndarray = np.array([0.0, 0.0, 0.0]),
+                       tail_color : np.ndarray = np.array([0.0, 1.0, 1.0, 1.0])):
+        '''
+        poses - mx4, [x,y,theta,z]
+        '''
+        self.name = name
+        self.scale = scale
+        
+        if poses is None:
+            poses = [Pose2z.identity()]
+
+        heads = np.hstack([p.retract((scale,0,0,0)).t for p in poses]) #3xm
+        tails = np.hstack([p.t for p in poses]) #3xm
+        indicies =  np.vstack((np.arange(0,len(poses), dtype = int), #2xm
+                                np.arange(len(poses),2 * len(poses), dtype = int)))
+
+        self.lines = LinesSolid(f"{name}_lines",
+                                np.hstack((heads,tails)).T,  #<--- transpose
+                                indicies.T, #<--- transpose
+                                line_width,
+                                color = line_color)
+        self.tails = PcdSolid(f"{name}_tails",
+                                pcd = tails.T,  #<--- transpose
+                                color = tail_color)
+
+    def update(self, poses : list[Pose2z]) -> None:
+        heads = np.hstack([p.retract((self.scale,0,0,0)).t for p in poses])
+        tails = np.hstack([p.t for p in poses])
+        indicies =  np.vstack((np.arange(0,len(poses), dtype = int),
+                                np.arange(len(poses),2 * len(poses), dtype = int)))
+
+        self.lines.update(np.hstack((heads,tails)).T, indicies.T)
+        self.tails.update(tails.T)
 
 class DynamicSolid(o3dSolid):
     base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh

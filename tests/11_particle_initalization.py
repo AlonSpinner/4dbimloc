@@ -2,7 +2,7 @@ import numpy as np
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import PcdSolid, ifc_converter, LinesSolid
+from bim4loc.solids import PcdSolid, ifc_converter, LinesSolid, ParticlesSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
@@ -38,28 +38,16 @@ drone.mount_sensor(sensor)
 
 bounds_min, bounds_max, _ = world.bounds()
 Nparticles = 100
-inital_poses = []
+particle_poses = []
 for i in range(Nparticles):
-    inital_poses.append(
+    particle_poses.append(
         Pose2z(np.random.uniform(bounds_min[0], bounds_max[0]),
                 np.random.uniform(bounds_min[1], bounds_max[1]),
                 np.random.uniform(-np.pi, +np.pi),
                 0)
     )
 
-
-s = np.array([[0.4],
-              [0],
-              [0]])
-heads = np.hstack([p.transform_from(s) for p in inital_poses])
-tails = np.hstack([p.t for p in inital_poses])
-indicies =  np.vstack((np.arange(0,len(inital_poses), dtype = int),
-            np.arange(len(inital_poses),2 * len(inital_poses), dtype = int)))
-quiver_lines = LinesSolid(np.hstack((heads,tails)).T,
-                          indicies.T,
-                          np.array([0.0,0.0,0.0]))
-quiver_lines.material.line_width = 4.0
-quiver_tails = PcdSolid(pcd = tails.T)
+particles = ParticlesSolid(poses = particle_poses)
 
 #create world scene
 visApp = VisApp()
@@ -68,5 +56,18 @@ visApp.redraw("world")
 visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
-visApp.add_solid(quiver_tails, "world")
-visApp.add_solid(quiver_lines, "world")
+visApp.add_solid(particles.lines, "world")
+visApp.add_solid(particles.tails, "world")
+
+u = Pose2z(1.0 ,0.0 ,0.0 ,0.0)
+for i in range(10):
+    drone.move(u)
+
+    particle_poses = [p.compose(u) for p in particle_poses]
+
+    particles.update(particle_poses)
+
+    visApp.update_solid(drone.solid)
+    visApp.update_solid(particles.lines)
+    visApp.update_solid(particles.tails)
+    time.sleep(0.1)
