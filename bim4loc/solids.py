@@ -127,6 +127,52 @@ class LinesSolid(o3dSolid):
         c = np.tile(self.color, (indicies.shape[0], 1))
         self.geometry.colors = o3d.utility.Vector3dVector(c)
 
+class ScanSolid(o3dSolid):
+    def __init__(self, name = 'scan',
+                p0 : np.ndarray = None,
+                pts : np.ndarray = None, 
+                line_width : float = 2.0,
+                color : np.ndarray = np.array([1.0, 0.8, 0.0])):
+
+        '''
+        p0 -  3 x 1
+        pts - 3 x m
+        '''
+
+        self.name = name
+        self.color = color
+
+        if p0 is None or pts is None:
+            p0 = np.array([[0.0] ,[0.0] ,[0.0]])
+            pts = np.array([[0.1], [0.0], [0.0]])
+
+        pts = np.hstack((p0, pts))
+        indicies = np.zeros((pts.shape[1],2), dtype = int)
+        indicies[:,1] = np.arange(pts.shape[1])
+        
+        self.geometry = o3d.geometry.LineSet()
+        self.geometry.points = o3d.utility.Vector3dVector(pts.T)
+        self.geometry.lines = o3d.utility.Vector2iVector(indicies)
+        c = np.tile(self.color, (indicies.shape[0], 1))
+        self.geometry.colors = o3d.utility.Vector3dVector(c)
+
+        mat = rendering.MaterialRecord()
+        mat.shader = "unlitLine"
+        mat.line_width = line_width 
+        self.material = mat
+
+    def update(self,  p0 : np.ndarray,
+                        pts : np.ndarray):
+
+        pts = np.hstack((p0, pts))
+        indicies = np.zeros((pts.shape[1],2), dtype = int)
+        indicies[:,1] = np.arange(pts.shape[1])
+        
+        self.geometry.points = o3d.utility.Vector3dVector(pts.T)
+        self.geometry.lines = o3d.utility.Vector2iVector(indicies)
+        c = np.tile(self.color, (indicies.shape[0], 1))
+        self.geometry.colors = o3d.utility.Vector3dVector(c)
+
 class ParticlesSolid(o3dSolid):
     def __init__(self, name = 'particles', 
                        poses : list[Pose2z] = None, 

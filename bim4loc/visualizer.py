@@ -116,6 +116,7 @@ class VisApp():
                         # post to the main thread to safely access UI items.
                         def update_label():
                             info.text = text
+                            print(text) #<-------------------------------------------- PRINT TO CONSOLE
                             # info.visible = (text != "")
                             # We are sizing the info label to be exactly the right size,
                             # so since the text likely changed width, we need to

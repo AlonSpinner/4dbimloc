@@ -2,16 +2,12 @@ import numpy as np
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import PcdSolid, ifc_converter, LinesSolid, ParticlesSolid
+from bim4loc.solids import ifc_converter, ParticlesSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
-import bim4loc.existance_mapping.filters as filters
-from copy import deepcopy, copy
 import time
 import logging
-import keyboard
-import bim4loc.geometry.scan_matcher.scan_matcher as scan_matcher
 
 np.random.seed(25)
 

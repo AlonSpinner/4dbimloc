@@ -2,7 +2,7 @@ import numpy as np
 from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
+from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
@@ -33,12 +33,13 @@ visApp.add_solid(drone.solid)
 pcd_scan = PcdSolid(shader = "normals")
 # pcd_scan.material.point_size = 5.0
 visApp.add_solid(pcd_scan)
-line_scan = LinesSolid()
+line_scan = ScanSolid()
 visApp.add_solid(line_scan)
+
 
 time.sleep(1)
 for a in actions:
-    keyboard.wait('space')
+    # keyboard.wait('space')
     
     drone.move(a)
     z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10)
@@ -55,11 +56,7 @@ for a in actions:
             world.solids[s_i].material.base_color = np.hstack((s.ifc_color,1))
 
     pcd_scan.update(p.T, z_normals.reshape(-1,3))
-    p = np.hstack((drone.pose.t, p))
-    line_ids = np.zeros((p.shape[1],2), dtype = int)
-    line_ids[:,1] = np.arange(p.shape[1])
-    line_scan.update(p.T, line_ids)
-
+    line_scan.update(drone.pose.t, p)
     [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)
