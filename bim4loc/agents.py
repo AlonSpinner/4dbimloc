@@ -28,11 +28,16 @@ class Drone:
         #currently assume sensor pose is identical to agent pose
         self.sensor : Lidar = sensor
 
-    def move(self, a : Pose2z, cov = None):
-        if cov is not None:
-            a = Pose2z(*np.random.multivariate_normal(a.Log(), cov))
-            
-        self.pose = self.pose.compose(a)
+    def move(self, u : Union[Pose2z, np.ndarray], cov = None):
+        if isinstance(u, Pose2z):
+            if cov is not None:
+                u = Pose2z(*np.random.multivariate_normal(u.Log(), cov))
+            self.pose = self.pose.compose(u)
+        else:
+            if cov is not None:
+                u = np.random.multivariate_normal(u, cov)
+            self.pose = self.pose.retract(u)
+        
         self.solid.update_geometry(self.pose)
 
     def scan(self, m : RayCastingMap, project_scan = False, noisy = True) -> Union[np.ndarray, np.ndarray, list[str]]:
