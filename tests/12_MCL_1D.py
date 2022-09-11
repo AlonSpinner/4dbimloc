@@ -1,6 +1,6 @@
 import numpy as np
 from bim4loc.geometry.poses import Pose2z
-from bim4loc.binaries.paths import IFC_LINE_UP_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_LINE_UP_DENSE_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
 from bim4loc.agents import Drone
@@ -10,6 +10,7 @@ from bim4loc.random.one_dim import Gaussian
 import time
 import logging
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -20,21 +21,20 @@ solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
 #INITALIZE DRONE AND SENSOR
-drone = Drone(pose = Pose2z(3.0 ,1.0 ,0.0 , 1.5))
+drone = Drone(pose = Pose2z(3.0 ,10.0 ,0.0 , 1.5))
 sensor = Lidar(angles_u = np.array([0.0]),
                  angles_v = np.array([0.0])); 
 sensor.std = 0.1
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
-U_COV = np.diag([0.0, 0.1, 0.0, 0.0])
 
 simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 100
+N_particles = 200
 particles = []
 for i in range(N_particles):
     particles.append(
@@ -59,11 +59,12 @@ visApp.add_solid(vis_particles.tails, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
 
+u = np.array([0.0 ,0.2 ,0.0 ,0.0])
+U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
 #LOOP
-u = np.array([0.0 ,1.0 ,0.0 ,0.0])
-for i in range(100):
+for t in range(100):
     #move drone
-    drone.move(u, U_COV)
+    drone.move(u)
     
     #produce measurement
     z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True)
@@ -84,7 +85,7 @@ for i in range(100):
     weights = weights / sum_weights
     
     #resample
-    if i % 4 == 0:
+    if (t % 5) == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]
@@ -97,6 +98,7 @@ for i in range(100):
             new_particles.append(deepcopy(particles[idx]))
         particles = new_particles
         weights = np.ones(N_particles) / N_particles
+        # print('resampled')
 
     #updating drawings
     vis_scan.update(drone.pose.t, z_p)
@@ -105,4 +107,9 @@ for i in range(100):
     visApp.update_solid(drone.solid)
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
-    time.sleep(0.3)
+
+    # plt.scatter([p.t[1] for p in particles], weights)
+    # plt.xlim([bounds_min[1], bounds_max[1]])
+    # plt.show()
+
+    # time.sleep(0.1)
