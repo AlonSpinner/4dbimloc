@@ -1,6 +1,6 @@
 import numpy as np
 from bim4loc.geometry.poses import Pose2z
-from bim4loc.binaries.paths import IFC_LINE_UP_DENSE_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_LINEUP_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
 from bim4loc.agents import Drone
@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
+
+#FUNCTIONS
+gaussian_pdf = Gaussian._pdf
 
 #BUILD WORLD
 solids = ifc_converter(IFC_PATH)
@@ -34,7 +37,7 @@ simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 200
+N_particles = 100
 particles = []
 for i in range(N_particles):
     particles.append(
@@ -78,7 +81,7 @@ for t in range(100):
                                                                     world, n_hits = 1, 
                                                                     noisy = False)
         
-        pz = Gaussian._pdf(particle_z_values[0], simulated_sensor.std, z, pseudo = True)
+        pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values[0], simulated_sensor.std, z, pseudo = True)
         weights[i] = weights[i] * pz
         sum_weights += weights[i]
     #normalize
