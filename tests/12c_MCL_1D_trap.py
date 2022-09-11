@@ -7,6 +7,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
+from bim4loc.existance_mapping.filters import exact
 import time
 import logging
 from copy import deepcopy
@@ -22,12 +23,11 @@ gaussian_pdf = Gaussian._pdf
 #BUILD WORLD
 solids = ifc_converter(IFC_PATH)
 constructed_solids = [s.clone() for s in solids[:-2]]
-for s in solids:
-    s.set_existance_belief_and_shader(1.0)
-solids[6].set_existance_belief_and_shader(0.5)
-solids[10].set_existance_belief_and_shader(0.5)
-solids[-1].set_existance_belief_and_shader(0.5)
-solids[-2].set_existance_belief_and_shader(0.5)
+
+beliefs = 1.0 * np.ones(len(solids))
+beliefs[[-1, -2, 6, 10]] = 0.5
+for i, b in enumerate(beliefs):
+    solids[i].set_existance_belief_and_shader(b)
 
 simulation = RayCastingMap(solids)
 world = RayCastingMap(constructed_solids)
@@ -47,14 +47,17 @@ simulated_sensor.piercing = True
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
 N_particles = 100
-particles = []
+particle_poses = []
 for i in range(N_particles):
-    particles.append(
+    particle_poses.append(
         Pose2z(3.0,
                 np.random.uniform(bounds_min[1], bounds_max[1]),
                 0.0,
                 0.0)
     )
+
+particle_beliefs = np.tile(beliefs, (N_particles,1))
+
 #initalize weights
 weights = np.ones(N_particles) / N_particles
 
@@ -74,7 +77,7 @@ visApp.add_scene("simulation", "world")
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
-vis_particles = ParticlesSolid(poses = particles)
+vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
 visApp.add_solid(vis_particles.tails, "simulation")
 
@@ -92,11 +95,13 @@ for t in range(100):
     #compute weights and normalize
     sum_weights = 0.0
     for i in range(N_particles):
-        particles[i] = particles[i].retract(np.random.multivariate_normal(u, U_COV))
-        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particles[i], 
+        particle_poses[i] = particle_poses[i].retract(np.random.multivariate_normal(u, U_COV))
+        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particle_poses[i], 
                                                                     simulation, n_hits = 2, 
                                                                     noisy = False)
         
+        exact(particle_beliefs[i], z, particle_z_values, particle_z_ids, simulated_sensor.std, simulated_sensor.max_range)
+
         pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, simulated_sensor.std, z, pseudo = True)
         weights[i] = weights[i] * np.max(pz)
         sum_weights += weights[i]
@@ -108,25 +113,33 @@ for t in range(100):
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]
-        new_particles = []
+        new_particle_poses = []
+        new_particle_beliefs = np.zeros_like(particle_beliefs)
         for i in range(N_particles):
             uu = r + i*1/N_particles
             while uu > c:
                 idx += 1
                 c += weights[idx]
-            new_particles.append(deepcopy(particles[idx]))
-        particles = new_particles
+            new_particle_poses.append(deepcopy(particle_poses[idx]))
+            new_particle_beliefs[i] = particle_beliefs[idx]
+        particle_poses = new_particle_poses
+        particle_beliefs = new_particle_beliefs
         weights = np.ones(N_particles) / N_particles
         
         # print('resampled')
+
+    if t % 5 != 0:
+        best_particle_idx = np.argmax(weights)
+        simulation.update_solids_beliefs(particle_beliefs[best_particle_idx])
 
     #updating drawings
     vis_scan.update(drone.pose.t, z_p)
     visApp.update_solid(drone.solid, "world")
     visApp.update_solid(vis_scan, "world")
-    vis_particles.update(particles)
+    vis_particles.update(particle_poses)
     visApp.update_solid(vis_particles.lines, "simulation")
     visApp.update_solid(vis_particles.tails, "simulation")
+    [visApp.update_solid(s,"simulation") for s in simulation.solids]
 
     # plt.scatter([p.t[1] for p in particles], weights)
     # plt.xlim([bounds_min[1], bounds_max[1]])

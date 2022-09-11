@@ -4,3 +4,7 @@ import matplotlib.pyplot as plt
 p = r_1d.ExponentialT(0.2, 20)
 p.plot()
 plt.show()
+
+# p = r_1d.GaussianT(0, 2, -3, 5)
+# p.plot()
+# plt.show()

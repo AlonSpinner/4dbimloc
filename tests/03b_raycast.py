@@ -39,7 +39,7 @@ visApp.add_solid(line_scan)
 
 time.sleep(1)
 for a in actions:
-    # keyboard.wait('space')
+    keyboard.wait('space')
     
     drone.move(a)
     z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10)
