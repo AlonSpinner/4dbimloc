@@ -17,7 +17,7 @@ THRESHOLD_WEIGHT_FILTER = 0.4
 def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals, 
                 beliefs,
                 sensor_std, sensor_max_range,
-                scan_to_points, errT):
+                scan_to_points):
  
     #convert scan to points
     qw = scan_to_points(world_z)

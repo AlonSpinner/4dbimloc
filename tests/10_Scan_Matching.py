@@ -98,8 +98,7 @@ for t,u in enumerate(actions):
     R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals, 
                 beliefs, 
                 sensor.std, sensor.max_range,
-                sensor.get_scan_to_points(),
-                errT.inverse().Exp())
+                sensor.get_scan_to_points())
     print(Pose2z.from_Rt(R,t).compose(errT).Log())
     
     simulation.update_solids_beliefs(beliefs)

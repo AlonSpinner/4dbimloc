@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_LINE_UP_PATH
+from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_BUILDING_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter
 import logging
@@ -6,7 +6,7 @@ import logging
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
-solids = ifc_converter(IFC_LINE_UP_PATH)
+solids = ifc_converter(IFC_BUILDING_PATH)
 visApp = VisApp()
 
 for s in solids:

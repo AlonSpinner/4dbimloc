@@ -56,6 +56,7 @@ visApp.add_solid(particles.lines, "world")
 visApp.add_solid(particles.tails, "world")
 
 u = Pose2z(1.0 ,0.0 ,0.0 ,0.0)
+time.sleep(5)
 for i in range(10):
     drone.move(u)
 
