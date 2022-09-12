@@ -43,6 +43,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
         for i_m in prange(N_meshes):
             if not(ray_box_intersection(ray[:3], inv_ray_dir, meshes_bb[i_m])):
                 continue
+            
             finished_mesh = False
 
             m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]
@@ -129,8 +130,8 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
     tmin = -np.inf; tmax = np.inf
 
     for i in prange(3):
-        t1 = box[i]- ray_o[i] * ray_inv_dir[i]
-        t2 = box[i+3] - ray_o[i] * ray_inv_dir[i]
+        t1 = (box[i]- ray_o[i]) * ray_inv_dir[i]
+        t2 = (box[i+3] - ray_o[i]) * ray_inv_dir[i]
     
         #imortant: max(1,np.inf) -> 1 
         #          max(1,np.nan) -> nan
@@ -138,7 +139,7 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
         tmin = min(max(tmin, t1), max(tmin, t2))
         tmax = max(min(tmax, t1), min(tmax, t2))
     
-    return tmax >= tmin
+    return abs(tmax) >= abs(tmin)
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
@@ -157,12 +158,12 @@ if __name__ == "__main__":
     # print((e-s)/N)
 
     ray = ray.reshape((1,6))
-    raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+    raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), np.array([2,-1,-1,2,1,1]), 3, 1, 1)
     N = int(1e2)    
     print('started')
     s = time.time()
     for _ in range(N):
-        raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), 3, 1, 1)
+        raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), np.array([2,-1,-1,2,1,1]), 3, 1, 1)
     e = time.time()
     print((e-s)/N)
     
