@@ -6,7 +6,7 @@ EPS = 1e-16
 NO_HIT = 2161354
 
 @njit(parallel = True, cache = True)
-def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
+def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, meshes_bb : np.ndarray,
                     meshes_iguid : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
                     max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
@@ -15,6 +15,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
         rays - array of shape (n_rays, 6) containing [origin,direction]
         meshes_v - array of shape (n_meshes * inc_v, 3) containing vertices [px,py,pz]
         meshes_t - array of shape (n_meshes * inc_t, 3) containing triangles [id1,id2,id3]
+        meshes_bb - arrya of shape (n_meshes * 6) containing AABB [minx,miny,minz,maxx,maxy,maxz]
         meshes_iguid - array of shape (n_meshes, ) containing mesh ids
         max_hits - after max_hits stop raytracing for ray.
                         this is an assumption that allows us to allocate size
@@ -38,8 +39,10 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray,
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
-
+        inv_ray_dir = 1/ray[3:] #infs are acceptable
         for i_m in prange(N_meshes):
+            if not(ray_box_intersection(ray[:3], inv_ray_dir, meshes_bb[i_m])):
+                continue
             finished_mesh = False
 
             m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]

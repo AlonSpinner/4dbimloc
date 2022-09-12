@@ -157,8 +157,8 @@ for t in range(100):
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
 
-    plt.scatter([p.t[1] for p in particle_poses], weights)
-    plt.xlim([bounds_min[1], bounds_max[1]])
-    plt.show()
+    # plt.scatter([p.t[1] for p in particle_poses], weights)
+    # plt.xlim([bounds_min[1], bounds_max[1]])
+    # plt.show()
 
     # time.sleep(0.1)
