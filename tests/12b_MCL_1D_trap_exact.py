@@ -7,7 +7,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.existance_mapping.filters import exact
+from bim4loc.existance_mapping.filters import exact, approx
 import time
 import logging
 from copy import deepcopy
@@ -84,6 +84,7 @@ visApp.add_solid(vis_particles.tails, "simulation")
 u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
 #LOOP
+time.sleep(2)
 for t in range(100):
     #move drone
     drone.move(u)
@@ -100,7 +101,12 @@ for t in range(100):
                                                                     simulation, n_hits = 2, 
                                                                     noisy = False)
         
-        exact(particle_beliefs[i], z, particle_z_values, particle_z_ids, simulated_sensor.std, simulated_sensor.max_range)
+        exact(particle_beliefs[i], 
+              z, 
+              particle_z_values, 
+              particle_z_ids, 
+              simulated_sensor.std, 
+              simulated_sensor.max_range)
 
         pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, simulated_sensor.std, z, pseudo = True)
         weights[i] = weights[i] * np.max(pz)
@@ -129,8 +135,10 @@ for t in range(100):
         # print('resampled')
 
     if t % 5 != 0:
-        best_particle_idx = np.argmax(weights)
-        simulation.update_solids_beliefs(particle_beliefs[best_particle_idx])
+        # best_particle_idx = np.argmax(weights)
+        # simulation.update_solids_beliefs(logodds2p(particle_beliefs[best_particle_idx]))
+        estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
+        simulation.update_solids_beliefs(estimate_beliefs)        
 
     #updating drawings
     vis_scan.update(drone.pose.t, z_p)
