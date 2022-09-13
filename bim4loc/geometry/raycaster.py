@@ -117,7 +117,7 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
 @njit(fastmath = True, cache = True)
 def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.ndarray) -> bool:
     '''
-    based on https://tavianator.com/2022/ray_box_boundary.html
+    based on https://medium.com/@bromanz/another-view-on-the-classic-ray-aabb-intersection-algorithm-for-bvh-traversal-41125138b525
 
     input:
         ray_o - np.array([x,y,z])
@@ -127,19 +127,18 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
     output:
         boolean - True if ray intersects box          
     '''
-    tmin = -np.inf; tmax = np.inf
 
-    for i in prange(3):
-        t1 = (box[i]- ray_o[i]) * ray_inv_dir[i]
-        t2 = (box[i+3] - ray_o[i]) * ray_inv_dir[i]
-    
-        #imortant: max(1,np.inf) -> 1 
-        #          max(1,np.nan) -> nan
-        # therfore tmin/tmax are always the first value in the comparison
-        tmin = min(max(tmin, t1), max(tmin, t2))
-        tmax = max(min(tmax, t1), min(tmax, t2))
-    
-    return tmin <= tmax
+    t0s = (box[:3] - ray_o) * ray_inv_dir
+    t1s = (box[3:] - ray_o) * ray_inv_dir
+
+    tsmaller = np.minimum(t1s, t0s)
+    tbigger = np.maximum(t1s, t0s)
+
+    tmin = np.max(tsmaller)
+    tmax = np.min(tbigger)
+
+    return (tmin <= tmax)
+
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
@@ -158,12 +157,12 @@ if __name__ == "__main__":
     # print((e-s)/N)
 
     ray = ray.reshape((1,6))
-    raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), np.array([2,-1,-1,2,1,1]), 3, 1, 1)
+    raycast(ray,triangle,np.array([[0,1,2]]),np.array([[2,-1,-1,2,1,1]]), np.array([0]), 3, 1, 1)
     N = int(1e2)    
     print('started')
     s = time.time()
     for _ in range(N):
-        raycast(ray,triangle,np.array([[0,1,2]]),np.array([0]), np.array([2,-1,-1,2,1,1]), 3, 1, 1)
+        raycast(ray,triangle,np.array([[0,1,2]]),np.array([[2,-1,-1,2,1,1]]), np.array([0]), 3, 1, 1)
     e = time.time()
     print((e-s)/N)
     

@@ -117,6 +117,6 @@ for t, u in enumerate(actions):
     visApp.update_solid(drone.solid)
     visApp.update_solid(vis_scan)
 
-    time.sleep(0.01)
+    # time.sleep(0.01)
 
 print('finished')
