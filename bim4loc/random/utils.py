@@ -13,10 +13,7 @@ def odds2p(odds):
 
 @njit(cache = True)
 def p2odds(p):
-    p_bar = negate(p)
-    indicies = np.argwhere(p_bar < EPS)
-    p_bar[indicies] = EPS
-    return p / p_bar
+    return p /np.maximum(1 - p, EPS)
 
 @njit(cache = True)
 def p2logodds(p):
@@ -24,5 +21,5 @@ def p2logodds(p):
 
 @njit(cache = True)
 def logodds2p(l):
-    l[l > 5.0] = 5.0 #big enough
+    l = np.minimum(l, 5.0)
     return  np.exp(l) / (1 + np.exp(l))
