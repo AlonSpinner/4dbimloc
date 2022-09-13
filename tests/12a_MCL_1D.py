@@ -86,7 +86,6 @@ for t in range(100):
     weights = weights / sum_weights
     
     #resample
-    n_eff = weights.dot(weights)
     if t % 5 == 0:
         r = np.random.uniform()/N_particles
         idx = 0

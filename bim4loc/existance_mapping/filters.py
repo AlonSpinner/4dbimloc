@@ -65,11 +65,11 @@ def binary_variable_update(current, update):
 
 @njit(parallel = True, cache = True)
 def exact(beliefs : np.ndarray, 
-                  world_z : np.ndarray, 
-                  simulated_z : np.ndarray, 
-                  simulated_z_ids : np.ndarray,
-                  sensor_std : float,
-                  sensor_max_range : float) -> np.ndarray:
+            world_z : np.ndarray, 
+            simulated_z : np.ndarray, 
+            simulated_z_ids : np.ndarray,
+            sensor_std : float,
+            sensor_max_range : float) -> np.ndarray:
     '''
     inputs: 
         beliefs : one dimensional np.ndarray sorted same as solids
@@ -105,11 +105,11 @@ def exact(beliefs : np.ndarray,
 
 @njit(parallel = True, cache = True)
 def approx(logodds_beliefs : np.ndarray, 
-                  world_z : np.ndarray, 
-                  simulated_z : np.ndarray, 
-                  simulated_z_ids : np.ndarray,
-                  sensor_std : float,
-                  sensor_max_range : float) -> np.ndarray:
+            world_z : np.ndarray, 
+            simulated_z : np.ndarray, 
+            simulated_z_ids : np.ndarray,
+            sensor_std : float,
+            sensor_max_range : float) -> np.ndarray:
     '''
     inputs: 
         logodds_beliefs : one dimensional np.ndarray sorted same as solids
