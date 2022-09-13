@@ -8,3 +8,5 @@ print(pose2z.R_from_theta(x0[3]))
 
 x1 = pose2z.compose_s(x0, dx)
 print(x1)
+
+print(pose2z.compose_s_array(np.vstack((x0,x0)), dx))

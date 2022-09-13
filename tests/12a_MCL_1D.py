@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_LINEUP_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
@@ -72,7 +71,7 @@ for t in range(100):
     #produce measurement
     z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True)
 
-    #---------------------------FILTER0-------------------------------------
+    #---------------------------FILTER-------------------------------------
     #compute weights and normalize
     sum_weights = 0.0
     for i in range(N_particles):
@@ -82,7 +81,7 @@ for t in range(100):
                                                                     noisy = False)
         
         pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values[0], simulated_sensor.std, z, pseudo = True)
-        weights[i] = weights[i] * pz
+        weights[i] = weights[i] * np.product(pz)
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights

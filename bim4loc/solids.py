@@ -4,7 +4,7 @@ import numpy as np
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
-from bim4loc.geometry.pose2z import compose_s, T_from_s
+from bim4loc.geometry.pose2z import compose_s, compose_s_array, T_from_s
 from importlib import import_module
 from copy import deepcopy
 from typing import Literal
@@ -135,23 +135,23 @@ class ScanSolid(o3dSolid):
                 color : np.ndarray = np.array([1.0, 0.8, 0.0])):
 
         '''
-        p0 -  3 x 1
-        pts - 3 x m
+        p0 -  1 x 3
+        pts - m x 3
         '''
 
         self.name = name
         self.color = color
 
         if p0 is None or pts is None:
-            p0 = np.array([[0.0] ,[0.0] ,[0.0]])
-            pts = np.array([[0.1], [0.0], [0.0]])
+            p0 = np.array([0.0, 0.0, 0.0])
+            pts = np.array([0.1, 0.0, 0.0])
 
-        pts = np.hstack((p0, pts))
-        indicies = np.zeros((pts.shape[1],2), dtype = int)
-        indicies[:,1] = np.arange(pts.shape[1])
+        pts = np.vstack((p0, pts))
+        indicies = np.zeros((pts.shape[0],2), dtype = int)
+        indicies[:,1] = np.arange(pts.shape[0])
         
         self.geometry = o3d.geometry.LineSet()
-        self.geometry.points = o3d.utility.Vector3dVector(pts.T)
+        self.geometry.points = o3d.utility.Vector3dVector(pts)
         self.geometry.lines = o3d.utility.Vector2iVector(indicies)
         c = np.tile(self.color, (indicies.shape[0], 1))
         self.geometry.colors = o3d.utility.Vector3dVector(c)
@@ -164,11 +164,11 @@ class ScanSolid(o3dSolid):
     def update(self,  p0 : np.ndarray,
                         pts : np.ndarray):
 
-        pts = np.hstack((p0, pts))
-        indicies = np.zeros((pts.shape[1],2), dtype = int)
-        indicies[:,1] = np.arange(pts.shape[1])
+        pts = np.vstack((p0, pts))
+        indicies = np.zeros((pts.shape[0],2), dtype = int)
+        indicies[:,1] = np.arange(pts.shape[0])
         
-        self.geometry.points = o3d.utility.Vector3dVector(pts.T)
+        self.geometry.points = o3d.utility.Vector3dVector(pts)
         self.geometry.lines = o3d.utility.Vector2iVector(indicies)
         c = np.tile(self.color, (indicies.shape[0], 1))
         self.geometry.colors = o3d.utility.Vector3dVector(c)
@@ -190,29 +190,29 @@ class ParticlesSolid(o3dSolid):
             poses = np.zeros(4)
 
         ds = np.array([self.scale,0,0,0])
-        heads = np.hstack([compose_s(p,ds)[:3] for p in poses]) #3xm
-        tails = np.hstack([p.t for p in poses]) #3xm
+        heads = compose_s_array(poses,ds)[:,:3]
+        tails = poses[:,:3]
         indicies =  np.vstack((np.arange(0,len(poses), dtype = int), #2xm
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
 
         self.lines = LinesSolid(f"{name}_lines",
-                                np.hstack((heads,tails)).T,  #<--- transpose
+                                np.vstack((heads,tails)),  #<--- transpose
                                 indicies.T, #<--- transpose
                                 line_width,
                                 color = line_color)
         self.tails = PcdSolid(f"{name}_tails",
-                                pcd = tails.T,  #<--- transpose
+                                pcd = tails,  #<--- transpose
                                 color = tail_color)
 
     def update(self, poses : np.ndarray) -> None:
         ds = np.array([self.scale,0,0,0])
-        heads = np.hstack([compose_s(p,ds)[:3] for p in poses])
-        tails = np.hstack([p.t for p in poses])
+        heads = compose_s_array(poses,ds)[:,:3]
+        tails = poses[:,:3]
         indicies =  np.vstack((np.arange(0,len(poses), dtype = int),
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
 
-        self.lines.update(np.hstack((heads,tails)).T, indicies.T)
-        self.tails.update(tails.T)
+        self.lines.update(np.vstack((heads,tails)), indicies.T)
+        self.tails.update(tails)
 
 class DynamicSolid(o3dSolid):
     base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh

@@ -1,12 +1,12 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import PcdSolid, ifc_converter, PcdSolid, ArrowSolid
+from bim4loc.solids import ifc_converter, ScanSolid, ParticlesSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
-from bim4loc.particle_filters import vanila
+from bim4loc.geometry.pose2z import compose_s
+from bim4loc.random.one_dim import Gaussian
 import time
 import logging
 import copy
@@ -14,39 +14,34 @@ import copy
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
+#FUNCTIONS
+gaussian_pdf = Gaussian._pdf
+
+#BUILD WORLD
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose = Pose2z(3,3,0, 1.5))
+world = RayCastingMap(solids)
+
+#INITALIZE DRONE AND SENSOR
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,36), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False
 drone.mount_sensor(sensor)
-world = RayCastingMap(solids)
 
-straight = Pose2z(0.5,0,0,0)
-turn_left = Pose2z(0,0,np.pi/8,0)
-turn_right = Pose2z(0,0,-np.pi/8,0)
+straight = np.array([0.5,0.0 ,0.0 ,0.0])
+turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
+turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
-model = world
-_, _, extent = model.bounds()
+#SPREAD PARTICLES UNIFORMLY
+bounds_min, bounds_max, extent = world.bounds()
+N_particles = 200
+particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
+                       np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
+                       np.zeros(N_particles),
+                       np.random.uniform(-np.pi, np.pi, N_particles))).T
 
-Nparticles = 100
-inital_poses = []
-for i in range(Nparticles):
-    inital_poses.append(
-        Pose2z(np.random.uniform(drone.pose.y + extent[0]/10, drone.pose.y - extent[0]/10),
-                np.random.uniform(drone.pose.y + extent[1]/10, drone.pose.y - extent[1]/10),
-                np.random.uniform(-np.pi, +np.pi),
-                0)
-                        )
-inital_poses[0] = Pose2z(drone.pose.x,drone.pose.y,drone.pose.theta,0.0); #<---------------------------------------- CHEATING
-arrows = []
-for i in range(Nparticles):
-    arrows.append(ArrowSolid(name = f'arrow_{i}', alpha = 1/Nparticles, pose = inital_poses[i]))
-
-pf_sensor = copy.copy(drone.sensor); pf_sensor.std = None
-pf = vanila(pf_sensor, model , inital_poses)
-Z_COV = np.kron(np.eye(drone.sensor._angles_u.size),drone.sensor.std**2)
-U_COV = 0.01 * np.diag([0.1,0.1,np.radians(0.1),0.0])
+#INITALIZE WEIGHTS
+weights = np.ones(N_particles) / N_particles
 
 visApp = VisApp()
 for s in solids:
@@ -54,27 +49,64 @@ for s in solids:
 visApp.redraw()
 visApp.show_axes()
 visApp.setup_default_camera()
-[visApp.add_solid(a) for a in arrows]
 visApp.add_solid(drone.solid)
-pcd_scan = PcdSolid()
-visApp.add_solid(pcd_scan)
+vis_particles = ParticlesSolid(poses = particles)
+visApp.add_solid(vis_particles.lines)
+visApp.add_solid(vis_particles.tails)
+vis_scan = ScanSolid("scan")
+visApp.add_solid(vis_scan)
+visApp.redraw()
 
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
+ETA_THRESHOLD = 1.0/N_particles
+#LOOP
 time.sleep(0.1)
-for t,u in enumerate(actions):
+for t, u in enumerate(actions):
+    #move drone
     drone.move(u)
-    z, _, _, z_p = drone.scan(world, project_scan = True, noisy = True)
-
-    pf.step(z, Z_COV, u, U_COV)
-    if t % 3 == 0:
-        pf.resample()
     
-    pcd_scan.update(z_p.T)
-    for a,p in zip(arrows, pf.particles):
-        a.update_geometry(p)
-  
-    [visApp.update_solid(a) for a in arrows]
+    #produce measurement
+    z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True, noisy = True)
+
+    #---------------------------FILTER-------------------------------------
+    #compute weights and normalize
+    sum_weights = 0.0
+    noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
+    for i in range(N_particles):
+        particles[i] = compose_s(particles[i], noisy_u[i])
+        particle_z_values, particle_z_ids, _ = sensor.sense(particles[i], 
+                                                                    world, n_hits = 10, 
+                                                                    noisy = False)
+        
+        pz = 0.4 + 0.6 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        weights[i] *= np.product(pz)
+        sum_weights += weights[i]
+    #normalize
+    weights = weights / sum_weights
+    
+    #resample
+    n_eff = weights.dot(weights)
+    if n_eff < ETA_THRESHOLD or t % 10 == 0:
+    
+            r = np.random.uniform()/N_particles
+            idx = 0
+            c = weights[idx]
+            new_particles = np.zeros_like(particles)
+            for i in range(N_particles):
+                uu = r + i*1/N_particles
+                while uu > c:
+                    idx += 1
+                    c += weights[idx]
+                new_particles[i] = particles[idx]
+            particles = new_particles
+            weights = np.ones(N_particles) / N_particles
+
+    vis_particles.update(particles)
+    visApp.update_solid(vis_particles.lines)
+    visApp.update_solid(vis_particles.tails)
+    vis_scan.update(drone.pose[:3], z_p.T)
     visApp.update_solid(drone.solid)
-    visApp.update_solid(pcd_scan)
+    visApp.update_solid(vis_scan)
 
     time.sleep(0.01)
 

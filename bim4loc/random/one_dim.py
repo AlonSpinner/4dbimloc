@@ -47,7 +47,7 @@ class Gaussian(Distribution1D):
 
     @staticmethod
     @njit(cache = True)
-    def _pdf(mu : float ,sigma : float, x : np.ndarray, pseudo = False) -> np.ndarray:
+    def _pdf(mu : np.ndarray ,sigma : float, x : np.ndarray, pseudo = False) -> np.ndarray:
         num = np.exp(-(x-mu)**2/(2*sigma**2))
         if pseudo:
             return num
