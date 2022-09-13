@@ -73,8 +73,8 @@ for t in range(100):
     for i in range(N_particles):
         particles[i] = compose_s(particles[i], noisy_u[i])
         particle_z_values, particle_z_ids, _ = sensor.sense(particles[i], 
-                                                                    world, n_hits = 10, 
-                                                                    noisy = False)
+                                                            world, n_hits = 10, 
+                                                            noisy = False)
         
         pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
         weights[i] *= np.product(pz)
@@ -104,9 +104,5 @@ for t in range(100):
     visApp.update_solid(drone.solid)
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
-
-    # plt.scatter([p.t[1] for p in particles], weights)
-    # plt.xlim([bounds_min[1], bounds_max[1]])
-    # plt.show()
 
     # time.sleep(0.1)

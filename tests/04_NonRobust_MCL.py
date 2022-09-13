@@ -24,7 +24,7 @@ world = RayCastingMap(solids)
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,36), angles_v = np.array([0.0])); 
-sensor.std = 0.1; sensor.piercing = False
+sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 straight = np.array([0.5,0.0 ,0.0 ,0.0])
@@ -39,7 +39,7 @@ particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particl
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
                        np.random.uniform(-np.pi, np.pi, N_particles))).T
-
+# particles[0] = drone.pose #<------------------------ CHEATTTTINGGG !!
 #INITALIZE WEIGHTS
 weights = np.ones(N_particles) / N_particles
 
@@ -74,19 +74,29 @@ for t, u in enumerate(actions):
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
         particles[i] = compose_s(particles[i], noisy_u[i])
+
+        if np.any(particles[i][:3] < bounds_min[:3]) \
+             or np.any(particles[i][:3] > bounds_max[:3]):
+            weights[i] = 0.0
+            continue
+
         particle_z_values, particle_z_ids, _ = sensor.sense(particles[i], 
-                                                                    world, n_hits = 10, 
-                                                                    noisy = False)
+                                                            world, n_hits = 10, 
+                                                            noisy = False)
         
-        pz = 0.4 + 0.6 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
-        weights[i] *= np.product(pz)
+        pz = 0.3 + 0.7 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        
+        #line 229 in https://github.com/atinfinity/amcl/blob/master/src/amcl/sensors/amcl_laser.cpp
+        weights[i] *= (1.0 + np.sum(pz**3))
+
+        # weights[i] *= np.product(pz)
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights
     
     #resample
     n_eff = weights.dot(weights)
-    if n_eff < ETA_THRESHOLD or t % 10 == 0:
+    if n_eff < ETA_THRESHOLD or (t % 10) == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]

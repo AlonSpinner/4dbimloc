@@ -27,7 +27,7 @@ constructed_solids = [s.clone() for s in solids[:-2]]
 
 beliefs = np.ones(len(solids))
 beliefs[[-1, -2, 6, 10]] = 0.5
-# beliefs[[-1, -2]] = 0.0
+# beliefs[[-1, -2]] = 1.0
 for i, b in enumerate(beliefs):
     solids[i].set_existance_belief_and_shader(b)
 
@@ -104,7 +104,6 @@ for t in range(200):
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         
-
         exact(particle_beliefs[i], 
                 z, 
                 particle_z_values, 
@@ -113,7 +112,7 @@ for t in range(200):
                 simulated_sensor.max_range)
 
         pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
-        weights[i] *= np.max(pz)
+        weights[i] *= np.max(pz) #<-------- THIS NEEDS TO CHANGE?
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights
@@ -146,7 +145,7 @@ for t in range(200):
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
 
-    # plt.scatter([p.t[1] for p in particle_poses], weights)
+    # plt.scatter([p[1] for p in particle_poses], weights)
     # plt.xlim([bounds_min[1], bounds_max[1]])
     # plt.show()
 

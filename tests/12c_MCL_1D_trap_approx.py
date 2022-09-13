@@ -105,7 +105,6 @@ for t in range(200):
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         
-
         approx(particle_beliefs[i], 
                 z, 
                 particle_z_values, 
@@ -151,4 +150,4 @@ for t in range(200):
     # plt.xlim([bounds_min[1], bounds_max[1]])
     # plt.show()
 
-    # time.sleep(0.1)
+    time.sleep(0.1)
