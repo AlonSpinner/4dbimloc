@@ -9,11 +9,11 @@ def negate(p):
 
 @njit(cache = True)
 def odds2p(odds):
-    return odds / (1 + odds)
+    return odds / (1.0 + odds)
 
 @njit(cache = True)
 def p2odds(p):
-    return p /np.maximum(1 - p, EPS)
+    return p /np.maximum(1.0 - p, EPS)
 
 @njit(cache = True)
 def p2logodds(p):
@@ -22,4 +22,4 @@ def p2logodds(p):
 @njit(cache = True)
 def logodds2p(l):
     l = np.minimum(l, 5.0)
-    return  np.exp(l) / (1 + np.exp(l))
+    return  np.exp(l) / (1.0 + np.exp(l))

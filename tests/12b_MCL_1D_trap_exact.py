@@ -26,8 +26,8 @@ solids = ifc_converter(IFC_PATH)
 constructed_solids = [s.clone() for s in solids[:-2]]
 
 beliefs = 1.0 * np.ones(len(solids))
-# beliefs[[-1, -2, 6, 10]] = 0.5
-beliefs[[-1, -2]] = 0.0
+beliefs[[-1, -2, 6, 10]] = 0.5
+# beliefs[[-1, -2]] = 0.0
 for i, b in enumerate(beliefs):
     solids[i].set_existance_belief_and_shader(b)
 
@@ -109,12 +109,12 @@ for t in range(100):
                                                                     simulation, n_hits = 2, 
                                                                     noisy = False)
         
-        # exact(particle_beliefs[i], 
-        #       z, 
-        #       particle_z_values, 
-        #       particle_z_ids, 
-        #       simulated_sensor.std, 
-        #       simulated_sensor.max_range)
+        exact(particle_beliefs[i], 
+              z, 
+              particle_z_values, 
+              particle_z_ids, 
+              simulated_sensor.std, 
+              simulated_sensor.max_range)
 
         pz = 0.05 + 0.95 * gaussian_pdf(particle_z_values, simulated_sensor.std, z, pseudo = True)
         weights[i] = weights[i] * np.max(pz)

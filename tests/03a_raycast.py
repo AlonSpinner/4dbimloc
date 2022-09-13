@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
@@ -12,16 +11,16 @@ import keyboard
 import open3d as o3d
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose = Pose2z(3,3,0,1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 5), angles_v = np.array([0])); 
 sensor.std = 0.05; sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
 
-straight = Pose2z(0.5,0,0,0)
-turn_left = Pose2z(0,0,np.pi/8,0)
-turn_right = Pose2z(0,0,-np.pi/8,0)
+straight = np.array([0.5,0.0 ,0.0 ,0.0])
+turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
+turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 visApp = VisApp()

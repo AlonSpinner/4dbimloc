@@ -4,7 +4,7 @@ import numpy as np
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
-from bim4loc.geometry.poses import Pose2z
+from bim4loc.geometry.pose2z import compose_s, T_from_s
 from importlib import import_module
 from copy import deepcopy
 from typing import Literal
@@ -175,7 +175,7 @@ class ScanSolid(o3dSolid):
 
 class ParticlesSolid(o3dSolid):
     def __init__(self, name = 'particles', 
-                       poses : list[Pose2z] = None, 
+                       poses : np.ndarray = None, 
                        scale = 0.4,
                        line_width = 4.0,
                        line_color : np.ndarray = np.array([0.0, 0.0, 0.0]),
@@ -187,9 +187,10 @@ class ParticlesSolid(o3dSolid):
         self.scale = scale
         
         if poses is None:
-            poses = [Pose2z.identity()]
+            poses = np.zeros(4)
 
-        heads = np.hstack([p.retract((scale,0,0,0)).t for p in poses]) #3xm
+        ds = np.array([self.scale,0,0,0])
+        heads = np.hstack([compose_s(p,ds)[:3] for p in poses]) #3xm
         tails = np.hstack([p.t for p in poses]) #3xm
         indicies =  np.vstack((np.arange(0,len(poses), dtype = int), #2xm
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
@@ -203,8 +204,9 @@ class ParticlesSolid(o3dSolid):
                                 pcd = tails.T,  #<--- transpose
                                 color = tail_color)
 
-    def update(self, poses : list[Pose2z]) -> None:
-        heads = np.hstack([p.retract((self.scale,0,0,0)).t for p in poses])
+    def update(self, poses : np.ndarray) -> None:
+        ds = np.array([self.scale,0,0,0])
+        heads = np.hstack([compose_s(p,ds)[:3] for p in poses])
         tails = np.hstack([p.t for p in poses])
         indicies =  np.vstack((np.arange(0,len(poses), dtype = int),
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
@@ -214,7 +216,7 @@ class ParticlesSolid(o3dSolid):
 
 class DynamicSolid(o3dSolid):
     base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh
-    pose : Pose2z = Pose2z.identity()
+    pose : np.ndarray = np.zeros(4)
     
     def __init__(self, name, geometry, material, pose = None):
         self.name = name
@@ -226,8 +228,8 @@ class DynamicSolid(o3dSolid):
         if pose is not None:
             self.update_geometry(pose)
 
-    def update_geometry(self, pose : Pose2z) -> None:
-        self.geometry = deepcopy(self.base_geometry).transform(pose.Exp())
+    def update_geometry(self, pose : np.ndarray) -> None:
+        self.geometry = deepcopy(self.base_geometry).transform(T_from_s(pose))
         self.pose = pose
 
 class ArrowSolid(DynamicSolid):

@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid
@@ -17,7 +16,7 @@ world = RayCastingMap(solids)
 min_bounds, max_bounds, _, = world.bounds()
 mid = (min_bounds + max_bounds) / 2
 
-drone = Drone(pose = Pose2z(mid[0],mid[1],0,mid[2]))
+drone = Drone(pose = np.array([mid[0],mid[1],mid[2], 0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi,4), angles_v = np.array([0.0])); 
 sensor.std = 0.05; sensor.piercing = False
 sensor.max_range = 1000.0

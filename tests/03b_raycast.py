@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
+from bim4loc.geometry.pose2z import transform_from
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid, ScanSolid
@@ -11,15 +11,15 @@ import time
 import keyboard
 
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
-drone = Drone(pose = Pose2z(3,3,0,1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar()
 sensor.std = 0.05; sensor.piercing = True; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)
 
-straight = Pose2z(0.5,0,0,0)
-turn_left = Pose2z(0,0,np.pi/8,0)
-turn_right = Pose2z(0,0,-np.pi/8,0)
+straight = np.array([0.5,0.0 ,0.0 ,0.0])
+turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
+turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 visApp = VisApp()
@@ -45,7 +45,7 @@ for a in actions:
     z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10)
     
     drone_p = sensor.scan_to_points(z)
-    p = drone.pose.transform_from(drone_p)
+    p = transform_from(drone.pose,drone_p)
 
     
     z_ids_flat = z_ids.flatten()
@@ -56,7 +56,7 @@ for a in actions:
             world.solids[s_i].material.base_color = np.hstack((s.ifc_color,1))
 
     pcd_scan.update(p.T, z_normals.reshape(-1,3))
-    line_scan.update(drone.pose.t, p)
+    line_scan.update(drone.pose[:3].reshape(3,1), p)
     [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)

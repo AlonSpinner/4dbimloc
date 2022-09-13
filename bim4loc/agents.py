@@ -6,9 +6,10 @@ from bim4loc.geometry.poses import Pose2z
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
 from typing import Union
+from bim4loc.geometry.pose2z import compose_s, transform_from
 
 class Drone:
-    def __init__(self, pose : Pose2z):
+    def __init__(self, pose : np.ndarray):
         mat = o3d.visualization.rendering.MaterialRecord()
         mat.shader = "defaultUnlit"
         mat.base_color = [1.0 , 0.0 , 0.0 , 1.0]
@@ -28,16 +29,12 @@ class Drone:
         #currently assume sensor pose is identical to agent pose
         self.sensor : Lidar = sensor
 
-    def move(self, u : Union[Pose2z, np.ndarray], cov = None):
-        if isinstance(u, Pose2z):
-            if cov is not None:
-                u = Pose2z(*np.random.multivariate_normal(u.Log(), cov))
-            self.pose = self.pose.compose(u)
-        else:
-            if cov is not None:
-                u = np.random.multivariate_normal(u, cov)
-            self.pose = self.pose.retract(u)
+    def move(self, u : np.ndarray, cov : np.ndarray = None):
         
+        if cov is not None:
+            u = np.random.multivariate_normal(u, cov)
+        
+        self.pose = compose_s(self.pose, u)
         self.solid.update_geometry(self.pose)
 
     def scan(self, m : RayCastingMap, project_scan = False, noisy = True) -> Union[np.ndarray, np.ndarray, list[str]]:
@@ -51,7 +48,7 @@ class Drone:
         
         if project_scan:
             drone_p = self.sensor.scan_to_points(z)
-            world_p = self.pose.transform_from(drone_p)
+            world_p = transform_from(self.pose, drone_p)
             return z, z_ids, z_normals, world_p
         else:
             return z, z_ids, z_normals

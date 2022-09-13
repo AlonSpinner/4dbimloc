@@ -99,7 +99,7 @@ def exact(beliefs : np.ndarray,
                                 sensor_std, sensor_max_range)
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j]
-            beliefs[szid_ij] = binary_variable_update(beliefs[szid_ij], p)
+            beliefs[szid_ij] = p #binary_variable_update(beliefs[szid_ij], p)
         
     return beliefs
 

@@ -1,6 +1,6 @@
 from bim4loc.maps import RayCastingMap
-from bim4loc.geometry.poses import Pose2z
 import bim4loc.geometry.raycaster as raycaster
+from bim4loc.geometry.pose2z import R_from_theta
 import numpy as np
 from functools import partial
 
@@ -12,7 +12,7 @@ class Sensor():
     def __init__(self):
         pass
 
-    def sense(self, pose : Pose2z, noisy = True): #to be overwritten
+    def sense(self, pose : np.ndarray, noisy = True): #to be overwritten
         '''
         returns np.ndarray of measurement values
         returns list of viewed solid names
@@ -45,7 +45,7 @@ class Lidar(Sensor):
         self._rays = rays
 
 
-    def sense(self, pose : Pose2z, m : RayCastingMap, n_hits = 10, noisy = True):
+    def sense(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         rays = self.transform_rays(pose)
         
         z_values, z_ids, z_normals = raycaster.raycast(rays, *m.scene, n_hits)
@@ -61,11 +61,11 @@ class Lidar(Sensor):
 
         return z_values, z_ids, z_normals
     
-    def transform_rays(self, pose : Pose2z) -> np.ndarray:
+    def transform_rays(self, pose : np.ndarray) -> np.ndarray:
         #returns rays in world system to be used by raycaster.
         rays = self._rays.copy()
-        rays[:, 0:3] = pose.t.T
-        rays[:, 3:6] = (pose.R @ rays[:, 3:6].T).T
+        rays[:, 0:3] = pose[:3]
+        rays[:, 3:6] = (R_from_theta(pose[3]) @ rays[:, 3:6].T).T
         return rays
     
     def scan_to_points(self, z):
