@@ -137,7 +137,7 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
     tmin = np.max(tsmaller)
     tmax = np.min(tbigger)
 
-    return (tmin <= tmax)
+    return abs(tmin) <= abs(tmax)
 
 
 if __name__ == "__main__":
