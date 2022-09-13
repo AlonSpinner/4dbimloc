@@ -102,7 +102,7 @@ for t in range(200):
     for i in range(N_particles):
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
         particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particle_poses[i], 
-                                                                    world, n_hits = 10, 
+                                                                    simulation, n_hits = 10, 
                                                                     noisy = False)
         
 
@@ -113,7 +113,7 @@ for t in range(200):
                 simulated_sensor.std, 
                 simulated_sensor.max_range)
 
-        pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
         weights[i] *= np.max(pz)
         sum_weights += weights[i]
     #normalize
@@ -147,7 +147,7 @@ for t in range(200):
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
 
-    # plt.scatter([p.t[1] for p in particle_poses], weights)
+    # plt.scatter([p[1] for p in particle_poses], weights)
     # plt.xlim([bounds_min[1], bounds_max[1]])
     # plt.show()
 

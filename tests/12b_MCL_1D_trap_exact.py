@@ -101,7 +101,7 @@ for t in range(200):
     for i in range(N_particles):
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
         particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particle_poses[i], 
-                                                                    world, n_hits = 10, 
+                                                                    simulation, n_hits = 10, 
                                                                     noisy = False)
         
 

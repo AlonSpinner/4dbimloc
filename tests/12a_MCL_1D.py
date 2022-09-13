@@ -32,9 +32,6 @@ sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
-simulated_sensor = deepcopy(sensor)
-simulated_sensor.piercing = True
-
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
 N_particles = 100
