@@ -1,12 +1,11 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
-import bim4loc.existance_mapping.filters as filters
+from bim4loc.geometry.pose2z import compose_s
 from copy import deepcopy, copy
 import time
 import logging
@@ -28,7 +27,7 @@ for s in solids:
     constructed_solids.append(s.clone())
 world = RayCastingMap(constructed_solids)
 
-drone = Drone(pose = Pose2z(3,3,0, 1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 36),
                  angles_v = np.linspace(-np.pi/30, +np.pi/30, 3)); 
 sensor.std = 0.1
@@ -45,9 +44,9 @@ simulation = RayCastingMap(simulation_solids)
 beliefs = np.full(len(simulation.solids), 0.5)
 simulation.update_solids_beliefs(beliefs)
 
-straight = Pose2z(0.5,0,0,0)
-turn_left = Pose2z(0,0,np.pi/8,0)
-turn_right = Pose2z(0,0,-np.pi/8,0)
+straight = np.array([0.5,0.0 ,0.0 ,0.0])
+turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
+turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + 4 * [turn_right]
 
 #create world scene
@@ -81,8 +80,8 @@ for t,u in enumerate(actions):
     
     z, z_ids, _, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    errT = Pose2z(1.0,0,1 *np.pi/8,0)
-    simulated_drone.pose = drone.pose.compose(errT)
+    errT = np.array([1.0, 0.0, 0.0, 1 *np.pi/8])
+    simulated_drone.pose = compose_s(drone.pose,errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 
     simulated_z, simulated_z_ids, simulated_z_normals, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
@@ -99,7 +98,6 @@ for t,u in enumerate(actions):
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points())
-    print(Pose2z.from_Rt(R,t).compose(errT).Log())
     
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]

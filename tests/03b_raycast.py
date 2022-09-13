@@ -56,7 +56,7 @@ for a in actions:
             world.solids[s_i].material.base_color = np.hstack((s.ifc_color,1))
 
     pcd_scan.update(p.T, z_normals.reshape(-1,3))
-    line_scan.update(drone.pose[:3].reshape(3,1), p)
+    line_scan.update(drone.pose[:3], p.T)
     [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
     visApp.update_solid(pcd_scan)

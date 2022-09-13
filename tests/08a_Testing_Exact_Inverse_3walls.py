@@ -1,9 +1,8 @@
 import numpy as np
 from numpy.matlib import repmat
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_THREE_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import IfcSolid, PcdSolid, LinesSolid, ifc_converter
+from bim4loc.solids import IfcSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
@@ -21,7 +20,7 @@ np.set_printoptions(precision=3)
 solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
-drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.1; 
 sensor.piercing = False
 sensor.max_range = 1000.0

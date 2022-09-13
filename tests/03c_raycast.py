@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid
+from bim4loc.solids import ifc_converter, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
@@ -33,30 +33,15 @@ visApp.O3DVis_reset_camera('o3d_window')
 visApp.O3DVis_show_axes('o3d_window')
 
 visApp.add_solid(drone.solid)
-pcd_scan = PcdSolid()
-visApp.add_solid(pcd_scan)
-line_scan = LinesSolid()
-visApp.add_solid(line_scan)
+vis_scan = ScanSolid("scan")
+visApp.add_solid(vis_scan)
 
-time.sleep(1)
-for a in actions:
-    drone.move(a)
-    z, z_solid_names, z_normals, p = drone.scan(world, project_scan = True)
 
-    #show rays
-    p = np.hstack((drone.pose[:3].reshape(3,1), p))
-    pcd_scan.update(p.T)
-    line_ids = np.zeros((p.shape[1],2), dtype = int)
-    line_ids[:,1] = np.arange(p.shape[1])
-    line_scan.update(p.T, line_ids)
-    
-    visApp.update_solid(pcd_scan)
-    visApp.update_solid(line_scan)
+z, z_solid_names, z_normals, p = drone.scan(world, project_scan = True)
 
-    [visApp.update_solid(s) for s in world.solids]
-    visApp.update_solid(drone.solid)
-    visApp.update_solid(pcd_scan)
-
-    # time.sleep(1)
-    keyboard.wait('space')
+#show rays
+vis_scan.update(drone.pose[:3], p.T)
+visApp.update_solid(vis_scan)
+[visApp.update_solid(s) for s in world.solids]
+visApp.update_solid(drone.solid)
 

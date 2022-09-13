@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
@@ -27,7 +26,7 @@ for s in solids:
         constructed_solids.append(s.clone())
 world = RayCastingMap(constructed_solids)
 
-drone = Drone(pose = Pose2z(3,3,0, 1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 # sensor = Lidar(); 
 sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 10), angles_v = np.array([0])); 
 sensor.std = 0.1; 
@@ -43,10 +42,10 @@ simulation = RayCastingMap(simulation_solids)
 beliefs = np.full(len(simulation.solids), 0.5)
 simulation.update_solids_beliefs(beliefs)
 
-straight = Pose2z(0.5,0,0,0)
-turn_left = Pose2z(0,0,np.pi/8,0)
-turn_right = Pose2z(0,0,-np.pi/8,0)
-actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + 4 * [turn_right]
+straight = np.array([0.5,0.0 ,0.0 ,0.0])
+turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
+turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
+actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
 
 #create world scene
 visApp = VisApp()

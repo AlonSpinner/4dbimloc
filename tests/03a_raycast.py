@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, PcdSolid
+from bim4loc.solids import ifc_converter, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
@@ -30,9 +30,10 @@ visApp.redraw()
 visApp.setup_default_camera("world")
 visApp.show_axes()
 
+vis_scan = ScanSolid("scan")
+visApp.add_solid(vis_scan)
+visApp.redraw()
 visApp.add_solid(drone.solid)
-pcd_scan = PcdSolid(shader = "normals")
-visApp.add_solid(pcd_scan)
 time.sleep(1)
 
 for a in actions:
@@ -45,10 +46,7 @@ for a in actions:
         else:
             s.material.base_color = np.hstack((s.ifc_color,1))
 
-    pcd_scan.update(p.T, z_normals)
-    # pcd_scan.geometry.estimate_normals()
-    # o3d.visualization.draw_geometries([pcd_scan.geometry],  point_show_normal=True)
-
+    vis_scan.update(drone.pose[:3], p.T)
     [visApp.update_solid(s) for s in world.solids]
     visApp.update_solid(drone.solid)
-    visApp.update_solid(pcd_scan)
+    visApp.update_solid(vis_scan)

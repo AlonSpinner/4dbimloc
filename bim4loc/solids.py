@@ -80,8 +80,8 @@ class PcdSolid(o3dSolid):
     def update(self, pcd : np.ndarray, normals = None) -> None:
         '''
         input:
-        pcd - 3Xm matrix
-        normals - 3Xm matrix
+        pcd - mx3 matrix
+        normals - mx3 matrix
         '''
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
         if normals is not None:
@@ -120,7 +120,7 @@ class LinesSolid(o3dSolid):
     def update(self, pts : np.ndarray, indicies : np.ndarray) -> None:
         '''
         input:
-        pcd - 3Xm matrix
+        pcd - mx3 matrix
         '''
         self.geometry.points = o3d.utility.Vector3dVector(pts)
         self.geometry.lines = o3d.utility.Vector2iVector(indicies)

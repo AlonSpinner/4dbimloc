@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.matlib import repmat
-from bim4loc.geometry.poses import Pose2z
 from bim4loc.binaries.paths import IFC_NINE_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, LinesSolid, ifc_converter
@@ -19,7 +18,7 @@ np.set_printoptions(precision=3)
 solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
-drone = Drone(pose = Pose2z(3.0,2.5, 0, 1.5))
+drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.5; 
 sensor.piercing = False
 sensor.max_range = 20.0
@@ -49,24 +48,6 @@ visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
 visApp.redraw("simulation")
-line_scan = LinesSolid()
-visApp.add_solid(line_scan, "simulation")
-pcd_scan_simulation = PcdSolid()
-visApp.add_solid(pcd_scan_simulation, "simulation")
-
-def calcualte_lines(simulated_z, angles, drone_pose):
-    z_flat = simulated_z.flatten()
-    angles_flat = repmat(angles, simulated_z.shape[1] , 1).T.flatten()
-
-    drone_p = np.vstack((z_flat * np.cos(angles_flat), 
-                    z_flat * np.sin(angles_flat),
-                    np.zeros_like(z_flat)))
-    world_p = drone_pose.transform_from(drone_p)
-
-    world_p = np.hstack((drone_pose.t, world_p))
-    line_ids = np.zeros((world_p.shape[1],2), dtype = int)
-    line_ids[:,1] = np.arange(world_p.shape[1])
-    return world_p, line_ids
 
 bullet = PcdSolid()
 bullet.name = "bullet"
@@ -75,17 +56,17 @@ bullet.material.base_color = np.array([1, 0, 1, 1])
 visApp.add_solid(bullet, "world")
 
 shot_counter = 0
-move_1unit_left = Pose2z(0.0, 1.0, 0.0, 0.0)
+move_1unit_left = np.array([0.0, 1.0, 0.0, 0.0])
 drone.sensor.bias = 0.0
 drone.sensor.std = 0.001
 simulated_sensor.std = 0.5
 while True:
-    keyboard.wait('space')
+    # keyboard.wait('space')
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     for t in np.linspace(0,1,10):
-        p_bullet = (1 - t) * drone.pose.t + t * z_p
+        p_bullet = (1 - t) * drone.pose[:3].reshape(3,1) + t * z_p
         bullet.update(p_bullet.T)
         visApp.update_solid(bullet,"world")
         time.sleep(0.03)
@@ -93,15 +74,9 @@ while True:
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, 
                     simulated_sensor.std , sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
-    
-    line_p, line_ids = calcualte_lines(simulated_z, simulated_sensor.angles, drone.pose)
-    line_scan.update(line_p.T, line_ids)
-    pcd_scan_simulation.update(line_p.T)
 
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     visApp.update_solid(drone.solid,"world")
-    visApp.update_solid(line_scan, "simulation")
-    visApp.update_solid(pcd_scan_simulation,"simulation")
 
     shot_counter += 1
     if shot_counter % 3 ==0:

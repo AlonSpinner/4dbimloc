@@ -34,7 +34,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 200
+N_particles = 100
 particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
@@ -87,19 +87,18 @@ for t, u in enumerate(actions):
     #resample
     n_eff = weights.dot(weights)
     if n_eff < ETA_THRESHOLD or t % 10 == 0:
-    
-            r = np.random.uniform()/N_particles
-            idx = 0
-            c = weights[idx]
-            new_particles = np.zeros_like(particles)
-            for i in range(N_particles):
-                uu = r + i*1/N_particles
-                while uu > c:
-                    idx += 1
-                    c += weights[idx]
-                new_particles[i] = particles[idx]
-            particles = new_particles
-            weights = np.ones(N_particles) / N_particles
+        r = np.random.uniform()/N_particles
+        idx = 0
+        c = weights[idx]
+        new_particles = np.zeros_like(particles)
+        for i in range(N_particles):
+            uu = r + i*1/N_particles
+            while uu > c:
+                idx += 1
+                c += weights[idx]
+            new_particles[i] = particles[idx]
+        particles = new_particles
+        weights = np.ones(N_particles) / N_particles
 
     vis_particles.update(particles)
     visApp.update_solid(vis_particles.lines)
