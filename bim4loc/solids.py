@@ -1,13 +1,15 @@
 from dataclasses import dataclass
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
+from numpy.polynomial import polyutils
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
-from bim4loc.geometry.pose2z import compose_s, compose_s_array, T_from_s
+from bim4loc.geometry.pose2z import compose_s_array, T_from_s
 from importlib import import_module
 from copy import deepcopy
 from typing import Literal
+import matplotlib.colors as colors
 
 @dataclass(frozen = False)
 class o3dSolid:
@@ -58,7 +60,7 @@ class IfcSolid(o3dSolid):
 class PcdSolid(o3dSolid):
     def __init__(self, name : str = 'pcd', 
                     pcd : np.ndarray = None,
-                    color = [1.0, 0.8, 0.0, 1.0],
+                    color = np.array([1.0, 0.8, 0.0]),
                     shader : Literal["defaultUnlit", "normals"] = "defaultUnlit"):
         
         '''
@@ -68,16 +70,20 @@ class PcdSolid(o3dSolid):
         self.name = name
         
         if pcd is None:
-            pcd = [[100,100,100]]
+            pcd = [[100,100,100]] #random far off point 
         self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
-        
+        if color.ndim == 2: #if color is a matrix
+            self.geometry.colors = o3d.utility.Vector3dVector(color)
+        else:
+            self.geometry.paint_uniform_color(color)
+
         mat = rendering.MaterialRecord()
         mat.shader = shader
         mat.point_size = 10.0
-        mat.base_color = color
+        # mat.base_color = color
         self.material = mat
 
-    def update(self, pcd : np.ndarray, normals = None) -> None:
+    def update(self, pcd : np.ndarray, normals = None, color = None) -> None:
         '''
         input:
         pcd - mx3 matrix
@@ -86,6 +92,12 @@ class PcdSolid(o3dSolid):
         self.geometry.points = o3d.utility.Vector3dVector(pcd)
         if normals is not None:
             self.geometry.normals = o3d.utility.Vector3dVector(normals)
+
+        if color is not None:
+            if color.ndim == 2: #if color is a matrix
+                self.geometry.colors = o3d.utility.Vector3dVector(color)
+            else:
+                self.geometry.paint_uniform_color(color)
 
 class LinesSolid(o3dSolid):
     def __init__(self, name = 'lines',
@@ -179,12 +191,14 @@ class ParticlesSolid(o3dSolid):
                        scale = 0.4,
                        line_width = 4.0,
                        line_color : np.ndarray = np.array([0.0, 0.0, 0.0]),
-                       tail_color : np.ndarray = np.array([0.0, 1.0, 1.0, 1.0])):
+                       use_weight_colors : bool = True,
+                       tail_color : np.ndarray = np.array([0.0, 0.5, 0.5])):
         '''
         poses - mx4, [x,y,theta,z]
         '''
         self.name = name
         self.scale = scale
+        self.use_weight_colors = use_weight_colors
         
         if poses is None:
             poses = np.zeros(4)
@@ -196,15 +210,18 @@ class ParticlesSolid(o3dSolid):
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
 
         self.lines = LinesSolid(f"{name}_lines",
-                                np.vstack((heads,tails)),  #<--- transpose
-                                indicies.T, #<--- transpose
+                                np.vstack((heads,tails)),
+                                indicies.T, 
                                 line_width,
                                 color = line_color)
+
+        if self.use_weight_colors:
+            tail_color = weights2rgb(np.ones(len(poses))/len(poses))
         self.tails = PcdSolid(f"{name}_tails",
-                                pcd = tails,  #<--- transpose
+                                pcd = tails,
                                 color = tail_color)
 
-    def update(self, poses : np.ndarray) -> None:
+    def update(self, poses : np.ndarray, weights : np.ndarray = None) -> None:
         ds = np.array([self.scale,0,0,0])
         heads = compose_s_array(poses,ds)[:,:3]
         tails = poses[:,:3]
@@ -212,7 +229,10 @@ class ParticlesSolid(o3dSolid):
                                 np.arange(len(poses),2 * len(poses), dtype = int)))
 
         self.lines.update(np.vstack((heads,tails)), indicies.T)
-        self.tails.update(tails)
+        if weights is None:
+            self.tails.update(tails)
+        else:
+            self.tails.update(tails, color = weights2rgb(weights))
 
 class DynamicSolid(o3dSolid):
     base_geometry : float #o3d.cuda.pybind.geometry.TriangleMesh
@@ -317,3 +337,14 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
                                 ))
 
     return solids
+
+#----------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------- ADDITIONAL FUNCTIONS ----------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
+
+def weights2rgb(weights):
+    hsv = np.ones((len(weights),3))
+    hsv[:,0] = 0.0 #hue
+    hsv[:,1] = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.6, 1.0)) #saturation
+    hsv[:,2] = 0.5 #values
+    return colors.hsv_to_rgb(hsv)

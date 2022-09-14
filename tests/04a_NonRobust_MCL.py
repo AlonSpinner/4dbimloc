@@ -67,8 +67,8 @@ for t, u in enumerate(actions):
     
     #produce measurement
     z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True, noisy = True)
-
-    #---------------------------FILTER-------------------------------------
+    
+    # ---------------------------FILTER-------------------------------------
     #compute weights and normalize
     sum_weights = 0.0
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
@@ -96,7 +96,7 @@ for t, u in enumerate(actions):
     
     #resample
     n_eff = weights.dot(weights)
-    if n_eff < ETA_THRESHOLD or (t % 10) == 0:
+    if n_eff < ETA_THRESHOLD or (t % 2) == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]

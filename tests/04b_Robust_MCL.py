@@ -11,7 +11,6 @@ import time
 import logging
 import copy
 import keyboard
-import matplotlib.pyplot as plt
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -120,11 +119,6 @@ for t, u in enumerate(actions):
             w_fast = w_avg
         else:        
             w_fast = w_fast + ALPHA_FAST * (w_avg - w_fast)
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-
-
 
     #resample
     # https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/pf/pf.c
@@ -160,7 +154,7 @@ for t, u in enumerate(actions):
         if w_diff > 0.0:
             w_slow = w_fast = 0.0
 
-    vis_particles.update(particles)
+    vis_particles.update(particles, weights)
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
     vis_scan.update(drone.pose[:3], z_p.T)

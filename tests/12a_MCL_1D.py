@@ -50,7 +50,7 @@ visApp.redraw("world")
 visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
-vis_particles = ParticlesSolid(poses = particles)
+vis_particles = ParticlesSolid(poses = particles, use_weight_colors = True)
 visApp.add_solid(vis_particles.lines, "world")
 visApp.add_solid(vis_particles.tails, "world")
 vis_scan = ScanSolid("scan")
@@ -99,10 +99,10 @@ for t in range(100):
 
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
-    vis_particles.update(particles)
+    vis_particles.update(particles, weights)
     visApp.update_solid(vis_scan)
     visApp.update_solid(drone.solid)
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
 
-    # time.sleep(0.1)
+    time.sleep(0.1)
