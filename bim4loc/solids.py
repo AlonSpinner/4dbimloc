@@ -10,6 +10,7 @@ from importlib import import_module
 from copy import deepcopy
 from typing import Literal
 import matplotlib.colors as colors
+from matplotlib import cm
 
 @dataclass(frozen = False)
 class o3dSolid:
@@ -342,9 +343,13 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 #-------------------------------------------------- ADDITIONAL FUNCTIONS ----------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------
 
+CM_MAP = cm.get_cmap('plasma')
+
 def weights2rgb(weights):
+    weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
+    return CM_MAP(weights)[:,:3]
     hsv = np.ones((len(weights),3))
     hsv[:,0] = 0.0 #hue
-    hsv[:,1] = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.6, 1.0)) #saturation
+    hsv[:,1] = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0)) #saturation
     hsv[:,2] = 0.5 #values
     return colors.hsv_to_rgb(hsv)

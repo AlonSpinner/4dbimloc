@@ -105,4 +105,4 @@ for t in range(100):
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
 
-    time.sleep(0.1)
+    time.sleep(0.2)
