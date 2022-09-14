@@ -110,7 +110,7 @@ for t, u in enumerate(actions):
         particles = new_particles
         weights = np.ones(N_particles) / N_particles
 
-    vis_particles.update(particles)
+    vis_particles.update(particles, weights)
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
     vis_scan.update(drone.pose[:3], z_p.T)
