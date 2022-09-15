@@ -346,7 +346,19 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 #if this proves too slow, there is also this version:
 #https://stackoverflow.com/questions/49156484/fast-way-to-map-scalars-to-colors-in-python
 #https://stackoverflow.com/questions/66556156/getting-n-equally-spaced-rgb-colors-for-n-numbers-from-a-colormap
-CM_MAP = cm.get_cmap('jet')
+# CM_MAP = cm.get_cmap('jet')
+N_COLORS = 100
+COLORS = cm.get_cmap('jet', N_COLORS)(np.linspace(0,1,N_COLORS))[:,:3]
+EPS = 1e-16
 def weights2rgb(weights):
+    values = (weights - weights.min()) / max(weights.max() - weights.min(), EPS) #normalize
+    values = ((N_COLORS-1) * values).astype(np.int32)
+    rgb = COLORS[values]
+    return rgb
+
+    import matplotlib.pyplot as plt
+    plt.plot(np.linspace(0,1,len(weights)), weights, 'o', color = 'black')
+    plt.plot (np.linspace(0,1,len(values)), values, 'o', color = 'red')
+
     weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
     return CM_MAP(weights)[:,:3]

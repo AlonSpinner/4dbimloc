@@ -50,6 +50,11 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
             m_v = meshes_v[i_m * inc_v : (i_m + 1) * inc_v]
             for i_t in prange(m_t.shape[0]):
                 triangle = m_v[m_t[i_t]]
+                
+                #NOT SURE WHY THIS DOESNT WORK!?
+                # if not(ray_box_intersection(ray[:3], inv_ray_dir, triangle_to_AABB(triangle))):
+                    # continue
+
                 if triangle.sum() == 0: #empty triangle
                     finished_mesh = True
                     break
@@ -115,6 +120,20 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
     return z, n
 
 @njit(fastmath = True, cache = True)
+def triangle_to_AABB(triangle : np.ndarray) -> np.ndarray:
+    '''
+    input:
+        triangle - np.array([[ax,ay,az],
+                            [bx,by,bz],
+                            [cx,cy,cz]])
+    output:
+        AABB - np.array([minx,miny,minz,maxx,maxy,maxz])
+    '''
+    vmin = np.minimum(triangle[0], triangle[1], triangle[2])
+    vmax = np.maximum(triangle[0], triangle[1], triangle[2])
+    return np.hstack((vmin, vmax))
+
+@njit(fastmath = True, cache = True)
 def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.ndarray) -> bool:
     '''
     based on https://medium.com/@bromanz/another-view-on-the-classic-ray-aabb-intersection-algorithm-for-bvh-traversal-41125138b525
@@ -131,14 +150,17 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
     t0s = (box[:3] - ray_o) * ray_inv_dir
     t1s = (box[3:] - ray_o) * ray_inv_dir
 
-    tsmaller = np.minimum(t1s, t0s)
-    tbigger = np.maximum(t1s, t0s)
+    t_smaller = np.minimum(t1s, t0s) #first hit
+    t_bigger = np.maximum(t1s, t0s) #second hit
 
-    tmin = np.max(tsmaller)
-    tmax = np.min(tbigger)
+    #if box infront of ray: t_bigger > t_smaller
+    #if box behind ray: t_bigger < t_smaller
+
+    #check the worst case: make t_bigger the smalled and t_smaller the biggest.
+    tmin = np.max(t_smaller)
+    tmax = np.min(t_bigger)
 
     return abs(tmin) <= abs(tmax)
-
 
 if __name__ == "__main__":
     #simple test to show functionality and speed

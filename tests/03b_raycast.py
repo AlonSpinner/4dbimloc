@@ -42,12 +42,11 @@ for a in actions:
     keyboard.wait('space')
     
     drone.move(a)
-    z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10)
+    z, z_ids, z_normals = sensor.sense(drone.pose, world, n_hits = 10, noisy = False)
     
     drone_p = sensor.scan_to_points(z)
     p = transform_from(drone.pose,drone_p)
 
-    
     z_ids_flat = z_ids.flatten()
     for s_i in range(len(world.solids)):
         if s_i in z_ids_flat:
