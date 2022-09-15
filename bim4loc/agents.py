@@ -43,7 +43,7 @@ class Drone:
         world_p - MX3 matrix
         '''
 
-        z, z_ids, z_normals = self.sensor.sense(self.pose, m, noisy = noisy)
+        z, z_ids, z_normals, _ = self.sensor.sense(self.pose, m, noisy = noisy)
         
         if project_scan:
             drone_p = self.sensor.scan_to_points(z)

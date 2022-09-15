@@ -52,7 +52,7 @@ visApp.redraw("simulation")
 bullet = PcdSolid()
 bullet.name = "bullet"
 bullet.material.point_size = 15.0
-bullet.material.base_color = np.array([1, 0, 1, 1])
+bullet.material.base_color = np.array([0, 1, 1, 1])
 visApp.add_solid(bullet, "world")
 
 shot_counter = 0
@@ -63,7 +63,7 @@ simulated_sensor.std = 0.5
 while True:
     # keyboard.wait('space')
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    simulated_z, simulated_z_ids, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     for t in np.linspace(0,1,10):
         p_bullet = (1 - t) * drone.pose[:3].reshape(3,1) + t * z_p

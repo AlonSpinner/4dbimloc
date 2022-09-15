@@ -27,8 +27,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-# sensor = Lidar(); 
-sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 10), angles_v = np.array([0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 36), angles_v = np.array([0])); 
 sensor.std = 0.1; 
 sensor.piercing = False
 sensor.max_range = 100.0
@@ -74,7 +73,7 @@ for t,u in enumerate(actions):
     drone.move(u)
     
     z, z_ids, _, z_p  = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    simulated_z, simulated_z_ids, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     filters.exact(beliefs, z, simulated_z, simulated_z_ids, 
                     sensor.std, sensor.max_range)

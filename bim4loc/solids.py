@@ -73,16 +73,17 @@ class PcdSolid(o3dSolid):
         if pcd is None:
             pcd = [[100,100,100]] #random far off point 
         self.geometry = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pcd))
-        if color.ndim == 2: #if color is a matrix
-            self.geometry.colors = o3d.utility.Vector3dVector(color)
-        else:
-            self.geometry.paint_uniform_color(color)
 
         mat = rendering.MaterialRecord()
         mat.shader = shader
         mat.point_size = 10.0
-        # mat.base_color = color
         self.material = mat
+
+        if color.ndim == 2: #if color is a matrix
+            self.geometry.colors = o3d.utility.Vector3dVector(color)
+        else:
+            # self.geometry.paint_uniform_color(color) #<--- no effect?
+            self.material.base_color = np.hstack((color,1.0))
 
     def update(self, pcd : np.ndarray, normals = None, color = None) -> None:
         '''

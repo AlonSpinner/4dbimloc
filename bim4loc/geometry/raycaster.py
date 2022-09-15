@@ -28,14 +28,18 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
         z_values - array of shape (n_rays, max_hits) containing range values
         z_ids - array of shape (n_rays, max_hits) containing meshes ids
                 as provided in meshes_v and meshes_t
+        z_normals - array of shape (n_rays, max_hits, 3) containing normals
+        z_cos_incident - array of shape (n_rays, max_hits) containing cos of incident angle
+        
         outputs are sorted by z_values (small to big)
     '''
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
 
-    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
+    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float32)
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
-    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
+    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float32)
+    z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float32)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
@@ -59,7 +63,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                     finished_mesh = True
                     break
                 
-                z, n = ray_triangle_intersection(ray, triangle)
+                z, n, c = ray_triangle_intersection(ray, triangle)
                 n = n.reshape((1,3))
                 if z != NO_HIT and z > 0:
                     ii = np.searchsorted(z_values[i_r], z)
@@ -69,15 +73,17 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                         z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
                         z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
+                        z_cos_incident[i_r] = np.hstack((np.array([c]), z_cos_incident[i_r][:-1]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
                         z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
+                        z_cos_incident[i_r] = np.hstack((z_cos_incident[i_r][:ii], np.array([c]), z_cos_incident[i_r][ii:-1]))
             
             if finished_mesh:
                 break
     
-    return z_values, z_ids, z_normals
+    return z_values, z_ids, z_normals, z_cos_incident
 
 @njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
@@ -91,33 +97,37 @@ def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
                             [cx,cy,cz]])
 
     output:
-        z - distance to intersection             
+        z - distance to intersection
+        n - normal of triangle at intersection
+        c - cosine of incident angle         
     '''
     eye = ray[:3]
     dir = ray[3:]
     edge1 = triangle[1] - triangle[0]
     edge2 = triangle[2] - triangle[0]
     n = np.zeros(3)
+    c = 0.0
 
     pvec = np.cross(dir,edge2)
     det = np.dot(edge1,pvec)
     if det < EPS: #abs(det) < EPS if we want internal intersection
-        return NO_HIT, n
+        return NO_HIT, n, c
     
     inv_det = 1.0/det
     tvec  = eye - triangle[0]
     u = np.dot(tvec, pvec) * inv_det
     if u < 0 or u > 1.0:
-        return NO_HIT, n
+        return NO_HIT, n, c
     qvec = np.cross(tvec,edge1)
     v = np.dot(dir,qvec) * inv_det
     if v < 0 or u + v > 1.0:
-        return NO_HIT, n
+        return NO_HIT, n, c
 
     z = np.dot(edge2,qvec) * inv_det
     n = np.cross(edge1,edge2)
     n = n/np.linalg.norm(n)
-    return z, n
+    c = np.dot(n, dir)
+    return z, n, c
 
 @njit(fastmath = True, cache = True)
 def triangle_to_AABB(triangle : np.ndarray) -> np.ndarray:
@@ -179,7 +189,7 @@ if __name__ == "__main__":
     # print((e-s)/N)
 
     ray = ray.reshape((1,6))
-    raycast(ray,triangle,np.array([[0,1,2]]),np.array([[2,-1,-1,2,1,1]]), np.array([0]), 3, 1, 1)
+    raycast(ray,triangle,np.array([[0,1,2]]),np.array([[2,-1,-1,2,1,1]]), np.array([0]), 3, 1, 5)
     N = int(1e2)    
     print('started')
     s = time.time()
