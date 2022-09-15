@@ -27,6 +27,9 @@ sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,36), angles_v = np.array(
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
+simulated_sensor = copy.deepcopy(sensor)
+simulated_sensor.std =  10.0 * sensor.std
+
 straight = np.array([0.5,0.0 ,0.0 ,0.0])
 turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
 turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
@@ -39,7 +42,7 @@ particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particl
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
                        np.random.uniform(-np.pi, np.pi, N_particles))).T
-particles[0] = drone.pose #<------------------------ CHEATTTTINGGG !!
+# particles[0] = drone.pose #<------------------------ CHEATTTTINGGG !!
 #INITALIZE WEIGHTS
 weights = np.ones(N_particles) / N_particles
 
@@ -80,7 +83,7 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _ = sensor.sense(particles[i], 
+        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particles[i], 
                                                             world, n_hits = 10, 
                                                             noisy = False)
         
@@ -88,15 +91,15 @@ for t, u in enumerate(actions):
         
         #line 229 in https://github.com/atinfinity/amcl/blob/master/src/amcl/sensors/amcl_laser.cpp
         weights[i] *= (1.0 + np.sum(pz**3))
-
         # weights[i] *= np.product(pz)
+
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights
     
     #resample
     n_eff = weights.dot(weights)
-    if n_eff < ETA_THRESHOLD or (t % 2) == 0:
+    if n_eff < ETA_THRESHOLD or (t % 4) == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]
