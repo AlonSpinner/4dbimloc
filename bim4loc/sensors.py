@@ -53,6 +53,7 @@ class Lidar(Sensor):
         if self.piercing == False:
             z_values = z_values[:,0]
             z_normals = z_normals[:,0]
+            z_cos_incident = z_cos_incident[:,0]
         
         if noisy:
             z_values = np.random.normal(z_values + self.bias, self.std)

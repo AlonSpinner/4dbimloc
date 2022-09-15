@@ -83,9 +83,10 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particles[i], 
-                                                            world, n_hits = 10, 
-                                                            noisy = False)
+        particle_z_values, particle_z_ids, _, particle_z_cos_incident \
+            = simulated_sensor.sense(particles[i], 
+                                     world, n_hits = 10, 
+                                     noisy = False)
         
         pz = 0.3 + 0.7 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
         

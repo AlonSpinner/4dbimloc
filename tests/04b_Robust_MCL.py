@@ -1,3 +1,4 @@
+from tkinter import N
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
@@ -24,7 +25,7 @@ world = RayCastingMap(solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,20), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,10), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -38,7 +39,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 500
+N_particles = 4000
 
 #debugging
 particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
@@ -64,21 +65,29 @@ visApp.add_solid(vis_scan)
 visApp.redraw()
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
-ETA_THRESHOLD = 1.0/N_particles
-ALPHA_SLOW = 0.01 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
-ALPHA_FAST = 0.3
+ETA_THRESHOLD = 5.0/N_particles
+ALPHA_SLOW = 0.001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
+ALPHA_FAST = 0.1
 POSE_MIN_BOUNDS = np.array([bounds_min[0],bounds_min[1], 0.0 , -np.pi])
 POSE_MAX_BOUNDS = np.array([bounds_max[0],bounds_max[1], 0.0 , np.pi])
+MIN_STEPS_4_RESAMPLE = 3
+CEILING_STEPS_4_RESAMPLE = 5
 w_slow = w_fast = 0.0
 #LOOP
 time.sleep(0.1)
+steps_from_resample = 0
 # keyboard.wait('space')
 for t, u in enumerate(actions):
+    #add 1 more step
+    steps_from_resample += 1
+
     #move drone
     drone.move(u)
     
     #produce measurement
-    z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True, noisy = False)
+    z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True, 
+                                                 noisy = False, 
+                                                 n_hits = 5)
 
     #---------------------------FILTER-------------------------------------
     #compute weights and normalize
@@ -92,15 +101,17 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particles[i], 
-                                                            world, n_hits = 10, 
-                                                            noisy = False)
+        particle_z_values, particle_z_ids, _, particle_z_cos_incident \
+            = simulated_sensor.sense(particles[i], 
+                                     world, n_hits = 5, 
+                                     noisy = False)
         
-        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, simulated_sensor.std, z, pseudo = True)
+        particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
+        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z, pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
-        # weights[i] *= 1.0 + np.sum(pz**3)
-        weights[i] *= np.product(pz)
+        weights[i] *= 1.0 + np.sum(pz**3)
+        # weights[i] *= np.product(pz)
         
         sum_weights += weights[i]
     
@@ -127,7 +138,10 @@ for t, u in enumerate(actions):
     # https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/pf/pf.c
     # "void pf_update_resample"
     n_eff = weights.dot(weights)
-    if n_eff < ETA_THRESHOLD or (t % 4) == 0:
+    if n_eff < ETA_THRESHOLD and steps_from_resample > MIN_STEPS_4_RESAMPLE \
+        or steps_from_resample > CEILING_STEPS_4_RESAMPLE:
+        steps_from_resample = 0
+
         new_particles = np.zeros_like(particles)
         
         c = np.cumsum(weights)

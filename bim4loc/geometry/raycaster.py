@@ -36,10 +36,10 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
     N_meshes = int(meshes_t.shape[0]/ inc_t)
     N_rays = rays.shape[0]
 
-    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float32)
+    z_values = np.full((N_rays, max_hits), np.inf, dtype = np.float64)
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
-    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float32)
-    z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float32)
+    z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
+    z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float64)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]

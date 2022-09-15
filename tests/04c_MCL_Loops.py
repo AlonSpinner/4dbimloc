@@ -90,11 +90,13 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _ = simulated_sensor.sense(particles[i], 
-                                                            world, n_hits = 10, 
-                                                            noisy = False)
+        particle_z_values, particle_z_ids, _, particle_z_cos_incident \
+            = simulated_sensor.sense(particles[i], 
+                                     world, n_hits = 5, 
+                                     noisy = False)
         
-        pz = 0.9 + 0.1 * gaussian_pdf(particle_z_values, simulated_sensor.std, z, pseudo = True)
+        particle_stds = simulated_sensor.std#/np.maximum(np.abs(particle_z_cos_incident), 1e-16)
+        pz = 0.9 + 0.1 * gaussian_pdf(particle_z_values, particle_stds, z, pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
         weights[i] = 1.0 + np.sum(pz**3)

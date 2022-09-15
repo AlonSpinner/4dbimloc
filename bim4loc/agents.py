@@ -29,21 +29,14 @@ class Drone:
         self.sensor : Lidar = sensor
 
     def move(self, u : np.ndarray, cov : np.ndarray = None):
-        
         if cov is not None:
             u = np.random.multivariate_normal(u, cov)
         
         self.pose = compose_s(self.pose, u)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : RayCastingMap, project_scan = False, noisy = True) -> Union[np.ndarray, np.ndarray, list[str]]:
-        '''
-        output:
-        z - 1D array
-        world_p - MX3 matrix
-        '''
-
-        z, z_ids, z_normals, _ = self.sensor.sense(self.pose, m, noisy = noisy)
+    def scan(self, m : RayCastingMap, project_scan = False, noisy = True, n_hits = 10):
+        z, z_ids, z_normals, _ = self.sensor.sense(self.pose, m, noisy = noisy, n_hits = n_hits)
         
         if project_scan:
             drone_p = self.sensor.scan_to_points(z)
