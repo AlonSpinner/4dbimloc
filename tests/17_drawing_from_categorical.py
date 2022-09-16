@@ -73,14 +73,12 @@ plot_compare(samples, "multinomial")
 #https://discourse.pymc.io/t/preferred-sampler-for-categorical-predictors/7229/2
 #https://stats.stackexchange.com/questions/171269/pymc3-sampling-from-a-categorical-distribution
 # https://www.statlect.com/fundamentals-of-statistics/Metropolis-Hastings-algorithm
-# with pymc3.Model() as model:
-#     category = pymc3.Categorical(name='category',
-#                                  p = p_categories)
-#     start = pymc3.find_MAP()
-#     step = pymc3.NUTS(scaling=start)
-#     trace = pymc3.sample(20, start = start, step=step)
-# samples = trace['category']
-# plot_compare(samples, "pymc3")
+with pymc3.Model() as model:
+    category = pymc3.Categorical(name='category',
+                                 p = p_categories)
+    trace = pymc3.sample(N_samples)
+samples = trace['category']
+plot_compare(samples, "pymc3")
 
 
 plt.show()

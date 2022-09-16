@@ -52,6 +52,7 @@ class Lidar(Sensor):
         
         if self.piercing == False:
             z_values = z_values[:,0]
+            z_ids = z_ids[:,0]
             z_normals = z_normals[:,0]
             z_cos_incident = z_cos_incident[:,0]
         

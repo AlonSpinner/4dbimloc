@@ -136,7 +136,7 @@ for t in range(200):
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         simulation.update_solids_beliefs(estimate_beliefs)        
 
-       #updating drawings
+    #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
