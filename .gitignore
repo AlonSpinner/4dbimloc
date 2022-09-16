@@ -2,3 +2,9 @@
 *.pyc
 *.nbi
 *.nbc
+
+_configtest
+
+_configtest.c
+
+_configtest.o

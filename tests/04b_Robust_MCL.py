@@ -39,7 +39,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 4000
+N_particles = 100
 
 #debugging
 particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
@@ -144,27 +144,27 @@ for t, u in enumerate(actions):
 
         new_particles = np.zeros_like(particles)
         
-        c = np.cumsum(weights)
-        
-        w_diff = max(1.0 - w_fast / w_slow, 0.0)
+        w_diff = max(1.0 - w_fast / w_slow, 0.0) #percentage of random samples
 
         logging.info(f"resampling with w_diff = {w_diff}")
-        i = 0
-        while i < N_particles:
-            if np.random.uniform() < w_diff:
-                new_particles[i] = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS)
-                i += 1
-            else:
-                r = np.random.uniform()
-                for j in range(N_particles):
-                    if c[j] <= r and r < c[j+1]:
-                        break
-
-                if weights[j] > 0.0:
-                    new_particles[i] = particles[j]
-                    i += 1
         
-        particles = new_particles
+        N_random = int(w_diff*100)
+        N_resample = N_particles - N_random
+        random_samples = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS, (N_random , 4))
+        resample_samples = np.zeros((N_resample,4))
+
+        idx = 0
+        c = weights[0]
+        duu = 1.0/N_resample
+        r = np.random.uniform() * duu
+        for i in range(N_resample):
+            uu = r + i*duu
+            while uu > c:
+                idx += 1
+                c += weights[idx]
+            resample_samples[i] = particles[idx]
+        
+        particles = np.vstack((random_samples, resample_samples))
         weights = np.ones(N_particles) / N_particles
 
         #Reset averages, to avoid spiraling off into complete randomness.

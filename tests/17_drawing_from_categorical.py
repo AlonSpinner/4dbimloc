@@ -7,8 +7,8 @@ import pymc3
 np.random.seed(25)
 
 
-N_categories = 100
-N_samples = 100
+N_categories = 10
+N_samples = 10
 categories = np.arange(N_categories)
 p_categories = np.random.uniform(0,1, N_categories)
 p_categories = p_categories/np.sum(p_categories) #normalize
@@ -54,7 +54,18 @@ for k in range(int(N_samples_LVS/N_categories)):
 
 plot_compare(samples, "Low Variance Sampler")
 
+# --------------------------------------------------------------------------------------------------------
+# -------------------------------------- MultiNomial---------------------------------------------
+# --------------------------------------------------------------------------------------------------------
 
+hist = np.random.multinomial(N_samples, p_categories)
+samples = []
+for i, h in enumerate(hist):
+    samples.extend([i] * h)
+samples = np.array(samples)
+
+
+plot_compare(samples, "multinomial")
 # --------------------------------------------------------------------------------------------------------
 # -------------------------------------- PYMC3---------------------------------------------
 # --------------------------------------------------------------------------------------------------------
@@ -62,14 +73,14 @@ plot_compare(samples, "Low Variance Sampler")
 #https://discourse.pymc.io/t/preferred-sampler-for-categorical-predictors/7229/2
 #https://stats.stackexchange.com/questions/171269/pymc3-sampling-from-a-categorical-distribution
 # https://www.statlect.com/fundamentals-of-statistics/Metropolis-Hastings-algorithm
-with pymc3.Model() as model:
-    category = pymc3.Categorical(name='category',
-                                 p = p_categories)
-    start = pymc3.find_MAP()
-    step = pymc3.NUTS(scaling=start)
-    trace = pymc3.sample(20, start = start, step=step)
-samples = trace['category']
-plot_compare(samples, "pymc3")
+# with pymc3.Model() as model:
+#     category = pymc3.Categorical(name='category',
+#                                  p = p_categories)
+#     start = pymc3.find_MAP()
+#     step = pymc3.NUTS(scaling=start)
+#     trace = pymc3.sample(20, start = start, step=step)
+# samples = trace['category']
+# plot_compare(samples, "pymc3")
 
 
 plt.show()
