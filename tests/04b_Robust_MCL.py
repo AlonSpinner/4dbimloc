@@ -46,7 +46,7 @@ particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particl
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
                        np.random.uniform(-np.pi, np.pi, N_particles))).T
-particles[0] = drone.pose #<------------------------ CHEATTTTINGGG !!
+
 #INITALIZE WEIGHTS
 weights = np.ones(N_particles) / N_particles
 
@@ -64,10 +64,10 @@ vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan)
 visApp.redraw()
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
 ETA_THRESHOLD = 5.0/N_particles
-ALPHA_SLOW = 0.001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
-ALPHA_FAST = 0.1
+ALPHA_SLOW = 0.0001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
+ALPHA_FAST = 1.0
 POSE_MIN_BOUNDS = np.array([bounds_min[0],bounds_min[1], 0.0 , -np.pi])
 POSE_MAX_BOUNDS = np.array([bounds_max[0],bounds_max[1], 0.0 , np.pi])
 MIN_STEPS_4_RESAMPLE = 3
@@ -75,7 +75,7 @@ CEILING_STEPS_4_RESAMPLE = 5
 w_slow = w_fast = 0.0
 #LOOP
 time.sleep(0.1)
-steps_from_resample = 0
+steps_from_resample = CEILING_STEPS_4_RESAMPLE
 # keyboard.wait('space')
 for t, u in enumerate(actions):
     #add 1 more step
@@ -138,8 +138,8 @@ for t, u in enumerate(actions):
     # https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/pf/pf.c
     # "void pf_update_resample"
     n_eff = weights.dot(weights)
-    if n_eff < ETA_THRESHOLD and steps_from_resample > MIN_STEPS_4_RESAMPLE \
-        or steps_from_resample > CEILING_STEPS_4_RESAMPLE:
+    if n_eff < ETA_THRESHOLD and steps_from_resample >= MIN_STEPS_4_RESAMPLE \
+        or steps_from_resample >= CEILING_STEPS_4_RESAMPLE:
         steps_from_resample = 0
 
         new_particles = np.zeros_like(particles)
