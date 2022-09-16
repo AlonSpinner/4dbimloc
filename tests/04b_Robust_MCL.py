@@ -39,7 +39,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 100
+N_particles = 200
 
 #debugging
 particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
@@ -66,15 +66,15 @@ visApp.redraw()
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
 ETA_THRESHOLD = 5.0/N_particles
-ALPHA_SLOW = 0.0001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
-ALPHA_FAST = 1.0
+ALPHA_SLOW = 0.001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
+ALPHA_FAST = 2.0
 POSE_MIN_BOUNDS = np.array([bounds_min[0],bounds_min[1], 0.0 , -np.pi])
 POSE_MAX_BOUNDS = np.array([bounds_max[0],bounds_max[1], 0.0 , np.pi])
 MIN_STEPS_4_RESAMPLE = 3
 CEILING_STEPS_4_RESAMPLE = 5
 w_slow = w_fast = 0.0
 #LOOP
-time.sleep(0.1)
+time.sleep(2)
 steps_from_resample = CEILING_STEPS_4_RESAMPLE
 # keyboard.wait('space')
 for t, u in enumerate(actions):
@@ -124,6 +124,7 @@ for t, u in enumerate(actions):
 
         #Updating w_slow and w_fast
         w_avg = sum_weights / N_particles
+
         if w_slow == 0.0:
             w_slow = w_avg
         else:
@@ -144,27 +145,31 @@ for t, u in enumerate(actions):
 
         new_particles = np.zeros_like(particles)
         
-        w_diff = max(1.0 - w_fast / w_slow, 0.0) #percentage of random samples
+        w_diff = np.clip(1.0 - w_fast / w_slow, 0.0, 1.0) #percentage of random samples
 
         logging.info(f"resampling with w_diff = {w_diff}")
         
-        N_random = int(w_diff*100)
-        N_resample = N_particles - N_random
+        N_random = int(w_diff * N_particles)
         random_samples = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS, (N_random , 4))
-        resample_samples = np.zeros((N_resample,4))
-
-        idx = 0
-        c = weights[0]
-        duu = 1.0/N_resample
-        r = np.random.uniform() * duu
-        for i in range(N_resample):
-            uu = r + i*duu
-            while uu > c:
-                idx += 1
-                c += weights[idx]
-            resample_samples[i] = particles[idx]
         
-        particles = np.vstack((random_samples, resample_samples))
+        N_resample = N_particles - N_random
+        if N_resample > 0:
+            resample_samples = np.zeros((N_resample,4))
+            idx = 0
+            c = weights[0]
+            duu = 1.0/N_resample
+            r = np.random.uniform() * duu
+            for i in range(N_resample):
+                uu = r + i*duu
+                while uu > c:
+                    idx += 1
+                    c += weights[idx]
+                resample_samples[i] = particles[idx]
+        
+            particles = np.vstack((random_samples, resample_samples))
+        else:
+            particles = random_samples
+
         weights = np.ones(N_particles) / N_particles
 
         #Reset averages, to avoid spiraling off into complete randomness.
