@@ -55,9 +55,9 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
             for i_t in prange(m_t.shape[0]):
                 triangle = m_v[m_t[i_t]]
                 
-                #NOT SURE WHY THIS DOESNT WORK!?
+                #DOES NOT ACCELERATE COMPUTATIONS?
                 # if not(ray_box_intersection(ray[:3], inv_ray_dir, triangle_to_AABB(triangle))):
-                    # continue
+                #     continue
 
                 if triangle.sum() == 0: #empty triangle
                     finished_mesh = True
@@ -139,8 +139,8 @@ def triangle_to_AABB(triangle : np.ndarray) -> np.ndarray:
     output:
         AABB - np.array([minx,miny,minz,maxx,maxy,maxz])
     '''
-    vmin = np.minimum(triangle[0], triangle[1], triangle[2])
-    vmax = np.maximum(triangle[0], triangle[1], triangle[2])
+    vmin = np.minimum(np.minimum(triangle[0], triangle[1]),triangle[2])
+    vmax = np.maximum(np.maximum(triangle[0], triangle[1]), triangle[2])
     return np.hstack((vmin, vmax))
 
 @njit(fastmath = True, cache = True)
