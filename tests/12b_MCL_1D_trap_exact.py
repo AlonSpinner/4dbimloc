@@ -123,13 +123,16 @@ for t in range(200):
         idx = 0
         c = weights[idx]
         new_particle_poses = np.zeros_like(particle_poses)
+        new_particle_beliefs = np.zeros_like(particle_beliefs)
         for i in range(N_particles):
             uu = r + i*1/N_particles
             while uu > c:
                 idx += 1
                 c += weights[idx]
             new_particle_poses[i] = particle_poses[idx]
+            new_particle_beliefs[i] = particle_beliefs[idx]
         particle_poses = new_particle_poses
+        particle_beliefs = new_particle_beliefs
         weights = np.ones(N_particles) / N_particles
 
     if (t % 5) != 0:

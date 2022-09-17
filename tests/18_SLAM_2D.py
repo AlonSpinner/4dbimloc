@@ -8,7 +8,8 @@ from bim4loc.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.existance_mapping.filters import exact
+from bim4loc.existance_mapping.filters import exact, approx
+from bim4loc.random.utils import p2logodds, logodds2p
 import time
 import logging
 import copy
@@ -39,18 +40,19 @@ for i, s in enumerate(solids):
     s_simulation_belief = s.schedule.cdf(current_time)
     s_simulation.set_existance_belief_and_shader(s_simulation_belief)
     
-    beliefs[i] = s_simulation_belief
+    beliefs[i] = p2logodds(s_simulation_belief)
+    # beliefs[i] = s_simulation_belief
     simulation_solids.append(s_simulation)
 simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,10), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2, 8), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = copy.deepcopy(sensor)
-simulated_sensor.std = 10.0 * sensor.std
+simulated_sensor.std = 5.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
@@ -63,10 +65,15 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 bounds_min, bounds_max, extent = world.bounds()
 N_particles = 200
 
-particle_poses = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
-                       np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
+# particle_poses = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
+#                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
+#                        np.full(N_particles,drone.pose[2]),
+#                        np.random.uniform(-np.pi, np.pi, N_particles))).T
+
+particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
+                       np.random.normal(drone.pose[1], 0.5, N_particles),
                        np.full(N_particles,drone.pose[2]),
-                       np.random.uniform(-np.pi, np.pi, N_particles))).T
+                       np.random.normal(drone.pose[3], np.radians(7.0), N_particles))).T
 
 particle_beliefs = np.tile(beliefs, (N_particles,1))
 
@@ -93,10 +100,10 @@ vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
 visApp.add_solid(vis_particles.tails, "simulation")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
 ETA_THRESHOLD = 5.0/N_particles
-ALPHA_SLOW = 0.001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
-ALPHA_FAST = 2.0
+ALPHA_SLOW = 0* 0.001 #0.0 <= ALPHA_SLOW << ALPHA_FAST, also: http://wiki.ros.org/amcl
+ALPHA_FAST = 0* 2.0
 POSE_MIN_BOUNDS = np.array([bounds_min[0],bounds_min[1], 0.0 , -np.pi])
 POSE_MAX_BOUNDS = np.array([bounds_max[0],bounds_max[1], 0.0 , np.pi])
 MIN_STEPS_4_RESAMPLE = 3
@@ -136,8 +143,8 @@ for t, u in enumerate(actions):
                                      noisy = False)
         
         particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
-        pz = 0.1 + 0.9 * np.max(gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True), axis = 1)
-        # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
+        # pz = np.max(gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True), axis = 1)
+        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
         weights[i] *= 1.0 + np.sum(pz**3)
@@ -146,7 +153,7 @@ for t, u in enumerate(actions):
         sum_weights += weights[i]
 
             #update mapping
-        exact(particle_beliefs[i], 
+        approx(particle_beliefs[i], 
             z, 
             particle_z_values, 
             particle_z_ids, 
@@ -188,7 +195,6 @@ for t, u in enumerate(actions):
         N_random = int(w_diff * N_particles)
         if N_random > 0:
             random_samples = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS, (N_random , 4))
-            particle_beliefs_expectancy = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         
         N_resample = N_particles - N_random
         if N_resample > 0:
@@ -205,14 +211,18 @@ for t, u in enumerate(actions):
                     c += weights[idx]
                 resample_samples[i] = particle_poses[idx]
                 resample_beliefs[i] = particle_beliefs[idx]
-        
+
+            # particle_beliefs_4new = particle_beliefs[np.argmax(weights)]
+            particle_beliefs_4new = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
+
         if N_resample > 0 and N_random > 0:
+
             particle_poses = np.vstack((random_samples, resample_samples))
-            particle_beliefs = np.vstack((np.tile(particle_beliefs_expectancy, (random_samples,1)),
+            particle_beliefs = np.vstack((np.tile(particle_beliefs_4new, (N_random,1)),
                                            resample_beliefs))
         elif N_random > 0:
             particle_poses = random_samples
-            particle_beliefs = np.tile(particle_beliefs_expectancy, (random_samples,1))
+            particle_beliefs = np.tile(particle_beliefs_4new, (N_random,1))
         else:
             particle_poses = resample_samples
             particle_beliefs = resample_beliefs
@@ -224,9 +234,10 @@ for t, u in enumerate(actions):
             w_slow = w_fast = 0.0
 
     #updating drawings
-    # estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
-    estimate_beliefs = particle_beliefs[np.argmax(weights)]
-    simulation.update_solids_beliefs(estimate_beliefs)   
+    estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
+    # estimate_beliefs = particle_beliefs[np.argmax(weights)]
+    simulation.update_solids_beliefs(logodds2p(estimate_beliefs))
+    # simulation.update_solids_beliefs(estimate_beliefs)
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
