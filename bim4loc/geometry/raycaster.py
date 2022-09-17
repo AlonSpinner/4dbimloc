@@ -160,17 +160,14 @@ def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.
     t0s = (box[:3] - ray_o) * ray_inv_dir
     t1s = (box[3:] - ray_o) * ray_inv_dir
 
-    t_smaller = np.minimum(t1s, t0s) #first hit
     t_bigger = np.maximum(t1s, t0s) #second hit
 
-    #if box infront of ray: t_bigger > t_smaller
-    #if box behind ray: t_bigger < t_smaller
-
-    #check the worst case: make t_bigger the smalled and t_smaller the biggest.
-    tmin = np.max(t_smaller)
+    #check the worst case
     tmax = np.min(t_bigger)
-
-    return abs(tmin) <= abs(tmax)
+    if tmax < 0:
+        return False
+    else:
+        return True
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
