@@ -136,7 +136,8 @@ for t, u in enumerate(actions):
                                      noisy = False)
         
         particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
-        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z, pseudo = True)
+        pz = 0.1 + 0.9 * np.max(gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True), axis = 1)
+        # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
         weights[i] *= 1.0 + np.sum(pz**3)
@@ -185,11 +186,14 @@ for t, u in enumerate(actions):
         logging.info(f"resampling with w_diff = {w_diff}")
         
         N_random = int(w_diff * N_particles)
-        random_samples = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS, (N_random , 4))
+        if N_random > 0:
+            random_samples = np.random.uniform(POSE_MIN_BOUNDS, POSE_MAX_BOUNDS, (N_random , 4))
+            particle_beliefs_expectancy = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         
         N_resample = N_particles - N_random
         if N_resample > 0:
             resample_samples = np.zeros((N_resample,4))
+            resample_beliefs = np.zeros((N_resample,len(simulation.solids)))
             idx = 0
             c = weights[0]
             duu = 1.0/N_resample
@@ -200,10 +204,18 @@ for t, u in enumerate(actions):
                     idx += 1
                     c += weights[idx]
                 resample_samples[i] = particle_poses[idx]
+                resample_beliefs[i] = particle_beliefs[idx]
         
+        if N_resample > 0 and N_random > 0:
             particle_poses = np.vstack((random_samples, resample_samples))
-        else:
+            particle_beliefs = np.vstack((np.tile(particle_beliefs_expectancy, (random_samples,1)),
+                                           resample_beliefs))
+        elif N_random > 0:
             particle_poses = random_samples
+            particle_beliefs = np.tile(particle_beliefs_expectancy, (random_samples,1))
+        else:
+            particle_poses = resample_samples
+            particle_beliefs = resample_beliefs
 
         weights = np.ones(N_particles) / N_particles
 
@@ -212,6 +224,9 @@ for t, u in enumerate(actions):
             w_slow = w_fast = 0.0
 
     #updating drawings
+    # estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
+    estimate_beliefs = particle_beliefs[np.argmax(weights)]
+    simulation.update_solids_beliefs(estimate_beliefs)   
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
