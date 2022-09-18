@@ -17,7 +17,8 @@ h) recording rgbd data from a real construction site that we can model
 i) Additional Thoughts: layering the map with different overlapping options
 j) Additional Thoughts: Adding Semantics! Will allow us to use semantic data from RGB that has no D.
 k) Additional Thoughts: adding a "time" dimension to PF and search for correct time #where schedule comes in
-l) Writing Writing Writing... god who has time for this.
-m) wrapping the filter up and throwing it into a gazebo simulation?
+l) Additional Thoughts: Autonmous agent!
+m) Writing Writing Writing... god who has time for this.
+n) wrapping the filter up and throwing it into a gazebo simulation?
 
 

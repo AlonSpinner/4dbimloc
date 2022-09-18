@@ -39,7 +39,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 200
+N_particles = 5000
 particles = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
