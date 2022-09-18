@@ -1,4 +1,22 @@
 
 tensorflow: getting rid of warnnings -> https://github.com/tensorflow/tensorflow/issues/42738
 	$ for a in /sys/bus/pci/devices/*; do echo 0 | sudo tee -a $a/numa_node; done
+	
+	
+THINGS TO WORK ON WHEN COMING BACK FROM THE EXCURSION:
+a) BVH/KDTree for raycaster
+b) making the filter work with exact inverse (abandoning max(pz))
+c) throwing the filter into a numba wrapper
+d) incorprating scan matching into the frame work
+e) implementing adjustable particle numbers (KLD, follow ros amcl)  #recommended particle size 1000#
+		--- what map do new particles get?
+		
+f) testing std(hit_normal, ray direction)
+g) creating a real-like construction site map to work simulate on
+h) recording rgbd data from a real construction site that we can model
+i) Additional Thoughts: layering the map with different overlapping options
+j) Additional Thoughts: Adding Semantics! Will allow us to use semantic data from RGB that has no D.
+k) Additional Thoughts: adding a "time" dimension to PF and search for correct time #where schedule comes in
+l) Writing Writing Writing... god who has time for this.
+
 
