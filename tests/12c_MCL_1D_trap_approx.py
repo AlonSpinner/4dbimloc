@@ -15,7 +15,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import keyboard
 
-np.random.seed(25)
+np.random.seed(23)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -153,4 +153,4 @@ for t in range(200):
     # plt.xlim([bounds_min[1], bounds_max[1]])
     # plt.show()
 
-    time.sleep(0.1)
+    # time.sleep(0.1)

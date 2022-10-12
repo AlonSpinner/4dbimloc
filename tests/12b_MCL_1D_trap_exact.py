@@ -14,7 +14,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import keyboard
 
-np.random.seed(25)
+np.random.seed(25) #25, 24 are bad. 23 looks good :X
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -48,12 +48,11 @@ simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 10
+N_particles = 100
 particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
                        np.full(N_particles, 0.0))).T
-
 particle_beliefs = np.tile(beliefs, (N_particles,1))
 
 #initalize weights
@@ -109,7 +108,7 @@ for t in range(200):
                 z, 
                 particle_z_values, 
                 particle_z_ids, 
-                simulated_sensor.std, 
+                simulated_sensor.std * 10.0,  # THIS IS STUPID BUT IT WORKS
                 simulated_sensor.max_range)
 
         # pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
@@ -121,7 +120,7 @@ for t in range(200):
     weights = weights / sum_weights
     
     #resample
-    if t % 5 == 0:
+    if t % 15 == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]
