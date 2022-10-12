@@ -22,6 +22,16 @@ def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs,
     and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
     by Evan Kaufman et al.
     
+    input:
+    wz_i - world z value of i'th ray (np. array of floats)
+    sz_i - simulated z value of i'th ray (np.array of floats)
+    beliefs - probability of existance of each solid (np.array of floats [0,1])
+    sensor_std - standard deviation of sensor (float)
+    sensor_max_range - maximum range of sensor (float)
+
+    output:
+    pj_z_i - updated existance beliefs given measurement (probabilty of solid j, given z_i)
+    p_z_i - probability of measurement given existance beliefs
     '''
     N_maxhits = sz_i.size
     valid_hits = 0
@@ -55,8 +65,8 @@ def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs,
     inv_eta += Pjbar * forward_sensor_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    pz = inv_eta/(1.0 + p_random) #small normalization for 1.0 maximum value
-    return pj_z_i, pz
+    p_z_i = inv_eta/(1.0 + p_random) #small normalization for 1.0 maximum value
+    return pj_z_i, p_z_i
 
 @njit(cache = True)
 def binary_variable_update(current, update):
@@ -86,22 +96,26 @@ def exact(beliefs : np.ndarray,
     
     outputs:
         beliefs - updated beliefs
+        p_z - np.array of probability of measurements given existance beliefs
     '''
 
     N_rays = world_z.shape[0]
+    p_z = np.zeros(N_rays)
 
     for i in prange(N_rays):
         wz_i = world_z[i]
         sz_i = simulated_z[i]
         szid_i =  simulated_z_ids[i]
 
-        pj_zi, _ = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
+        pj_zi, p_z_i = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
                                 sensor_std, sensor_max_range)
         for j, p in enumerate(pj_zi):
-            szid_ij = szid_i[j]
+            szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             beliefs[szid_ij] = p #binary_variable_update(beliefs[szid_ij], p)
         
-    return beliefs
+        p_z[i] = p_z_i
+        
+    return beliefs, p_z
 
 @njit(parallel = True, cache = True)
 def approx(logodds_beliefs : np.ndarray, 

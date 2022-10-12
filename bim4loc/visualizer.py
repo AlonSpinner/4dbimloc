@@ -1,4 +1,3 @@
-
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
 from bim4loc.solids import o3dSolid
@@ -86,6 +85,7 @@ class VisApp():
 
             def _on_mouse_widget3d(window, scene_widget, info, event):
                 #from here: http://www.open3d.org/docs/release/python_example/visualization/index.html#mouse-and-point-coord-py
+                #correction from here? https://github.com/isl-org/Open3D/issues/4244
                 
                 # We could override BUTTON_DOWN without a modifier, but that would
                 # interfere with manipulating the scene.
@@ -104,10 +104,10 @@ class VisApp():
                         depth = np.asarray(depth_image)[y, x]
 
                         if depth == 1.0:  # clicked on nothing (i.e. the far plane)
-                            text = "nothing-clicked"
+                            text = ""
                         else:
                             world = scene_widget.scene.camera.unproject(
-                                event.x, event.y, depth, scene_widget.frame.width,
+                                x, y, depth, scene_widget.frame.width,
                                 scene_widget.frame.height)
                             text = "({:.3f}, {:.3f}, {:.3f})".format(
                                 world[0], world[1], world[2])
@@ -117,7 +117,7 @@ class VisApp():
                         def update_label():
                             info.text = text
                             print(text) #<-------------------------------------------- PRINT TO CONSOLE
-                            # info.visible = (text != "")
+                            info.visible = (text != "")
                             # We are sizing the info label to be exactly the right size,
                             # so since the text likely changed width, we need to
                             # re-layout to set the new frame.

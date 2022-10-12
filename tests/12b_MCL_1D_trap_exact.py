@@ -48,7 +48,7 @@ simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 100
+N_particles = 10
 particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
@@ -92,7 +92,7 @@ for t in range(200):
     drone.move(u)
     
     #produce measurement
-    z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True)
+    z, _, _, z_p = drone.scan(world, project_scan = True)
 
     #---------------------------FILTER-------------------------------------
     #compute weights and normalize
@@ -100,20 +100,22 @@ for t in range(200):
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
-        particle_z_values, particle_z_ids, _, _, _ = simulated_sensor.sense(particle_poses[i], 
+        particle_z_values, particle_z_ids, _, _, partcile_n_hits = simulated_sensor.sense(particle_poses[i], 
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         
-        exact(particle_beliefs[i], 
+        
+        _, pz = exact(particle_beliefs[i], 
                 z, 
                 particle_z_values, 
                 particle_z_ids, 
                 simulated_sensor.std, 
                 simulated_sensor.max_range)
 
-        pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        # pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
 
-        weights[i] *= np.max(pz) #<-------- THIS NEEDS TO CHANGE?
+        weights[i] *= np.product(pz)
+        # weights[i] *= 1.0 + np.product(pz**3)
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights
