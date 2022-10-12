@@ -101,7 +101,7 @@ for t in range(200):
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
-        particle_z_values, particle_z_ids, _, _ = simulated_sensor.sense(particle_poses[i], 
+        particle_z_values, particle_z_ids, _, _, _ = simulated_sensor.sense(particle_poses[i], 
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         

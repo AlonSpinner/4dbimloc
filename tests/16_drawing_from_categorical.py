@@ -1,4 +1,5 @@
 # https://stackoverflow.com/questions/62861868/how-to-draw-a-sample-from-a-categorical-distribution
+#requires installion of pymc with "pip install pymc3"
 
 import numpy as np
 import matplotlib.pyplot as plt

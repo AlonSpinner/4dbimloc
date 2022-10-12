@@ -48,20 +48,21 @@ class Lidar(Sensor):
     def sense(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         rays = self.transform_rays(pose)
         
-        z_values, z_ids, z_normals, z_cos_incident = raycaster.raycast(rays, *m.scene, n_hits)
+        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = raycaster.raycast(rays, *m.scene, n_hits)
         
         if self.piercing == False:
             z_values = z_values[:,0]
             z_ids = z_ids[:,0]
             z_normals = z_normals[:,0]
             z_cos_incident = z_cos_incident[:,0]
+            z_n_hits = np.minimum(z_n_hits,1)
         
         if noisy:
             z_values = np.random.normal(z_values + self.bias, self.std)
 
         z_values[z_values > self.max_range] = self.max_range
 
-        return z_values, z_ids, z_normals, z_cos_incident
+        return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
     
     def transform_rays(self, pose : np.ndarray) -> np.ndarray:
         #returns rays in world system to be used by raycaster.

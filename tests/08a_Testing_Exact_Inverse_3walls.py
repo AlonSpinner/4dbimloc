@@ -54,7 +54,7 @@ visApp.redraw("world")
 for i, b in enumerate(bias):
     drone.sensor.bias = b
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     pj_z_i, pz = filters.inverse_sensor_model(z[0], simulated_z[0], simulated_z_ids[0], \
                         beliefs, simulated_sensor.std, simulated_sensor.max_range)

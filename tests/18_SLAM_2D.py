@@ -137,7 +137,7 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _, particle_z_cos_incident \
+        particle_z_values, particle_z_ids, _, particle_z_cos_incident, _ \
             = simulated_sensor.sense(particle_poses[i], 
                                      simulation, n_hits = 5, 
                                      noisy = False)

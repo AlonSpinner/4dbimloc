@@ -30,6 +30,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                 as provided in meshes_v and meshes_t
         z_normals - array of shape (n_rays, max_hits, 3) containing normals
         z_cos_incident - array of shape (n_rays, max_hits) containing cos of incident angle
+        z_n_hits - array of shape (n_rays, ) containing number of hits for each ray
         
         outputs are sorted by z_values (small to big)
     '''
@@ -40,6 +41,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
     z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
     z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float64)
+    z_n_hits = np.zeros((N_rays, ), dtype = np.int32)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
@@ -74,16 +76,18 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
                         z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
                         z_cos_incident[i_r] = np.hstack((np.array([c]), z_cos_incident[i_r][:-1]))
+                        z_n_hits[i_r] += 1
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
                         z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
                         z_cos_incident[i_r] = np.hstack((z_cos_incident[i_r][:ii], np.array([c]), z_cos_incident[i_r][ii:-1]))
+                        z_n_hits[i_r] += 1
             
             if finished_mesh:
                 break
     
-    return z_values, z_ids, z_normals, z_cos_incident
+    return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
 
 @njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):

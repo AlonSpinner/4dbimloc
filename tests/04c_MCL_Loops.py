@@ -30,7 +30,7 @@ sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = copy.deepcopy(sensor)
-simulated_sensor.std =  1.0 * sensor.std
+simulated_sensor.std =  5.0 * sensor.std
 
 straight = np.array([0.5,0.0 ,0.0 ,0.0])
 turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
@@ -90,7 +90,7 @@ for t, u in enumerate(actions):
             weights[i] = 0.0
             continue
 
-        particle_z_values, particle_z_ids, _, particle_z_cos_incident \
+        particle_z_values, particle_z_ids, _, particle_z_cos_incident,_ \
             = simulated_sensor.sense(particles[i], 
                                      world, n_hits = 5, 
                                      noisy = False)
