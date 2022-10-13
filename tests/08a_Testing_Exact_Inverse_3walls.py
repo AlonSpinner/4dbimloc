@@ -5,7 +5,8 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import IfcSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
+from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
@@ -56,7 +57,7 @@ for i, b in enumerate(bias):
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
-    pj_z_i, pz = filters.inverse_sensor_model(z[0], simulated_z[0], simulated_z_ids[0], \
+    pj_z_i, pz = inverse_lidar_model(z[0], simulated_z[0], simulated_z_ids[0], \
                         beliefs, simulated_sensor.std, simulated_sensor.max_range)
     history_pz_ij[i] = np.hstack((pj_z_i, pz))
     

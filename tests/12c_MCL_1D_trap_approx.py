@@ -4,9 +4,10 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.existance_mapping.filters import approx, inverse_sensor_model
+from bim4loc.existance_mapping.filters import approx
+from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.utils import logodds2p, p2logodds
 import time
@@ -109,7 +110,7 @@ for t in range(200):
         #calcualte importance weight -> find current posterior distribution
         pz = np.zeros(len(z))
         for j in range(len(z)):
-            _, pz[j] = inverse_sensor_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
+            _, pz[j] = inverse_lidar_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
                             simulated_sensor.std, simulated_sensor.max_range)
 
         # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)

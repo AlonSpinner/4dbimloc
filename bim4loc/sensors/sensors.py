@@ -5,8 +5,6 @@ import numpy as np
 from functools import partial
 
 from numba import njit
-import bim4loc.random.one_dim as r_1d
-gaussian_pdf = r_1d.Gaussian._pdf 
 
 class Sensor():
     def __init__(self):
@@ -106,28 +104,6 @@ class Lidar(Sensor):
                  i,j = n2ij(n_i, Nv)
                  qz[:, n_i] = z[n_i] * spherical_coordiantes(angles_u[i], angles_v[j])
             return qz
-
-    @staticmethod
-    @njit(cache = True)
-    def forward_sensor_model(wz : np.ndarray, #wrapper for Gaussian_pdf
-                            sz : np.ndarray, 
-                            std : float, 
-                            pseudo = True) -> np.ndarray:
-        '''
-        input:
-        wz - world range measurement
-        sz - simulated range measurement
-        std - range sensor standard deviation (equivalent for both sensors)
-        pseudo - if True, doesnt normalize gaussian (p ~ exp(-0.5 * (wz - sz)**2 / std**2))
-
-        output:
-        probabilty of measuring wz : p(wz|sz,m)
-
-        in the future:
-        sigma = f(sz)
-        sigma = f(angle of ray hit)
-        '''
-        return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 ####--------------------------------------------------------------------####
 ####--------------------------HELPING FUNCTIONS-------------------------####

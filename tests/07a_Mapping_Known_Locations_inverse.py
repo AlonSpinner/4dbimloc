@@ -4,7 +4,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.utils import p2logodds, logodds2p
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy

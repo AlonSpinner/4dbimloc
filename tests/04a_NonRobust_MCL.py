@@ -3,7 +3,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, ParticlesSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.one_dim import Gaussian

@@ -3,7 +3,7 @@ import numpy as np
 from bim4loc.binaries.paths import DRONE_PATH
 from bim4loc.solids import DynamicSolid
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from typing import Union
 from bim4loc.geometry.pose2z import compose_s, transform_from
 

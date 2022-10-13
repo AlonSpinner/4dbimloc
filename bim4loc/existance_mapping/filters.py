@@ -5,67 +5,13 @@ import numpy as np
 from numba import njit
 from numba import prange
 
-from bim4loc.sensors import Lidar
-forward_sensor_model = Lidar.forward_sensor_model
+from bim4loc.sensors.models import inverse_lidar_model
 
 EPS = 1e-16
 
 #extract for numba performance
 gaussian_pdf = r_1d.Gaussian._pdf 
 exponentialT_pdf  = r_1d.ExponentialT._pdf
-
-@njit(cache = True)
-def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
-                        sensor_std, sensor_max_range):
-    '''
-    based on the awesome papers "Autonomous Exploration with Exact Inverse Sensor Models"
-    and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
-    by Evan Kaufman et al.
-    
-    input:
-    wz_i - world z value of i'th ray (np. array of floats)
-    sz_i - simulated z value of i'th ray (np.array of floats)
-    beliefs - probability of existance of each solid (np.array of floats [0,1])
-    sensor_std - standard deviation of sensor (float)
-    sensor_max_range - maximum range of sensor (float)
-
-    output:
-    pj_z_i - updated existance beliefs given measurement (probabilty of solid j, given z_i)
-    p_z_i - probability of measurement given existance beliefs
-    '''
-    N_maxhits = sz_i.size
-    valid_hits = 0
-    for j in prange(N_maxhits):
-        if szid_i[j] == NO_HIT:
-            break
-        valid_hits += 1
-
-    Pjbar = 1.0
-    inv_eta = 0.0
-    pj_z_i_wave = np.zeros(valid_hits)
-
-    #random hit
-    p_random = exponentialT_pdf(0.2, sensor_max_range, wz_i)
-    inv_eta += p_random
-
-    #solids
-    for j in prange(valid_hits):
-        sz_ij = sz_i[j]
-        belief_ij = beliefs[szid_i[j]]
-
-        Pjplus = Pjbar * belief_ij
-        Pjbar = Pjbar * negate(belief_ij)
-        
-        a_temp = Pjplus * forward_sensor_model(wz_i, sz_ij, sensor_std, pseudo = True)
-        pj_z_i_wave[j] = belief_ij * inv_eta + a_temp
-        inv_eta = inv_eta + a_temp
-    
-    #max range hit
-    inv_eta += Pjbar * forward_sensor_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
-    
-    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    p_z_i = inv_eta/(1.0 + p_random) #small normalization for 1.0 maximum value
-    return pj_z_i, p_z_i
 
 @njit(cache = True)
 def binary_variable_update(current, update):
@@ -106,7 +52,7 @@ def exact(beliefs : np.ndarray,
         sz_i = simulated_z[i]
         szid_i =  simulated_z_ids[i]
 
-        pj_zi, p_z_i = inverse_sensor_model(wz_i, sz_i, szid_i, beliefs, 
+        pj_zi, p_z_i = inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
                                 sensor_std, sensor_max_range)
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray

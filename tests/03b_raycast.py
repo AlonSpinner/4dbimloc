@@ -4,7 +4,7 @@ from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, PcdSolid, LinesSolid, ScanSolid
 from bim4loc.agents import Drone
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.raycaster import NO_HIT
 import time

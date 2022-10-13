@@ -5,7 +5,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
-from bim4loc.sensors import Lidar
+from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
 import time
 import logging
