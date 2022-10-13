@@ -37,22 +37,23 @@ def fast_slam_filter(weights, particle_poses, particle_beliefs, u, U_COV, z,
     sum_weights = 0.0
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for k in prange(N_particles):
+        #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
-
         #if particle moved outside the map, redraw a new one?
         if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
              or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
             weights[k] = 0.0
             continue
 
+        #calcualte weight
         particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
         pz = np.zeros(len(z))
         for i in prange(len(z)):
             _, pz[i] = inverse_lidar_model(z[i], particle_z_values[i], particle_z_ids[i], particle_beliefs[k], 
                             lidar_std, lidar_max_range)
             
-        weights[i] *= np.product(pz)
-        sum_weights += weights[i]
+        weights[k] *= np.product(pz)
+        sum_weights += weights[k]
 
         #remap 
         logodds_particle_beliefs = approx(p2logodds(particle_beliefs[i]), 
@@ -63,8 +64,26 @@ def fast_slam_filter(weights, particle_poses, particle_beliefs, u, U_COV, z,
                                     lidar_max_range)
         particle_beliefs[i] = logodds2p(logodds_particle_beliefs)
 
-    #normalize
+    if sum_weights == 0.0:
+        weights = np.ones(N_particles) / N_particles
     weights = weights / sum_weights
+
+    #Updating w_slow and w_fast
+    w_avg = sum_weights / N_particles
+
+    #update adaptive part of the filter
+    if w_slow == 0.0:
+        w_slow = w_avg
+    else:
+        w_slow = w_slow + ALPHA_SLOW * (w_avg - w_slow)
+    if w_fast == 0.0:
+        w_fast = w_avg
+    else:        
+        w_fast = w_fast + ALPHA_FAST * (w_avg - w_fast)
+
+    #resample
+    n_eff = weights.dot(weights)
+
             
 
     

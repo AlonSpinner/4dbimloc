@@ -152,7 +152,7 @@ for t, u in enumerate(actions):
         
         sum_weights += weights[i]
 
-            #update mapping
+        #update mapping
         approx(particle_beliefs[i], 
             z, 
             particle_z_values, 
