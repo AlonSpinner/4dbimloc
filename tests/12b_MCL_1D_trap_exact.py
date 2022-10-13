@@ -108,19 +108,19 @@ for t in range(200):
                 z, 
                 particle_z_values, 
                 particle_z_ids, 
-                simulated_sensor.std * 10.0,  # THIS IS STUPID BUT IT WORKS
+                simulated_sensor.std,  #MULTIPLYING BY 10. THIS IS STUPID BUT IT WORKS
                 simulated_sensor.max_range)
 
         # pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
 
         weights[i] *= np.product(pz)
-        # weights[i] *= 1.0 + np.product(pz**3)
+        # weights[i] *= 1.0 + np.sum(pz**3)
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights
     
     #resample
-    if t % 15 == 0:
+    if t % 1 == 0:
         r = np.random.uniform()/N_particles
         idx = 0
         c = weights[idx]
@@ -137,7 +137,7 @@ for t in range(200):
         particle_beliefs = new_particle_beliefs
         weights = np.ones(N_particles) / N_particles
 
-    if (t % 5) != 0:
+    if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         simulation.update_solids_beliefs(estimate_beliefs)        
 

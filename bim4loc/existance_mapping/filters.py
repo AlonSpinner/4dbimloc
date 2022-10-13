@@ -45,8 +45,7 @@ def inverse_sensor_model(wz_i, sz_i, szid_i, beliefs,
     pj_z_i_wave = np.zeros(valid_hits)
 
     #random hit
-    p_random = exponentialT_pdf(0.01 * sensor_max_range , \
-                                                sensor_max_range, wz_i)
+    p_random = exponentialT_pdf(0.2, sensor_max_range, wz_i)
     inv_eta += p_random
 
     #solids
