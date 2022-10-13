@@ -6,7 +6,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.existance_mapping.filters import approx
+from bim4loc.existance_mapping.filters import approx, inverse_sensor_model
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.utils import logodds2p, p2logodds
 import time
@@ -55,7 +55,7 @@ particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.zeros(N_particles),
                        np.full(N_particles, 0.0))).T
 
-particle_beliefs = p2logodds(np.tile(beliefs, (N_particles,1)))
+particle_beliefs = np.tile(beliefs, (N_particles,1))
 
 #initalize weights
 weights = np.ones(N_particles) / N_particles
@@ -100,21 +100,32 @@ for t in range(200):
     sum_weights = 0.0
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
+        #create proposal distribution
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
         particle_z_values, particle_z_ids, _, _, _ = simulated_sensor.sense(particle_poses[i], 
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         
-        approx(particle_beliefs[i], 
-                z, 
-                particle_z_values, 
-                particle_z_ids, 
-                simulated_sensor.std, 
-                simulated_sensor.max_range)
+        #calcualte importance weight -> find current posterior distribution
+        pz = np.zeros(len(z))
+        for j in range(len(z)):
+            _, pz[j] = inverse_sensor_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
+                            simulated_sensor.std, simulated_sensor.max_range)
 
-        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
-        weights[i] *= np.max(pz)
+        # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        # weights[i] *= 1.0 + np.sum(pz**3)
+        weights[i] *= np.product(pz)
         sum_weights += weights[i]
+
+        #remap 
+        logodds_particle_beliefs = approx(p2logodds(particle_beliefs[i]), 
+                                    z, 
+                                    particle_z_values, 
+                                    particle_z_ids, 
+                                    simulated_sensor.std, 
+                                    simulated_sensor.max_range)
+        particle_beliefs[i] = logodds2p(logodds_particle_beliefs)
+
     #normalize
     weights = weights / sum_weights
     
@@ -137,7 +148,7 @@ for t in range(200):
         weights = np.ones(N_particles) / N_particles
 
     if (t % 5) != 0:
-        estimate_beliefs = np.sum(weights.reshape(-1,1) * logodds2p(particle_beliefs), axis = 0)
+        estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         simulation.update_solids_beliefs(estimate_beliefs)        
 
        #updating drawings

@@ -4,7 +4,7 @@ tensorflow: getting rid of warnnings -> https://github.com/tensorflow/tensorflow
 	
 	
 THINGS TO WORK ON WHEN COMING BACK FROM THE EXCURSION:
-a) BVH/KDTree for raycaster
+a) BVH/KDTree for raycaster OR with culling objects outside frustrum #https://www.quora.com/How-do-modern-computer-games-render-fast-changing-high-variable-3D-environments-so-quickly-seamlessly
 b) making the filter work with exact inverse (abandoning max(pz))
 c) throwing the filter into a numba wrapper
 d) incorprating scan matching into the frame work
