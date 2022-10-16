@@ -26,6 +26,8 @@ def exact(beliefs : np.ndarray,
             sensor_std : float,
             sensor_max_range : float) -> np.ndarray:
     '''
+    CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
+
     inputs: 
         beliefs : one dimensional np.ndarray sorted same as solids
         world_z - range measurements from real-world-sensor 
@@ -70,6 +72,8 @@ def approx(logodds_beliefs : np.ndarray,
             sensor_std : float,
             sensor_max_range : float) -> np.ndarray:
     '''
+    CAREFUL. THIS FUNCTION ALTERS THE INPUT logodds_beliefs
+
     inputs: 
         logodds_beliefs : one dimensional np.ndarray sorted same as solids
         world_z - range measurements from real-world-sensor 
