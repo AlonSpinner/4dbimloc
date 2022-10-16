@@ -6,15 +6,12 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.existance_mapping.filters import exact
-from bim4loc.geometry.pose2z import compose_s
+from bim4loc.fast_slam import fast_slam_filter
 import time
 import logging
 from copy import deepcopy
-import matplotlib.pyplot as plt
 import keyboard
-from bim4loc.fast_slam import fast_slam_filter
-from functools import partial
+from numba import njit
 
 np.random.seed(25) #25, 24 are bad. 23 looks good :X
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -93,13 +90,17 @@ steps_from_resample = 0
 w_slow = w_fast = 0.0
 map_bounds_min = np.array([0.0, 0.0, 0.0]) #filler values
 map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
-sense_fcn = lambda x: simulated_sensor.sense(x,  simulation, n_hits = 10, noisy = False)
+
+
+#create the sense_fcn
+@njit
+def sense_fcn(x):
+    return simulated_sensor.sense(x, simulation, n_hits = 10, noisy = False)
+
 #LOOP
 time.sleep(2)
-for t in range(200):
+for t in range(100):
     # keyboard.wait('space')
-    if t  == 100:
-        u = -u
 
     #move drone
     drone.move(u)
@@ -113,7 +114,7 @@ for t in range(200):
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
                     map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = [0,0])
+                    resample_steps_thresholds = np.array([0,0]))
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)

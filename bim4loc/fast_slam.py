@@ -4,7 +4,7 @@ from bim4loc.geometry.pose2z import compose_s
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.utils import p2logodds,logodds2p
 from bim4loc.existance_mapping.filters import approx, exact
-from bim4loc.random.multi_dim import sample_uniform_multivariable
+from bim4loc.random.multi_dim import sample_uniform_multivariable, sample_normal_multivariable
 import numpy as np
 import logging
 
@@ -136,6 +136,9 @@ def filter_resampler(particle_poses : np.ndarray,
     N_random = int(w_diff * N_particles)
     N_resample = N_particles - N_random
     
+    N_resample = N_particles #for now, we will resample all particles
+    N_random = 0
+
     #produce new samples from static distribuion with initial belief maps
     if N_random > 0:
         thinAir_particle_poses = sample_uniform_multivariable(pose_min_bounds, pose_max_bounds, N_random)
@@ -165,7 +168,7 @@ def filter_resampler(particle_poses : np.ndarray,
     
     return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff
 
-# @njit(parallel = True, cache = True)
+@njit(parallel = True, cache = True)
 def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, lidar_std, lidar_max_range, 
@@ -187,7 +190,8 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
         w_slow, w_fast - floats for adaptive resampling (are states in this filter)
 
         PARAMTERS
-        sense_fcn - function that takes in a particle pose and returns possible measurements
+        sense_fcn - NUMBA JITED NO PYTHON FUNCTION 
+                        that takes in a particle pose and returns simulated measurements
         lidar_std - standard deviation of lidar measurements
         lidar_max_range - maximum range of lidar
         map_bounds_min, map_bounds_max - arrays of shape (3)
@@ -209,16 +213,16 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
 
     #compute weights and normalize
     sum_weights = 0.0
-    noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
+    noisy_u = sample_normal_multivariable(u, U_COV, N_particles)
     for k in prange(N_particles):
         #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
 
         #if particle moved outside the map, kill it?
-        if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
-             or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
-            weights[k] = 0.0
-            continue
+        # if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
+        #      or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
+        #     weights[k] = 0.0
+        #     continue
 
         #sense
         particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])

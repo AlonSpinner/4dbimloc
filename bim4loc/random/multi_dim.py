@@ -11,6 +11,21 @@ def sample_uniform_multivariable(a : np.ndarray, b : np.ndarray, n : int):
             s[i,j] = np.random.uniform(a[j],b[j])
     return s
 
+@njit(parallel = True, cache = True)
+def sample_normal_multivariable(mu : np.ndarray, cov : np.ndarray, n : int):
+    '''
+    mu - np.ndarray of shape (m,)
+    cov - np.ndarray of shape (m,m)
+    n - int
+
+    returns np.ndarray of shape (n,m) of samples
+    '''
+    m = mu.shape[0]
+    s = np.zeros((n,m))
+    for i in prange(n):
+            s[i] = np.random.normal(mu,cov) #<----------_THIS IS WRONG!!!!!!!!
+    return s
+
 @njit(cache = True)
 def gauss_likelihood(x : np.ndarray, mu : np.ndarray, cov : np.ndarray, pseudo = False):
     inExp = (-0.5*(x-mu).T @ np.linalg.inv(cov) @ (x-mu))[0,0] #[0,0] is to get the scalar
