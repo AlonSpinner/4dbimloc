@@ -5,13 +5,13 @@ tensorflow: getting rid of warnnings -> https://github.com/tensorflow/tensorflow
 	
 THINGS TO WORK ON WHEN COMING BACK FROM THE EXCURSION:
 a) BVH/KDTree for raycaster OR with culling objects outside frustrum #https://www.quora.com/How-do-modern-computer-games-render-fast-changing-high-variable-3D-environments-so-quickly-seamlessly
-b) making the filter work with exact inverse (abandoning max(pz))
+b) making the filter work with exact inverse (abandoning max(pz)) VEE.
 c) throwing the filter into a numba wrapper
 d) incorprating scan matching into the frame work
 e) implementing adjustable particle numbers (KLD, follow ros amcl)  #recommended particle size 1000#
 		--- what map do new particles get?
 		
-f) testing std(hit_normal, ray direction)
+f) testing std(hit_normal, ray direction), for deviation of real world from BIM for particle weight.
 g) creating a real-like construction site map to work simulate on
 h) recording rgbd data from a real construction site that we can model
 i) Additional Thoughts: layering the map with different overlapping options
@@ -20,5 +20,6 @@ k) Additional Thoughts: adding a "time" dimension to PF and search for correct t
 l) Additional Thoughts: Autonmous agent!
 m) Writing Writing Writing... god who has time for this.
 n) wrapping the filter up and throwing it into a gazebo simulation?
+o) Additional Thoughts: Importance Sampling so that each particle chooses its rays?
 
 

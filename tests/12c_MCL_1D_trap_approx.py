@@ -81,6 +81,13 @@ vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
 visApp.add_solid(vis_particles.tails, "simulation")
 
+#create initial map state window
+visApp.add_scene("initial_state", "world")
+[visApp.add_solid(s,"initial_state") for s in simulation.solids]
+visApp.redraw("initial_state")
+visApp.show_axes(True,"initial_state")
+visApp.setup_default_camera("initial_state")
+
 u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
 #LOOP

@@ -139,10 +139,21 @@ class VisApp():
             #change window on_layout
             window_scenes_names = [s for s in self._scenes.keys() if self._scene2window[s] == window_name]
             N_scenes = len(window_scenes_names)
+            if N_scenes == 4:
+                raise NotImplementedError("3 scenes per window is the max")
             if  N_scenes == 3:
-                msg = "window can't have more than 2 scenes"
-                logging.error(msg)
-                raise NameError(msg)
+                def _on_layout(theme):
+                    r = window.content_rect
+                    scene_width = r.width / 3
+                    self._scenes[window_scenes_names[0]].frame = gui.Rect(r.x, r.y, scene_width, r.height)
+                    self._scenes[window_scenes_names[1]].frame= gui.Rect(r.x + scene_width, r.y, scene_width, r.height)
+                    self._scenes[window_scenes_names[2]].frame= gui.Rect(r.x + 2 * scene_width, r.y, scene_width, r.height)
+                    pref = info.calc_preferred_size(theme,
+                                                gui.Widget.Constraints())
+                    info.frame = gui.Rect(r.x,
+                                    r.get_bottom() - pref.height, pref.width,
+                                    pref.height)
+                window.set_on_layout(_on_layout)
             elif N_scenes == 2:
                 def _on_layout(theme):
                     r = window.content_rect

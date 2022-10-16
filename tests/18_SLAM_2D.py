@@ -90,6 +90,7 @@ visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
+
 #create simulation window
 visApp.add_scene("simulation", "world")
 [visApp.add_solid(s,"simulation") for s in simulation.solids]
@@ -99,6 +100,13 @@ visApp.setup_default_camera("simulation")
 vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
 visApp.add_solid(vis_particles.tails, "simulation")
+
+#create initial map state window
+visApp.add_scene("initial_state", "world")
+[visApp.add_solid(s,"initial_state") for s in simulation.solids]
+visApp.redraw("initial_state")
+visApp.show_axes(True,"initial_state")
+visApp.setup_default_camera("initial_state")
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
 ETA_THRESHOLD = 5.0/N_particles
@@ -112,7 +120,7 @@ w_slow = w_fast = 0.0
 #LOOP
 time.sleep(2)
 steps_from_resample = CEILING_STEPS_4_RESAMPLE
-# keyboard.wait('space')
+keyboard.wait('space')
 for t, u in enumerate(actions):
     #add 1 more step
     steps_from_resample += 1
