@@ -5,6 +5,7 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, ParticlesSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors.sensors import Lidar
+from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.one_dim import Gaussian
@@ -120,7 +121,6 @@ w_slow = w_fast = 0.0
 #LOOP
 time.sleep(2)
 steps_from_resample = CEILING_STEPS_4_RESAMPLE
-keyboard.wait('space')
 for t, u in enumerate(actions):
     #add 1 more step
     steps_from_resample += 1
@@ -150,18 +150,24 @@ for t, u in enumerate(actions):
                                      simulation, n_hits = 5, 
                                      noisy = False)
         
-        particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
+        #calcualte importance weight -> find current posterior distribution
+        pz = np.zeros(len(z))
+        for j in range(len(z)):
+            _, pz[j] = inverse_lidar_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
+                            simulated_sensor.std, simulated_sensor.max_range)
+
         # pz = np.max(gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True), axis = 1)
-        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
+        
+        # particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
+        # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
         weights[i] *= 1.0 + np.sum(pz**3)
         # weights[i] *= np.product(pz)
-        
         sum_weights += weights[i]
 
         #update mapping
-        approx(particle_beliefs[i], 
+        exact(particle_beliefs[i], 
             z, 
             particle_z_values, 
             particle_z_ids, 
