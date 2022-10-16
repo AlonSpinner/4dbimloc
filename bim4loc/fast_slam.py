@@ -3,10 +3,12 @@ from numba import njit, prange
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.utils import p2logodds,logodds2p
-from bim4loc.existance_mapping.filters import approx
+from bim4loc.existance_mapping.filters import approx, exact
+from bim4loc.random.multi_dim import sample_uniform_multivariable
 import numpy as np
 import logging
 
+@njit(cache = True)
 def low_variance_sampler(weights : np.ndarray, 
                          particle_poses : np.ndarray,
                          particle_beliefs : np.ndarray, 
@@ -30,7 +32,7 @@ def low_variance_sampler(weights : np.ndarray,
     idx = 0
     c = weights[0]
     duu = 1.0/N_resample
-    r = np.random.uniform() * duu
+    r = np.random.uniform(0.0, 1.0) * duu
     
     for i in prange(N_resample):
         uu = r + i*duu
@@ -42,6 +44,7 @@ def low_variance_sampler(weights : np.ndarray,
     
     return new_particle_poses, new_particle_beliefs
 
+@njit(cache = True, fastmath =True)
 def update_resampling_ws(w_slow : float, w_fast : float,
                          sum_weights : float, N_particles : int,
                          alpha_slow = 0.001, alpha_fast = 2.0,) \
@@ -73,6 +76,7 @@ def update_resampling_ws(w_slow : float, w_fast : float,
     
     return w_slow, w_fast
 
+@njit(cache = True)
 def should_resample(weights : np.ndarray, 
                     steps_from_resample : int, 
                     resample_steps_thresholds : np.ndarray) -> bool:
@@ -96,6 +100,7 @@ def should_resample(weights : np.ndarray,
     else:
         return False
 
+@njit(cache = True)
 def filter_resampler(particle_poses : np.ndarray,
                      particle_beliefs : np.ndarray,
                      weights : np.ndarray,
@@ -123,16 +128,18 @@ def filter_resampler(particle_poses : np.ndarray,
     N_particles = particle_poses.shape[0]
     
     #percentage of random samples
-    w_diff = np.clip(1.0 - w_fast / w_slow, 0.0, 1.0) 
+    w_diff = 1.0 - w_fast / w_slow
+    if w_diff > 1.0: #clip it
+        w_diff = 1.0
+    elif w_diff < 0.0:
+        w_diff = 0.0
     N_random = int(w_diff * N_particles)
     N_resample = N_particles - N_random
     
     #produce new samples from static distribuion with initial belief maps
     if N_random > 0:
-        thinAir_particle_poses = np.random.uniform(pose_min_bounds,
-                                                pose_max_bounds, 
-                                                (N_random , 4))
-        thinAir_particle_beliefs = np.tile(initial_belief, (N_random, 1))
+        thinAir_particle_poses = sample_uniform_multivariable(pose_min_bounds, pose_max_bounds, N_random)
+        thinAir_particle_beliefs = initial_belief.repeat(N_random).reshape((-1, N_random)).T
 
     #produce resampled samples                                             
     if N_resample > 0:
@@ -158,6 +165,7 @@ def filter_resampler(particle_poses : np.ndarray,
     
     return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff
 
+# @njit(parallel = True, cache = True)
 def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, lidar_std, lidar_max_range, 
@@ -179,8 +187,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
         w_slow, w_fast - floats for adaptive resampling (are states in this filter)
 
         PARAMTERS
-        sense_fcn - function that takes in a particle pose and particle belief 
-                    and returns possible measurements (and maybe probability of ray)
+        sense_fcn - function that takes in a particle pose and returns possible measurements
         lidar_std - standard deviation of lidar measurements
         lidar_max_range - maximum range of lidar
         map_bounds_min, map_bounds_max - arrays of shape (3)
@@ -207,41 +214,36 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
         #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
 
-        #if particle moved outside the map, redraw a new one?
+        #if particle moved outside the map, kill it?
         if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
              or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
             weights[k] = 0.0
             continue
 
-        #calcualte weights
-        particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k], particle_beliefs[k])
-        pz = np.zeros(len(z))
-        for i in prange(len(z)):
-            _, pz[i] = inverse_lidar_model(z[i], particle_z_values[i], particle_z_ids[i], particle_beliefs[k], 
-                            lidar_std, lidar_max_range)
+        #sense
+        particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
+
+        #remap and calcualte probability of rays pz
+        particle_beliefs[k], pz = exact(particle_beliefs[k], 
+                                        z, 
+                                        particle_z_values, 
+                                        particle_z_ids, 
+                                        lidar_std,
+                                        lidar_max_range)
             
         weights[k] *= np.product(pz)
         sum_weights += weights[k]
-        
-        #remap 
-        logodds_particle_beliefs = approx(p2logodds(particle_beliefs[i]), 
-                                    z, 
-                                    particle_z_values, 
-                                    particle_z_ids, 
-                                    lidar_std, 
-                                    lidar_max_range)
-        particle_beliefs[i] = logodds2p(logodds_particle_beliefs)
 
     #----finished per particle calculations.
 
-    w_slow, w_fast = update_resampling_ws(sum_weights, N_particles)
+    w_slow, w_fast = update_resampling_ws(w_slow, w_fast, sum_weights, N_particles)
 
     #normalize weights
     if sum_weights == 0.0:
         weights = np.ones(N_particles) / N_particles
     weights = weights / sum_weights
 
-    if should_resample(weights, N_particles, steps_from_resample, resample_steps_thresholds):
+    if should_resample(weights, steps_from_resample, resample_steps_thresholds):
         particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff = \
             filter_resampler(particle_poses, particle_beliefs, weights,
                             w_slow, w_fast,
@@ -251,7 +253,9 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
     else:
         steps_from_resample += 1
 
-    return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff, steps_from_resample
+    return particle_poses, \
+        particle_beliefs, \
+        weights, w_slow, w_fast, w_diff, steps_from_resample
 
             
 
