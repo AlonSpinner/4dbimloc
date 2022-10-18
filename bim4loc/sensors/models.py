@@ -29,7 +29,7 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     '''
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-@njit(cache = True)
+@njit(parallel = True, cache = True)
 def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
                         sensor_std, sensor_max_range):
     '''

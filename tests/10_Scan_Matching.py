@@ -5,7 +5,7 @@ from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
-from bim4loc.geometry.pose2z import compose_s
+from bim4loc.geometry.pose2z import compose_s, transform_from
 from copy import deepcopy, copy
 import time
 import logging
@@ -31,13 +31,11 @@ drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 36),
                  angles_v = np.linspace(-np.pi/30, +np.pi/30, 3)); 
 sensor.std = 0.1
-sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_drone = Drone(copy(drone.pose))
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.piercing = True
 simulated_drone.mount_sensor(simulated_sensor)
 simulation_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulation_solids)
@@ -84,7 +82,11 @@ for t,u in enumerate(actions):
     simulated_drone.pose = compose_s(drone.pose,errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 
-    simulated_z, simulated_z_ids, simulated_z_normals, simulated_z_p = simulated_drone.scan(simulation, project_scan = True, noisy = False)
+    simulated_z, simulated_z_ids, simulated_z_normals, _, _ = \
+        simulated_sensor.sense_piercing(simulated_drone.pose, simulation, n_hits = 5, noisy = False)
+
+    simulated_drone_p = simulated_sensor.scan_to_points(simulated_z)
+    simulated_z_p = transform_from(simulated_drone.pose,simulated_drone_p)
 
     world_scan.update(z_p.T)
     simulation_scan.update(simulated_z_p.T)

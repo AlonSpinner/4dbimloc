@@ -28,7 +28,6 @@ drone = Drone(pose = np.array([3.0 ,10.0 ,1.5 , 0.0]))
 sensor = Lidar(angles_u = np.array([0.0]),
                  angles_v = np.array([0.0])); 
 sensor.std = 0.1
-sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -72,7 +71,7 @@ for t in range(100):
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
         particles[i] = compose_s(particles[i], noisy_u[i])
-        particle_z_values, particle_z_ids, _, _, _ = sensor.sense(particles[i], 
+        particle_z_values, particle_z_ids, _, _, _ = sensor.sense_nonpiercing(particles[i], 
                                                             world, n_hits = 10, 
                                                             noisy = False)
         

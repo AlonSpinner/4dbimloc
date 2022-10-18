@@ -28,7 +28,6 @@ drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 36),
                  angles_v = np.linspace(-np.pi/30, +np.pi/30, 3)); 
 sensor.std = 0.1
-sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 

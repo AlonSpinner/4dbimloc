@@ -20,13 +20,10 @@ world = RayCastingMap(solids)
 
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.5; 
-sensor.piercing = False
 sensor.max_range = 20.0
-sensor.angles = np.array([0])
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.piercing = True
 
 simulated_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulated_solids)
@@ -63,7 +60,7 @@ simulated_sensor.std = 0.5
 while True:
     # keyboard.wait('space')
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense_piercing(drone.pose, simulation, 10, noisy = False)
 
     for t in np.linspace(0,1,10):
         p_bullet = (1 - t) * drone.pose[:3].reshape(3,1) + t * z_p

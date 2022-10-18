@@ -46,7 +46,7 @@ class Gaussian(Distribution1D):
         return fig,axes
 
     @staticmethod
-    @njit(cache = True)
+    @njit(parallel = True, cache = True, fastmath = True)
     def _pdf(mu : np.ndarray ,sigma : float, x : np.ndarray, pseudo = False) -> np.ndarray:
         num = np.exp(-(x-mu)**2/(2*sigma**2))
         if pseudo:
@@ -186,7 +186,7 @@ class ExponentialT(Distribution1D):
         return fig,axes
 
     @staticmethod
-    @njit(cache = True)
+    @njit(parallel = True, cache = True)
     def _pdf(lamBda : float, maxX : float, x : np.ndarray) -> np.ndarray:
         eta = 1.0/(1.0 - np.exp(-lamBda*maxX))
         return eta * lamBda * np.exp(-lamBda*x) * (x < maxX)

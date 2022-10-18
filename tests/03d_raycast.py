@@ -34,6 +34,7 @@ pcd_scan = PcdSolid(shader = "normals")
 visApp.add_solid(pcd_scan)
 time.sleep(1)
 
+z, z_ids, z_normals, p = drone.scan(world, project_scan = True)
 s = time.time()
 N = 100
 for i in range(N):

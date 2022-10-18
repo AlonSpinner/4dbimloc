@@ -26,7 +26,7 @@ world = RayCastingMap(solids)
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2,10), angles_v = np.array([0.0])); 
-sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
+sensor.std = 0.1; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = copy.deepcopy(sensor)
@@ -100,7 +100,7 @@ for t, u in enumerate(actions):
             continue
 
         particle_z_values, particle_z_ids, _, particle_z_cos_incident, _ \
-            = simulated_sensor.sense(particles[i], 
+            = simulated_sensor.sense_nonpiercing(particles[i], 
                                      world, n_hits = 5, 
                                      noisy = False)
         
