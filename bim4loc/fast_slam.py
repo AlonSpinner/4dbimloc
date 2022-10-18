@@ -44,11 +44,14 @@ def low_variance_sampler(weights : np.ndarray,
     
     return new_particle_poses, new_particle_beliefs
 
-@njit(cache = True, fastmath =True)
+@njit(cache = True)
 def update_resampling_ws(w_slow : float, w_fast : float,
                          sum_weights : float, N_particles : int,
                          alpha_slow = 0.001, alpha_fast = 2.0,) \
                          -> Tuple[float, float]:
+    # NEEDS TO HAPPEN BEFORE WEIGHT NORMALIZATION
+    # SHOULD BE PROPRTIONAL TO pz
+    
     '''
     here we have two low pass filters, one fast and one slow.
     we later test the ratio between the two to see 
@@ -169,12 +172,47 @@ def filter_resampler(particle_poses : np.ndarray,
     return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff
 
 @njit(parallel = True, cache = True)
-def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
+def per_particle(particle_poses, particle_beliefs, weights, noisy_u, z, 
+                    sense_fcn, lidar_std, lidar_max_range, 
+                    pose_min_bounds, pose_max_bounds, map_initial_belief):
+    # https://github.com/numba/numba/issues/5923
+
+    N_particles = particle_poses.shape[0]
+    #compute weights and normalize
+    sum_weights = 0.0
+    # noisy_u = sample_normal(u, U_COV, N_particles)
+    for k in prange(N_particles):
+        #move
+        particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
+
+        #if particle moved outside the map, kill it?
+        # if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
+        #      or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
+        #     weights[k] = 0.0
+        #     continue
+
+        #sense
+        particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
+
+        # remap and calcualte probability of rays pz
+        particle_beliefs[k], pz = exact(particle_beliefs[k], 
+                                        z, 
+                                        particle_z_values, 
+                                        particle_z_ids, 
+                                        lidar_std,
+                                        lidar_max_range)
+            
+        weights[k] *= pz.prod()
+        sum_weights += weights[k]
+
+    return particle_poses, particle_beliefs, weights, sum_weights
+
+# @njit(parallel = True, cache = True)
+def fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z, 
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, lidar_std, lidar_max_range, 
                     map_bounds_min, map_bounds_max, map_initial_belief,
                     resample_steps_thresholds = [4,6]):
-
     '''
     called in the case resampling is needed
 
@@ -206,48 +244,24 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
         w_diff - w_fast/w_slow
         steps_from_resample - updated
     '''
-
     N_particles = particle_poses.shape[0]
     pose_min_bounds = np.array([map_bounds_min[0],map_bounds_min[1], 0.0 , -np.pi])
     pose_max_bounds = np.array([map_bounds_max[0],map_bounds_max[1], 0.0 , np.pi])
 
-    #compute weights and normalize
-    sum_weights = 0.0
-    noisy_u = sample_normal(u, U_COV, N_particles)
-    for k in prange(N_particles):
-        #move
-        particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
-
-        #if particle moved outside the map, kill it?
-        # if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
-        #      or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
-        #     weights[k] = 0.0
-        #     continue
-
-        #sense
-        particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
-
-        #remap and calcualte probability of rays pz
-        particle_beliefs[k], pz = exact(particle_beliefs[k], 
-                                        z, 
-                                        particle_z_values, 
-                                        particle_z_ids, 
-                                        lidar_std,
-                                        lidar_max_range)
-            
-        weights[k] *= pz.prod()
-        sum_weights += weights[k]
-
-    #----finished per particle calculations.
+    particle_poses, particle_beliefs, weights, sum_weights \
+        = per_particle(particle_poses, particle_beliefs, weights, noisy_u, z, 
+                    sense_fcn, lidar_std, lidar_max_range, 
+                    pose_min_bounds, pose_max_bounds, map_initial_belief)
 
     w_slow, w_fast = update_resampling_ws(w_slow, w_fast, sum_weights, N_particles)
 
-    #normalize weights
+    # normalize weights
     if sum_weights == 0.0:
         weights = np.ones(N_particles) / N_particles
     weights = weights / sum_weights
 
     if should_resample(weights, steps_from_resample, resample_steps_thresholds):
+        
         particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff = \
             filter_resampler(particle_poses, particle_beliefs, weights,
                             w_slow, w_fast,
@@ -255,6 +269,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
                             map_initial_belief)
         steps_from_resample = 0
     else:
+        w_diff = 0.0
         steps_from_resample += 1
 
     return particle_poses, \

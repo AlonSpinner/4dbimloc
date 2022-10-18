@@ -93,9 +93,6 @@ map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
 #create the sense_fcn
 sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
-# @njit(debug = True)
-# def sense_fcn(pose):
-    # return f(pose)
 
 #LOOP
 time.sleep(2)
@@ -108,13 +105,17 @@ for t in range(100):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True)
 
+    #produce noisy measurements here as numba cant handle np.random.multivariate
+    #we can create our own but it won't follow the seed
+    noisy_u = np.random.multivariate_normal(u, U_COV,particle_poses.shape[0])
+
     particle_poses, particle_beliefs, \
     weights, w_slow, w_fast, w_diff, steps_from_resample = \
-         fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
-                    steps_from_resample, w_slow, w_fast,
-                    sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
-                    map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([0,0]))
+    fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z, 
+            steps_from_resample, w_slow, w_fast,
+            sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
+            map_bounds_min, map_bounds_max, initial_beliefs,
+            resample_steps_thresholds = np.array([0,0]))
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
