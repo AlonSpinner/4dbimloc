@@ -3,6 +3,7 @@ from bim4loc.agents import Drone
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ParticlesSolid
 from bim4loc.geometry.pose2z import compose_s
+from bim4loc.random.multi_dim import sample_normal
 import time
 
 drone = Drone(pose = np.array([0.0, 0.0, 0.5, 0.0]))
@@ -25,7 +26,8 @@ visApp.redraw()
 for t in range(10):
     drone.move(u)
 
-    noisy_u = np.random.multivariate_normal(u, U_COV, len(particles))
+    # noisy_u = np.random.multivariate_normal(u, U_COV, len(particles))
+    noisy_u = sample_normal(u, U_COV, len(particles))
     for i in range(len(particles)):
         particles[i] = compose_s(particles[i], noisy_u[i]) 
 

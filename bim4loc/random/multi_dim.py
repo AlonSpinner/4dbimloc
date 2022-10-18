@@ -22,8 +22,9 @@ def sample_normal(mu : np.ndarray, cov : np.ndarray, n : int):
     '''
     #based on https://juanitorduz.github.io/multivariate_normal/
     m = mu.shape[0]
-    eps = np.min(cov)/1000
-    L = np.linalg.cholesky(cov) + eps*np.eye(m)
+    flat_cov = cov.flatten()
+    eps = np.min(flat_cov[np.nonzero(flat_cov)]) *1e-6
+    L = np.linalg.cholesky(cov + eps*np.eye(m))
     s = np.zeros((n,m))
 
     for i in prange(n):
