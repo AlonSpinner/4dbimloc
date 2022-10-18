@@ -4,7 +4,8 @@ from bim4loc.geometry.pose2z import R_from_theta
 import numpy as np
 from functools import partial
 from typing import Tuple
-from numba import njit
+from numba import njit, prange
+
 
 class Sensor():
     def __init__(self):
@@ -36,16 +37,16 @@ class Lidar(Sensor):
         self._Nv = angles_v.size
 
         #build rays
-        rays = np.zeros((self._Nu*self._Nv, 6))
+        ray_dirs = np.zeros((self._Nu*self._Nv, 3))
         for i, u in enumerate(angles_u):
             for j, v in enumerate(angles_v):
-                rays[i*self._Nv + j, 3:6] = spherical_coordiantes(u,v)
-        self._rays = rays
+                ray_dirs[i*self._Nv + j] = spherical_coordiantes(u,v)
+        self.ray_dirs = ray_dirs
 
 
     def sense(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         return self._sense(pose, m.scene, n_hits, noisy, 
-                            self._rays, self.piercing, 
+                            self.ray_dirs, self.piercing, 
                             self.bias, self.std, self.max_range)
     
     def get_sense(self):
@@ -60,34 +61,26 @@ class Lidar(Sensor):
         return partial(self._scan_to_points, self._angles_u, self._angles_v)
 
     @staticmethod
-    # @njit(cache = True)
+    @njit(cache = True)
     def _sense(pose : np.ndarray, m_scene : Tuple, n_hits : int, noisy : bool,
-               ego_rays : np.ndarray,  piercing : bool,
+               ray_dirs : np.ndarray, piercing: bool,
                bias : float , std: float, max_range : float):
-        rays = transform_rays(pose, ego_rays)
-        
-        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
-            raycaster.raycast(rays, 
-                              m_scene[0], m_scene[1], m_scene[2], 
-                              m_scene[3], m_scene[4], m_scene[5],
-                              n_hits)
-        
-        if piercing == False:
-            z_values = z_values[:,0]
-            z_ids = z_ids[:,0]
-            z_normals = z_normals[:,0]
-            z_cos_incident = z_cos_incident[:,0]
-            z_n_hits = np.minimum(z_n_hits,1)
-        
-        if noisy:
-            z_values = np.random.normal(z_values + bias, std)
 
-        z_values[z_values > max_range] = max_range
+        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
+                    _sense_all(pose, m_scene, n_hits, noisy,
+                               ray_dirs, bias, std, max_range)
+
+        # if piercing:
+        #     z_values = z_values[:,0]
+        #     z_ids = z_ids[:,0]
+        #     z_normals = z_normals[:,0]
+        #     z_cos_incident = z_cos_incident[:,0]
+        #     z_n_hits = np.minimum(z_n_hits,1)
 
         return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
 
     @staticmethod
-    @njit(cache = True)
+    @njit(parallel = True, cache = True)
     def _scan_to_points(angles_u, angles_v, z):
         '''
         returns points in sensor frame
@@ -145,13 +138,60 @@ def spherical_coordiantes(u : float, v: float) -> np.ndarray:
                         np.sin(v)])
 
 @njit(cache = True)
-def transform_rays(pose, ego_rays):
+def _sense_all(pose : np.ndarray, m_scene : Tuple, n_hits : int, noisy : bool,
+            ray_dirs : np.ndarray,
+            bias : float , std: float, max_range : float):
+    #piercing = True
+    
+    rays = transform_rays(pose, ray_dirs)
+    
+    z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
+        raycaster.raycast(rays, 
+                            m_scene[0], m_scene[1], m_scene[2], 
+                            m_scene[3], m_scene[4], m_scene[5],
+                            n_hits)
+    
+    if noisy:
+        z_values = _noisify_measurements(z_values, bias, std)
+
+    z_values = _cut_measurements(z_values, max_range)
+
+    return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
+
+@njit(parallel = True, cache = True)
+def transform_rays(pose, ray_dirs):
     '''
-    pose - np.ndarray [x,y,z,theta]
-    ego_rays - np.ndarray [N_rays, 6] {x,y,z,yaw,pitch,roll}
+    input:
+        pose - np.ndarray [x,y,z,theta]
+        ray_dirs - np.ndarray [N_rays, 3] {yaw,pitch,roll}
+
+    output:
+        rays - np.ndarray [N_rays, 6] {x,y,z,dx,dy,dz}
     '''
-    rays = ego_rays.copy()
-    dirs = ego_rays[:,3:6].T
+    rays = np.zeros((ray_dirs.shape[0],6))
     rays[:, 0:3] = pose[:3]
-    rays[:, 3:6] = (R_from_theta(pose[3]) @ dirs).T
+    rays[:, 3:6] = (R_from_theta(pose[3]) @ ray_dirs.T).T
     return rays
+
+@njit(parallel = True, cache = True)
+def _noisify_measurements(z_values, bias, std):
+    m = z_values[0].shape[0]
+    n = z_values.shape[0]
+    for i in prange(n):
+        for j in prange(m):
+            if np.isinf(z_values[i,j]):
+                break
+            z_values[i,j] = z_values[i,j] + np.random.normal(bias, std)
+    return z_values
+
+@njit(parallel = True, cache = True)
+def _cut_measurements(z_values, max_range):
+    m = z_values[0].shape[0]
+    n = z_values.shape[0]
+    for i in prange(n):
+        for j in prange(m):
+            if np.isinf(z_values[i,j]):
+                z_values[i,j:] = max_range
+                break
+            z_values[i,j] = min(z_values[i,j], max_range)
+    return z_values
