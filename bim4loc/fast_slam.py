@@ -1,5 +1,5 @@
 from typing import Tuple
-from numba import njit, prange
+from numba import njit, jit, prange
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.utils import p2logodds,logodds2p

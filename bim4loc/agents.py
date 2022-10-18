@@ -35,7 +35,7 @@ class Drone:
         self.pose = compose_s(self.pose, u)
         self.solid.update_geometry(self.pose)
 
-    def scan(self, m : RayCastingMap, project_scan = False, noisy = True, n_hits = 10):
+    def scan(self, m : RayCastingMap, project_scan = False, noisy = True, n_hits = 5):
         z, z_ids, z_normals, _, _ = self.sensor.sense_nonpiercing(self.pose, m, noisy = noisy, n_hits = n_hits)
         
         if project_scan:

@@ -46,7 +46,7 @@ simulated_sensor = deepcopy(sensor)
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 400
+N_particles = 200
 particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
@@ -93,6 +93,7 @@ map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
 #create the sense_fcn
 sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
+# sense_fcn = njit(sense_fcn) #<----- THIS CAN TAKE ALONG FUCKING TIME?
 
 #LOOP
 time.sleep(2)

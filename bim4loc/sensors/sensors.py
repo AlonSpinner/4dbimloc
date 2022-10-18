@@ -64,9 +64,6 @@ class Lidar(Sensor):
         z_n_hits = np.minimum(z_n_hits,1)
 
         return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
-    
-    def scan_to_points(self, z):
-        return self._scan_to_points(self._angles_u, self._angles_v, z)
 
     def get_sense_piercing(self, m : RayCastingMap, n_hits = 10, noisy = True):
         #returns a njit function sense(x) that takes a pose x and returns the measurements
@@ -88,38 +85,11 @@ class Lidar(Sensor):
                        bias, std, max_range,
                        pose)
 
+    def scan_to_points(self, z):
+        return _scan_to_points(self._angles_u, self._angles_v, z)
+
     def get_scan_to_points(self):
-        return partial(self._scan_to_points, self._angles_u, self._angles_v)
-
-    @staticmethod
-    @njit(parallel = True, cache = True)
-    def _scan_to_points(angles_u, angles_v, z):
-        '''
-        returns points in sensor frame
-        if z.ndim == 2, the scan is from a simulation with piercing)
-                shape ~ (N_rays, N_maxhits)
-
-        returns points in sensor frame of size 3x N_rays * N_maxhits
-        '''
-        assert(angles_u.size * angles_v.size == z.shape[0])
-
-        Nv = angles_v.size
-        if z.ndim == 2:
-            n = z.shape[0]
-            m = z.shape[1]
-            qz = np.zeros((3, n * m))
-
-            for n_i in range(n):
-                 i,j = n2ij(n_i, Nv)
-                 qz[:, n_i * m : (n_i + 1) * m] = z[n_i,:] * spherical_coordiantes(angles_u[i], angles_v[j]).reshape(3,1)
-            return qz
-        else:
-            n = z.shape[0] #amount of lasers in scan
-            qz = np.zeros((3, n))
-            for n_i in range(n):
-                 i,j = n2ij(n_i, Nv)
-                 qz[:, n_i] = z[n_i] * spherical_coordiantes(angles_u[i], angles_v[j])
-            return qz
+        return partial(_scan_to_points, self._angles_u, self._angles_v)
 
 ####--------------------------------------------------------------------####
 ####--------------------------HELPING FUNCTIONS-------------------------####
@@ -207,3 +177,32 @@ def _cut_measurements(z_values, max_range):
                 break
             z_values[i,j] = min(z_values[i,j], max_range)
     return z_values
+
+@njit(parallel = True, cache = True)
+def _scan_to_points(angles_u, angles_v, z):
+    '''
+    returns points in sensor frame
+    if z.ndim == 2, the scan is from a simulation with piercing)
+            shape ~ (N_rays, N_maxhits)
+
+    returns points in sensor frame of size 3x N_rays * N_maxhits
+    '''
+    assert(angles_u.size * angles_v.size == z.shape[0])
+
+    Nv = angles_v.size
+    if z.ndim == 2:
+        n = z.shape[0]
+        m = z.shape[1]
+        qz = np.zeros((3, n * m))
+
+        for n_i in range(n):
+                i,j = n2ij(n_i, Nv)
+                qz[:, n_i * m : (n_i + 1) * m] = z[n_i,:] * spherical_coordiantes(angles_u[i], angles_v[j]).reshape(3,1)
+        return qz
+    else:
+        n = z.shape[0] #amount of lasers in scan
+        qz = np.zeros((3, n))
+        for n_i in range(n):
+                i,j = n2ij(n_i, Nv)
+                qz[:, n_i] = z[n_i] * spherical_coordiantes(angles_u[i], angles_v[j])
+        return qz
