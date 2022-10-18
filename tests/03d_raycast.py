@@ -18,7 +18,7 @@ mid = (min_bounds + max_bounds) / 2
 
 drone = Drone(pose = np.array([mid[0],mid[1],mid[2], 0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi,4), angles_v = np.array([0.0])); 
-sensor.std = 0.05; sensor.piercing = False
+sensor.std = 0.05
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 

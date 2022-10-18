@@ -11,7 +11,6 @@ import keyboard
 full_solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0.2]), angles_v = np.array([0.0]))
-sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 
