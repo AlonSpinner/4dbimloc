@@ -41,7 +41,6 @@ drone = Drone(pose = np.array([3.0 ,10.0 ,1.5 , 0.0]))
 sensor = Lidar(angles_u = np.array([0.0]),
                  angles_v = np.array([0.0])); 
 sensor.std = 0.1
-sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -110,7 +109,7 @@ for t in range(200):
     for i in range(N_particles):
         #create proposal distribution
         particle_poses[i] = compose_s(particle_poses[i], noisy_u[i])
-        particle_z_values, particle_z_ids, _, _, _ = simulated_sensor.sense(particle_poses[i], 
+        particle_z_values, particle_z_ids, _, _, _ = simulated_sensor.sense_piercing(particle_poses[i], 
                                                                     simulation, n_hits = 10, 
                                                                     noisy = False)
         

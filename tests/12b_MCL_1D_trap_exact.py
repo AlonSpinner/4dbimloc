@@ -107,7 +107,8 @@ for t in range(100):
     z, _, _, z_p = drone.scan(world, project_scan = True)
 
     #produce noisy measurements here as numba cant handle np.random.multivariate
-    #we can create our own but it won't follow the seed
+    #we can create our own but it won't follow the seed...
+    #or the problem is with parallelization!! 
     noisy_u = np.random.multivariate_normal(u, U_COV,particle_poses.shape[0])
 
     particle_poses, particle_beliefs, \
@@ -116,7 +117,7 @@ for t in range(100):
             steps_from_resample, w_slow, w_fast,
             sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
             map_bounds_min, map_bounds_max, initial_beliefs,
-            resample_steps_thresholds = np.array([0,0]))
+            resample_steps_thresholds = np.array([1,2]))
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)

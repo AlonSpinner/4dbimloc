@@ -186,7 +186,7 @@ class ExponentialT(Distribution1D):
         return fig,axes
 
     @staticmethod
-    @njit(parallel = True, cache = True)
+    @njit(cache = True)
     def _pdf(lamBda : float, maxX : float, x : np.ndarray) -> np.ndarray:
         eta = 1.0/(1.0 - np.exp(-lamBda*maxX))
         return eta * lamBda * np.exp(-lamBda*x) * (x < maxX)
