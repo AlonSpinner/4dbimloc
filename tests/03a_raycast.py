@@ -13,7 +13,7 @@ import open3d as o3d
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/3, np.pi/3, 5), angles_v = np.array([0])); 
-sensor.std = 0.05; sensor.piercing = False
+sensor.std = 0.05
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
 world = RayCastingMap(solids)

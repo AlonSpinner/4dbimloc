@@ -39,10 +39,10 @@ visApp.add_solid(line_scan)
 
 time.sleep(1)
 for a in actions:
-    keyboard.wait('space')
+    # keyboard.wait('space')
     
     drone.move(a)
-    z, z_ids, z_normals, _, _ = sensor.sense(drone.pose, world, n_hits = 10, noisy = False)
+    z, z_ids, z_normals, _, _ = sensor.sense_piercing(drone.pose, world, n_hits = 10, noisy = False)
     
     drone_p = sensor.scan_to_points(z)
     p = transform_from(drone.pose,drone_p)
