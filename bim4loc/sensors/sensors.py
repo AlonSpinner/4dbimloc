@@ -3,7 +3,7 @@ import bim4loc.geometry.raycaster as raycaster
 from bim4loc.geometry.pose2z import R_from_theta
 import numpy as np
 from functools import partial
-
+from typing import Tuple
 from numba import njit
 
 class Sensor():
@@ -44,11 +44,35 @@ class Lidar(Sensor):
 
 
     def sense(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
-        rays = self.transform_rays(pose)
+        return self._sense(pose, m.scene, n_hits, noisy, 
+                            self._rays, self.piercing, 
+                            self.bias, self.std, self.max_range)
+    
+    def get_sense(self):
+        return partial(self._sense, 
+                        self._rays, self.piercing, 
+                        self.bias, self.std, self.max_range)
+    
+    def scan_to_points(self, z):
+        return self._scan_to_points(self._angles_u, self._angles_v, z)
+
+    def get_scan_to_points(self):
+        return partial(self._scan_to_points, self._angles_u, self._angles_v)
+
+    @staticmethod
+    # @njit(cache = True)
+    def _sense(pose : np.ndarray, m_scene : Tuple, n_hits : int, noisy : bool,
+               ego_rays : np.ndarray,  piercing : bool,
+               bias : float , std: float, max_range : float):
+        rays = transform_rays(pose, ego_rays)
         
-        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = raycaster.raycast(rays, *m.scene, n_hits)
+        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
+            raycaster.raycast(rays, 
+                              m_scene[0], m_scene[1], m_scene[2], 
+                              m_scene[3], m_scene[4], m_scene[5],
+                              n_hits)
         
-        if self.piercing == False:
+        if piercing == False:
             z_values = z_values[:,0]
             z_ids = z_ids[:,0]
             z_normals = z_normals[:,0]
@@ -56,24 +80,11 @@ class Lidar(Sensor):
             z_n_hits = np.minimum(z_n_hits,1)
         
         if noisy:
-            z_values = np.random.normal(z_values + self.bias, self.std)
+            z_values = np.random.normal(z_values + bias, std)
 
-        z_values[z_values > self.max_range] = self.max_range
+        z_values[z_values > max_range] = max_range
 
         return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
-    
-    def transform_rays(self, pose : np.ndarray) -> np.ndarray:
-        #returns rays in world system to be used by raycaster.
-        rays = self._rays.copy()
-        rays[:, 0:3] = pose[:3]
-        rays[:, 3:6] = (R_from_theta(pose[3]) @ rays[:, 3:6].T).T
-        return rays
-    
-    def scan_to_points(self, z):
-        return self._scan_to_points(self._angles_u, self._angles_v, z)
-    
-    def get_scan_to_points(self):
-        return partial(self._scan_to_points, self._angles_u, self._angles_v)
 
     @staticmethod
     @njit(cache = True)
@@ -132,3 +143,15 @@ def spherical_coordiantes(u : float, v: float) -> np.ndarray:
     return np.array([np.cos(u)*np.cos(v),
                         np.sin(u)*np.cos(v), 
                         np.sin(v)])
+
+@njit(cache = True)
+def transform_rays(pose, ego_rays):
+    '''
+    pose - np.ndarray [x,y,z,theta]
+    ego_rays - np.ndarray [N_rays, 6] {x,y,z,yaw,pitch,roll}
+    '''
+    rays = ego_rays.copy()
+    dirs = ego_rays[:,3:6].T
+    rays[:, 0:3] = pose[:3]
+    rays[:, 3:6] = (R_from_theta(pose[3]) @ dirs).T
+    return rays

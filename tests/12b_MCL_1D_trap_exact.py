@@ -47,7 +47,7 @@ simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 200
+N_particles = 400
 particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
