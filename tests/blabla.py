@@ -92,40 +92,10 @@ map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
 
 #create the sense_fcn
-sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
+f = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
 # @njit(debug = True)
 # def sense_fcn(pose):
-    # return f(pose)
+#     return f(pose)
 
-#LOOP
-time.sleep(2)
-for t in range(100):
-    # keyboard.wait('space')
-
-    #move drone
-    drone.move(u)
-    
-    #produce measurement
-    z, _, _, z_p = drone.scan(world, project_scan = True)
-
-    particle_poses, particle_beliefs, \
-    weights, w_slow, w_fast, w_diff, steps_from_resample = \
-         fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
-                    steps_from_resample, w_slow, w_fast,
-                    sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
-                    map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([0,0]))
-
-    if (t % 2) != 0:
-        estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
-        simulation.update_solids_beliefs(estimate_beliefs)        
-    #updating drawings
-    vis_scan.update(drone.pose[:3], z_p.T)
-    vis_particles.update(particle_poses, weights)
-    visApp.update_solid(vis_scan)
-    visApp.update_solid(drone.solid)
-    visApp.update_solid(vis_particles.lines, "simulation")
-    visApp.update_solid(vis_particles.tails, "simulation")
-    [visApp.update_solid(s,"simulation") for s in simulation.solids]
-
-    # time.sleep(0.1)
+f(particle_poses[0])
+print('finished')

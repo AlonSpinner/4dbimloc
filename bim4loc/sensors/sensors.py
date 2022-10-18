@@ -44,7 +44,7 @@ class Lidar(Sensor):
 
     def sense_piercing(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
-            self._sense(m.scene, n_hits, noisy, 
+            _sense(m.scene, n_hits, noisy, 
             self.ray_dirs, 
             self.bias, self.std, self.max_range,
             pose)
@@ -52,7 +52,7 @@ class Lidar(Sensor):
 
     def sense_nonpiercing(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
-            self._sense(m.scene, n_hits, noisy, 
+            _sense(m.scene, n_hits, noisy, 
             self.ray_dirs, 
             self.bias, self.std, self.max_range,
             pose)
@@ -69,41 +69,28 @@ class Lidar(Sensor):
         return self._scan_to_points(self._angles_u, self._angles_v, z)
 
     def get_sense_piercing(self, m : RayCastingMap, n_hits = 10, noisy = True):
-        #returns a function sense(x) that takes a pose x and returns the measurements
-        # return partial(self._sense,
-        #                m.scene, n_hits, noisy, 
-        #                self.ray_dirs, 
-        #                self.bias, self.std, self.max_range)
+        #returns a njit function sense(x) that takes a pose x and returns the measurements
 
-        return njit(lambda pose: self._sense(m.scene, n_hits, noisy, 
-                       self.ray_dirs, 
-                       self.bias, self.std, self.max_range,
+        #unpack variables to basic types for numba
+        m_scene = m.scene
+        ray_dirs = self.ray_dirs
+        bias = self.bias
+        std = self.std
+        max_range = self.max_range
+   
+        # return partial(_sense,#numba doesnt work with partials..
+        #                m_scene, n_hits, noisy, 
+        #                ray_dirs, 
+        #                bias, std, max_range)
+
+        return njit(lambda pose: 
+                       _sense(m_scene, n_hits, noisy, 
+                       ray_dirs, 
+                       bias, std, max_range,
                        pose))
 
     def get_scan_to_points(self):
         return partial(self._scan_to_points, self._angles_u, self._angles_v)
-
-    @staticmethod
-    @njit(cache = True)
-    def _sense(m_scene : Tuple, n_hits : int, noisy : bool,
-               ray_dirs : np.ndarray,
-               bias : float , std: float, max_range : float,
-               pose : np.ndarray):
-
-        rays = transform_rays(pose, ray_dirs)
-    
-        z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
-        raycaster.raycast(rays, 
-                            m_scene[0], m_scene[1], m_scene[2], 
-                            m_scene[3], m_scene[4], m_scene[5],
-                            n_hits)
-    
-        if noisy:
-            z_values = _noisify_measurements(z_values, bias, std)
-
-        z_values = _cut_measurements(z_values, max_range)
-
-        return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
 
     @staticmethod
     @njit(parallel = True, cache = True)
@@ -162,6 +149,27 @@ def spherical_coordiantes(u : float, v: float) -> np.ndarray:
     return np.array([np.cos(u)*np.cos(v),
                         np.sin(u)*np.cos(v), 
                         np.sin(v)])
+
+@njit(cache = True)
+def _sense(m_scene : Tuple, n_hits : int, noisy : bool,
+            ray_dirs : np.ndarray,
+            bias : float , std: float, max_range : float,
+            pose : np.ndarray):
+
+    rays = transform_rays(pose, ray_dirs)
+
+    z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
+    raycaster.raycast(rays, 
+                        m_scene[0], m_scene[1], m_scene[2], #numba doesnt know tuple unpacking
+                        m_scene[3], m_scene[4], m_scene[5],
+                        n_hits)
+
+    if noisy:
+        z_values = _noisify_measurements(z_values, bias, std)
+
+    z_values = _cut_measurements(z_values, max_range)
+
+    return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
 
 @njit(parallel = True, cache = True)
 def transform_rays(pose, ray_dirs):
