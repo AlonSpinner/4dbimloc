@@ -43,7 +43,6 @@ sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
@@ -93,7 +92,10 @@ map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
 
 #create the sense_fcn
-sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 10, noisy = False)
+f = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
+@njit(debug = True)
+def sense_fcn(pose):
+    return f(pose)
 
 #LOOP
 time.sleep(2)

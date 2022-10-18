@@ -70,10 +70,15 @@ class Lidar(Sensor):
 
     def get_sense_piercing(self, m : RayCastingMap, n_hits = 10, noisy = True):
         #returns a function sense(x) that takes a pose x and returns the measurements
-        return partial(self._sense,
-                       m.scene, n_hits, noisy, 
+        # return partial(self._sense,
+        #                m.scene, n_hits, noisy, 
+        #                self.ray_dirs, 
+        #                self.bias, self.std, self.max_range)
+
+        return njit(lambda pose: self._sense(m.scene, n_hits, noisy, 
                        self.ray_dirs, 
-                       self.bias, self.std, self.max_range)
+                       self.bias, self.std, self.max_range,
+                       pose))
 
     def get_scan_to_points(self):
         return partial(self._scan_to_points, self._angles_u, self._angles_v)
