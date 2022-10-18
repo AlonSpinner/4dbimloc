@@ -83,11 +83,10 @@ class Lidar(Sensor):
         #                ray_dirs, 
         #                bias, std, max_range)
 
-        return njit(lambda pose: 
-                       _sense(m_scene, n_hits, noisy, 
+        return lambda pose: _sense(m_scene, n_hits, noisy, 
                        ray_dirs, 
                        bias, std, max_range,
-                       pose))
+                       pose)
 
     def get_scan_to_points(self):
         return partial(self._scan_to_points, self._angles_u, self._angles_v)
@@ -150,7 +149,7 @@ def spherical_coordiantes(u : float, v: float) -> np.ndarray:
                         np.sin(u)*np.cos(v), 
                         np.sin(v)])
 
-@njit(cache = True)
+# @njit(cache = True)
 def _sense(m_scene : Tuple, n_hits : int, noisy : bool,
             ray_dirs : np.ndarray,
             bias : float , std: float, max_range : float,

@@ -171,7 +171,7 @@ def filter_resampler(particle_poses : np.ndarray,
     
     return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def per_particle(particle_poses, particle_beliefs, weights, noisy_u, z, 
                     sense_fcn, lidar_std, lidar_max_range, 
                     pose_min_bounds, pose_max_bounds, map_initial_belief):
