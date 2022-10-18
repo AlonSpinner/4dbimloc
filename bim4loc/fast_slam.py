@@ -235,7 +235,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
                                         lidar_std,
                                         lidar_max_range)
             
-        weights[k] *= np.product(pz)
+        weights[k] *= pz.prod()
         sum_weights += weights[k]
 
     #----finished per particle calculations.
