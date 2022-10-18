@@ -93,9 +93,7 @@ map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
 
 #create the sense_fcn
-@njit
-def sense_fcn(x):
-    return simulated_sensor.sense(x, simulation, n_hits = 10, noisy = False)
+sense_fcn = njit(lambda x: simulated_sensor.sense(x, simulation, n_hits = 10, noisy = False))
 
 #LOOP
 time.sleep(2)

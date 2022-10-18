@@ -3,7 +3,7 @@ from . import one_dim as r1d
 from numba import njit, prange
 
 @njit(parallel = True, cache = True)
-def sample_uniform_multivariable(a : np.ndarray, b : np.ndarray, n : int):
+def sample_uniform(a : np.ndarray, b : np.ndarray, n : int):
     m = a.shape[0]
     s = np.zeros((n,m))
     for i in prange(n):
@@ -12,7 +12,7 @@ def sample_uniform_multivariable(a : np.ndarray, b : np.ndarray, n : int):
     return s
 
 @njit(parallel = True, cache = True)
-def sample_normal_multivariable(mu : np.ndarray, cov : np.ndarray, n : int):
+def sample_normal(mu : np.ndarray, cov : np.ndarray, n : int):
     '''
     mu - np.ndarray of shape (m,)
     cov - np.ndarray of shape (m,m)
@@ -20,10 +20,18 @@ def sample_normal_multivariable(mu : np.ndarray, cov : np.ndarray, n : int):
 
     returns np.ndarray of shape (n,m) of samples
     '''
+    #based on https://juanitorduz.github.io/multivariate_normal/
     m = mu.shape[0]
+    eps = np.min(cov)/1000
+    L = np.linalg.cholesky(cov) + eps*np.eye(m)
     s = np.zeros((n,m))
+
     for i in prange(n):
-            s[i] = np.random.normal(mu,cov) #<----------_THIS IS WRONG!!!!!!!!
+        u = np.zeros(m)
+        for j in prange(m):
+            u[j] = np.random.normal(0,1)
+        s[i] = mu + np.dot(L,u)
+        
     return s
 
 @njit(cache = True)

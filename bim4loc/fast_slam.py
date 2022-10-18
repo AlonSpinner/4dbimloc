@@ -4,7 +4,7 @@ from bim4loc.geometry.pose2z import compose_s
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.utils import p2logodds,logodds2p
 from bim4loc.existance_mapping.filters import approx, exact
-from bim4loc.random.multi_dim import sample_uniform_multivariable, sample_normal_multivariable
+from bim4loc.random.multi_dim import sample_uniform, sample_normal
 import numpy as np
 import logging
 
@@ -141,7 +141,7 @@ def filter_resampler(particle_poses : np.ndarray,
 
     #produce new samples from static distribuion with initial belief maps
     if N_random > 0:
-        thinAir_particle_poses = sample_uniform_multivariable(pose_min_bounds, pose_max_bounds, N_random)
+        thinAir_particle_poses = sample_uniform(pose_min_bounds, pose_max_bounds, N_random)
         thinAir_particle_beliefs = initial_belief.repeat(N_random).reshape((-1, N_random)).T
 
     #produce resampled samples                                             
@@ -213,7 +213,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
 
     #compute weights and normalize
     sum_weights = 0.0
-    noisy_u = sample_normal_multivariable(u, U_COV, N_particles)
+    noisy_u = sample_normal(u, U_COV, N_particles)
     for k in prange(N_particles):
         #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
