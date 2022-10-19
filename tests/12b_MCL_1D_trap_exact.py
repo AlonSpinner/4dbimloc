@@ -38,7 +38,6 @@ drone = Drone(pose = np.array([3.0 ,10.0 ,1.5 , 0.0]))
 sensor = Lidar(angles_u = np.array([0.0]),
                  angles_v = np.array([0.0])); 
 sensor.std = 0.1
-sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -46,7 +45,7 @@ simulated_sensor = deepcopy(sensor)
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
-N_particles = 200
+N_particles = 100
 particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
                        np.zeros(N_particles),
@@ -82,6 +81,8 @@ visApp.add_scene("initial_state", "world")
 visApp.redraw("initial_state")
 visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
+visApp.add_solid(vis_particles.lines, "initial_state")
+visApp.add_solid(vis_particles.tails, "initial_state")
 
 u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
@@ -90,7 +91,6 @@ w_slow = w_fast = 0.0
 map_bounds_min = np.array([0.0, 0.0, 0.0]) #filler values
 map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
 
-
 #create the sense_fcn
 sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
 # sense_fcn = njit(sense_fcn) #<----- THIS CAN TAKE ALONG FUCKING TIME?
@@ -98,22 +98,17 @@ sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = 
 #LOOP
 time.sleep(2)
 for t in range(100):
-    # keyboard.wait('space')
+    keyboard.wait('space')
 
     #move drone
     drone.move(u)
     
     #produce measurement
-    z, _, _, z_p = drone.scan(world, project_scan = True)
-
-    #produce noisy measurements here as numba cant handle np.random.multivariate
-    #we can create our own but it won't follow the seed...
-    #or the problem is with parallelization!! 
-    noisy_u = np.random.multivariate_normal(u, U_COV,particle_poses.shape[0])
+    z, _, _, z_p = drone.scan(world, project_scan = True, noisy = False)
 
     particle_poses, particle_beliefs, \
     weights, w_slow, w_fast, w_diff, steps_from_resample = \
-    fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z, 
+    fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
             steps_from_resample, w_slow, w_fast,
             sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
             map_bounds_min, map_bounds_max, initial_beliefs,

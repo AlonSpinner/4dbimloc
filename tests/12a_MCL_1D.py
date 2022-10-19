@@ -11,6 +11,7 @@ import time
 import logging
 from copy import deepcopy
 import matplotlib.pyplot as plt
+import keyboard
 
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -59,6 +60,8 @@ u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
 #LOOP
 for t in range(100):
+    keyboard.wait('space')
+
     #move drone
     drone.move(u)
     
@@ -75,8 +78,8 @@ for t in range(100):
                                                             world, n_hits = 10, 
                                                             noisy = False)
         
-        pz = 0.2 + 0.8 * gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
-        weights[i] *= np.product(pz)
+        pz = 0.2 + 0.8*gaussian_pdf(particle_z_values, sensor.std, z, pseudo = True)
+        weights[i] *= pz.prod()
         sum_weights += weights[i]
     #normalize
     weights = weights / sum_weights

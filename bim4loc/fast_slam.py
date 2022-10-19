@@ -172,7 +172,7 @@ def filter_resampler(particle_poses : np.ndarray,
     return particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff
 
 # @njit(parallel = True, cache = True)
-def per_particle(particle_poses, particle_beliefs, weights, noisy_u, z, 
+def per_particle(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     sense_fcn, lidar_std, lidar_max_range, 
                     pose_min_bounds, pose_max_bounds, map_initial_belief):
     # https://github.com/numba/numba/issues/5923
@@ -180,7 +180,7 @@ def per_particle(particle_poses, particle_beliefs, weights, noisy_u, z,
     N_particles = particle_poses.shape[0]
     #compute weights and normalize
     sum_weights = 0.0
-    # noisy_u = sample_normal(u, U_COV, N_particles)
+    noisy_u = sample_normal(u, U_COV, N_particles)
     for k in prange(N_particles):
         #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
@@ -208,7 +208,7 @@ def per_particle(particle_poses, particle_beliefs, weights, noisy_u, z,
     return particle_poses, particle_beliefs, weights, sum_weights
 
 # @njit(parallel = True, cache = True)
-def fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z, 
+def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, lidar_std, lidar_max_range, 
                     map_bounds_min, map_bounds_max, map_initial_belief,
@@ -249,7 +249,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z,
     pose_max_bounds = np.array([map_bounds_max[0],map_bounds_max[1], 0.0 , np.pi])
 
     particle_poses, particle_beliefs, weights, sum_weights \
-        = per_particle(particle_poses, particle_beliefs, weights, noisy_u, z, 
+        = per_particle(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     sense_fcn, lidar_std, lidar_max_range, 
                     pose_min_bounds, pose_max_bounds, map_initial_belief)
 
@@ -258,7 +258,8 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, noisy_u, z,
     # normalize weights
     if sum_weights == 0.0:
         weights = np.ones(N_particles) / N_particles
-    weights = weights / sum_weights
+    else:
+        weights = weights / sum_weights
 
     if should_resample(weights, steps_from_resample, resample_steps_thresholds):
         

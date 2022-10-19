@@ -27,10 +27,10 @@ gaussian_pdf = Gaussian._pdf
 solids = ifc_converter(IFC_PATH)
 constructed_solids = [s.clone() for s in solids[:-2]]
 
-beliefs = np.ones(len(solids))
-beliefs[[-1, -2, 6, 10]] = 0.5
-# beliefs[[-1, -2]] = 0.0
-for i, b in enumerate(beliefs):
+initial_beliefs = np.ones(len(solids))
+initial_beliefs[[-1, -2, 6, 10]] = 0.5
+# beliefs[[-1, -2]] = 1.0
+for i, b in enumerate(initial_beliefs):
     solids[i].set_existance_belief_and_shader(b)
 
 simulation = RayCastingMap(solids)
@@ -45,7 +45,6 @@ sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.piercing = True
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, _ = world.bounds()
@@ -55,7 +54,7 @@ particle_poses = np.vstack((np.full(N_particles, 3.0),
                        np.zeros(N_particles),
                        np.full(N_particles, 0.0))).T
 
-particle_beliefs = np.tile(beliefs, (N_particles,1))
+particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
 
 #initalize weights
 weights = np.ones(N_particles) / N_particles
@@ -86,21 +85,27 @@ visApp.add_scene("initial_state", "world")
 visApp.redraw("initial_state")
 visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
+visApp.add_solid(vis_particles.lines, "initial_state")
+visApp.add_solid(vis_particles.tails, "initial_state")
 
 u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
+steps_from_resample = 0
+w_slow = w_fast = 0.0
+map_bounds_min = np.array([0.0, 0.0, 0.0]) #filler values
+map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
+
+sense_fcn = simulated_sensor.get_sense_piercing(simulation, n_hits = 5, noisy = False)
 #LOOP
 time.sleep(2)
-for t in range(200):
+for t in range(100):
     # keyboard.wait('space')
-    if t  == 100:
-        u = -u
 
     #move drone
     drone.move(u)
     
     #produce measurement
-    z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True)
+    z, _, _, z_p = drone.scan(world, project_scan = True)
 
     #---------------------------FILTER-------------------------------------
     #compute weights and normalize
