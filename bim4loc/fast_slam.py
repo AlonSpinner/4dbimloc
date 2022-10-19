@@ -248,6 +248,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
     weights = weights / sum_weights
 
     if should_resample(weights, steps_from_resample, resample_steps_thresholds):
+        
         particle_poses, particle_beliefs, weights, w_slow, w_fast, w_diff = \
             filter_resampler(particle_poses, particle_beliefs, weights,
                             w_slow, w_fast,
@@ -256,6 +257,7 @@ def fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z,
         steps_from_resample = 0
     else:
         steps_from_resample += 1
+        w_diff = np.clip(1.0 - w_fast / w_slow, 0.0, 1.0)
 
     return particle_poses, \
         particle_beliefs, \

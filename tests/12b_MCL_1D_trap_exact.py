@@ -112,7 +112,7 @@ for t in range(100):
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
                     map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([0,0]))
+                    resample_steps_thresholds = np.array([1,2]))
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
