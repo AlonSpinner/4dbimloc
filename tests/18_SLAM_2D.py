@@ -151,15 +151,15 @@ for t, u in enumerate(actions):
                                      noisy = False)
         
         #calcualte importance weight -> find current posterior distribution
-        pz = np.zeros(len(z))
-        for j in range(len(z)):
-            _, pz[j] = inverse_lidar_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
-                            simulated_sensor.std, simulated_sensor.max_range)
+        # pz = np.zeros(len(z))
+        # for j in range(len(z)):
+        #     _, pz[j] = inverse_lidar_model(z[j], particle_z_values[j], particle_z_ids[j], particle_beliefs[i], 
+        #                     simulated_sensor.std, simulated_sensor.max_range)
 
         # pz = np.max(gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True), axis = 1)
         
-        # particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
-        # pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
+        particle_stds = simulated_sensor.std#/ np.abs(particle_z_cos_incident)
+        pz = 0.1 + 0.9 * gaussian_pdf(particle_z_values, particle_stds, z.reshape(-1,1), pseudo = True)
         
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
         weights[i] *= 1.0 + np.sum(pz**3)
@@ -167,7 +167,7 @@ for t, u in enumerate(actions):
         sum_weights += weights[i]
 
         #update mapping
-        exact(particle_beliefs[i], 
+        approx(particle_beliefs[i], 
             z, 
             particle_z_values, 
             particle_z_ids, 
