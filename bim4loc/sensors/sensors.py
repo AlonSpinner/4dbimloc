@@ -66,6 +66,23 @@ class Lidar(Sensor):
         return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
 
     def get_sense_piercing(self, m : RayCastingMap, n_hits = 10, noisy = True):
+        #returns a function sense(x) that takes a pose x and returns the measurements
+
+        #unpack variables to basic types for numba
+        m_scene = m.scene
+        ray_dirs = self.ray_dirs
+        bias = self.bias
+        std = self.std
+        max_range = self.max_range
+
+        def sense_fcn(pose):
+            return _sense(m_scene, n_hits, noisy, 
+                       ray_dirs, 
+                       bias, std, max_range,
+                       pose)
+        return sense_fcn
+
+    def get_sense_nonpiercing(self, m : RayCastingMap, n_hits = 10, noisy = True):
         #returns a njit function sense(x) that takes a pose x and returns the measurements
 
         #unpack variables to basic types for numba
@@ -74,16 +91,23 @@ class Lidar(Sensor):
         bias = self.bias
         std = self.std
         max_range = self.max_range
-   
-        # return partial(_sense,#numba doesnt work with partials..
-        #                m_scene, n_hits, noisy, 
-        #                ray_dirs, 
-        #                bias, std, max_range)
 
-        return lambda pose: _sense(m_scene, n_hits, noisy, 
-                       ray_dirs, 
-                       bias, std, max_range,
-                       pose)
+        def sense_fcn(pose):
+            z_values, z_ids, z_normals, z_cos_incident, z_n_hits = \
+                _sense(m_scene, n_hits, noisy, 
+                    ray_dirs, 
+                    bias, std, max_range,
+                    pose)
+
+            z_values = z_values[:,0]
+            z_ids = z_ids[:,0]
+            z_normals = z_normals[:,0]
+            z_cos_incident = z_cos_incident[:,0]
+            z_n_hits = np.minimum(z_n_hits,1)
+
+            return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
+        
+        return sense_fcn
 
     def scan_to_points(self, z):
         return _scan_to_points(self._angles_u, self._angles_v, z)

@@ -9,7 +9,7 @@ NO_HIT = 2161354
 def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, meshes_bb : np.ndarray,
                     meshes_iguid : np.ndarray,
                     inc_v : int = 60, inc_t : int = 20,
-                    max_hits : int = 10) -> Union[np.ndarray, np.ndarray]:
+                    max_hits : int = 5) -> Union[np.ndarray, np.ndarray]:
     '''
     input:
         rays - array of shape (n_rays, 6) containing [origin,direction]
