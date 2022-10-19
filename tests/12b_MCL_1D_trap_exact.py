@@ -6,7 +6,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.fast_slam import fast_slam_filter
+from bim4loc.fast_slam.exact_filter import fast_slam_lpf_resampler
 import time
 import logging
 from copy import deepcopy
@@ -108,7 +108,7 @@ for t in range(100):
 
     particle_poses, particle_beliefs, \
     weights, w_slow, w_fast, w_diff, steps_from_resample = \
-         fast_slam_filter(particle_poses, particle_beliefs, weights, u, U_COV, z, 
+         fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV, z, 
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
                     map_bounds_min, map_bounds_max, initial_beliefs,
