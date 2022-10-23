@@ -96,7 +96,7 @@ def fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV,
         steps_from_resample = 0
     else:
         steps_from_resample += 1
-        w_diff = np.clip(1.0 - w_fast / w_slow, 0.0, 1.0)
+        w_diff = np.clip(1.0 - w_fast / (w_slow + 1e-16), 0.0, 1.0)
 
     return particle_poses, \
         particle_beliefs, \
