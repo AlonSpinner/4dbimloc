@@ -23,5 +23,6 @@ n) wrapping the filter up and throwing it into a gazebo simulation?
 o) Additional Thoughts: Importance Sampling so that each particle chooses its rays? 
 p) different amount of rays per particle with accordance to RIS
 q) introduce new random samples in a smart way using grid
+s) IF WE HAD GONE WITH 3D GRID, WE COULD HAVE USED DDA TO HASH EVERYTHING OUT
 
 

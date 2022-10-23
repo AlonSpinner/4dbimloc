@@ -352,6 +352,8 @@ N_COLORS = 100
 COLORS = cm.get_cmap('jet', N_COLORS)(np.linspace(0,1,N_COLORS))[:,:3]
 EPS = 1e-16
 def weights2rgb(weights):
+    if np.isnan(weights).any():
+        raise ValueError('NaNs are not allowed in weights')
     values = (weights - weights.min()) / max(weights.max() - weights.min(), EPS) #normalize
     values = ((N_COLORS-1) * values).astype(np.int32)
     rgb = COLORS[values]
