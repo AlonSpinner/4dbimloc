@@ -24,5 +24,7 @@ o) Additional Thoughts: Importance Sampling so that each particle chooses its ra
 p) different amount of rays per particle with accordance to RIS
 q) introduce new random samples in a smart way using grid
 s) IF WE HAD GONE WITH 3D GRID, WE COULD HAVE USED DDA TO HASH EVERYTHING OUT
+t) condition element(a) on element(b) such that p(a|not-b) = 0
+u) MCMC after resampling (against particle depletion, see "Rao-Blackwellised Particle Filtering for Dynamic Bayesian Networks"
 
 
