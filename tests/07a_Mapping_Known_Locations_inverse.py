@@ -5,6 +5,7 @@ from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
+from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.utils import p2logodds, logodds2p
 import bim4loc.existance_mapping.filters as filters
 from copy import deepcopy
@@ -28,13 +29,15 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(); sensor.std = 0.1; 
+sensor = Lidar(angles_u = np.linspace(-np.pi, np.pi, 100), angles_v = np.array([0])); 
+sensor.std = 0.1; 
 sensor.piercing = False
 sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
+simulated_sensor.std = 1.0 * sensor.std
 
 simulation_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulation_solids)
@@ -66,13 +69,15 @@ visApp.setup_default_camera("simulation")
 time.sleep(1)
 dt = 0.0
 for t,u in enumerate(actions):
-    keyboard.wait('space')
+    # keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
     
     z, z_ids, _, z_p = drone.scan(world, project_scan = True)
-    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    test_pose = compose_s(drone.pose, np.array([0.1,0.0,0.0,0.0]))
+    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
+    # simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     filters.approx(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(logodds2p(logodds_beliefs))
