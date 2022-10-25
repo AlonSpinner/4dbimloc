@@ -39,7 +39,7 @@ for i, s in enumerate(solids):
     s_simulation_belief = s.schedule.cdf(current_time)
     s_simulation.set_existance_belief_and_shader(s_simulation_belief)
     
-    initial_beliefs[i] = s_simulation_belief
+    initial_beliefs[i] = 0.5#s_simulation_belief
     simulation_solids.append(s_simulation)
 simulation = RayCastingMap(simulation_solids)
 
@@ -61,7 +61,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 20
+N_particles = 10
 
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
                        np.random.normal(drone.pose[1], 0.5, N_particles),
@@ -99,13 +99,10 @@ visApp.redraw("initial_state")
 visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
 
-u = np.array([0.0 ,0.2 ,0.0 ,0.0])
-U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
 steps_from_resample = 0
 w_slow = w_fast = 0.0
-map_bounds_min = np.array([0.0, 0.0, 0.0]) #filler values
-map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
-
+map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
@@ -127,11 +124,12 @@ for t, u in enumerate(actions):
                     steps_from_resample, w_slow, w_fast,
                     sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
                     map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([1,2]))
+                    resample_steps_thresholds = np.array([1,1]))
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
-        simulation.update_solids_beliefs(estimate_beliefs)        
+        best_belief = particle_beliefs[np.argmax(weights)]
+        simulation.update_solids_beliefs(best_belief)        
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)

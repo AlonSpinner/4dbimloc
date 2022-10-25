@@ -57,11 +57,11 @@ def fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV,
         #move
         particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
 
-        #if particle moved outside the map, kill it?
-        # if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
-        #      or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
-        #     weights[k] = 0.0
-        #     continue
+        # if particle moved outside the map, kill it?
+        if np.any(particle_poses[k][:3] < map_bounds_min[:3]) \
+             or np.any(particle_poses[k][:3] > map_bounds_max[:3]):
+            weights[k] = 0.0
+            continue
 
         #sense
         particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
@@ -74,17 +74,20 @@ def fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV,
                                         lidar_std,
                                         lidar_max_range)
             
-        weights[k] *= np.product(pz)
+        weights[k] *= np.sum(pz)
         sum_weights += weights[k]
 
     #----finished per particle calculations.
-
     w_slow, w_fast = update_resampling_ws(w_slow, w_fast, sum_weights, N_particles)
 
+    if np.isinf(weights).any() or np.isnan(weights).any():
+        logging.error('weights are inf or nan')
+
     #normalize weights
-    if sum_weights == 0.0:
+    if sum_weights < 1e-16:
         weights = np.ones(N_particles) / N_particles
-    weights = weights / sum_weights
+    else:
+        weights = weights / sum_weights
 
     if should_resample(weights, steps_from_resample, resample_steps_thresholds):
         

@@ -48,7 +48,7 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2, 8), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2, 36), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -64,7 +64,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 200
+N_particles = 10
 
 # particle_poses = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
 #                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
