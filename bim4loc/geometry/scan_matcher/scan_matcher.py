@@ -39,9 +39,9 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
 
     # R, t = point2plane_registration(src, dst, normals, 
                                 # np.eye(4), threshold = 0.5, k = sensor_std)
-    # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.5)
+    # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.1)
     # R, t = teaser_registration(src, dst)
-    R, t = point2point_ransac(src, dst, normals)
+    R, t = point2point_ransac_fhph(src, dst, normals)
 
     plot(src, dst, R, t, False)
     return R,t
@@ -79,7 +79,7 @@ def compute_fpfh(o3d_pcd, voxel_size = 0.2):
                                             max_nn=100))
     return pcd_fpfh
 
-def point2point_ransac(src, dst, normals, 
+def point2point_ransac_fhph(src, dst, normals, 
                         threshold = 0.5, 
                         RANASC_max_iterations = 1000,
                         RANSAC_confidence = 0.99):
@@ -100,6 +100,37 @@ def point2point_ransac(src, dst, normals,
         dst,
         src_fpfh,
         dst_fpfh,
+        mutual_filter = True,
+        max_correspondence_distance = threshold,
+        estimation_method=o3d.pipelines.registration.
+        TransformationEstimationPointToPoint(False), #without scaling
+        ransac_n= 3,
+        checkers=[
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
+                0.9),
+            o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                threshold)
+        ],
+        criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(
+            RANASC_max_iterations, RANSAC_confidence))
+    T =  result.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t
+
+def point2point_ransac_max_dist(src, dst,
+                        threshold = 0.5, 
+                        RANASC_max_iterations = 1000,
+                        RANSAC_confidence = 0.99):
+
+    src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
+    src = src.voxel_down_sample(0.2)
+    
+    dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    dst = dst.voxel_down_sample(0.2)
+    
+    result = o3d.pipelines.registration.registration_ransac_based_on_correspondence(
+        src,
+        dst,
         mutual_filter = True,
         max_correspondence_distance = threshold,
         estimation_method=o3d.pipelines.registration.

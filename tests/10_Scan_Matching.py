@@ -10,7 +10,7 @@ from copy import deepcopy, copy
 import time
 import logging
 import keyboard
-import bim4loc.geometry.scan_matcher.scan_matcher as scan_matcher
+import bim4loc.geometry.scan_matcher.new_scan_matcher as scan_matcher
 
 np.random.seed(25)
 
@@ -29,7 +29,7 @@ world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 36),
-                 angles_v = np.linspace(-np.pi/30, +np.pi/30, 3)); 
+                 angles_v = np.array([0])); 
 sensor.std = 0.1
 sensor.piercing = False
 sensor.max_range = 100.0
@@ -94,7 +94,7 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals, 
+    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, 
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points())

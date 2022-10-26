@@ -36,7 +36,7 @@ drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
-simulated_sensor.std = 10.0 * sensor.std
+simulated_sensor.std = 1 * sensor.std
 
 simulation_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulation_solids)
@@ -54,14 +54,14 @@ visApp = VisApp()
 visApp.redraw("world")
 visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
-visApp.add_solid(drone.solid, "world")
+# visApp.add_solid(drone.solid, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
 
 simulated_drone = Drone(drone.pose)
 simulated_drone.solid.name = "simulated_drone"
 simulated_drone.solid.material.base_color = np.array([0, 1, 0, 1])
-visApp.add_solid(simulated_drone.solid, "world")
+# visApp.add_solid(simulated_drone.solid, "world")
 simulated_vis_scan = ScanSolid("simulated_scan", color = np.array([1.0, 0.0, 0.8]))
 visApp.add_solid(simulated_vis_scan, "world")
 
@@ -76,7 +76,7 @@ time.sleep(1)
 dt = 0.0
 start_time = time.time()
 for t,u in enumerate(actions):
-    # keyboard.wait('space')
+    keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
@@ -84,7 +84,12 @@ for t,u in enumerate(actions):
     simulated_drone.solid.update_geometry(test_pose)
 
     z, z_ids, _, z_p  = drone.scan(world, project_scan = True, noisy = False)
+    
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
+    #scan match?
+    fixed_pose = scan_match(z, simulated_z)
+    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
+
 
     filters.exact2(beliefs, z, simulated_z, simulated_z_ids, 
                     sensor.std, sensor.max_range)
@@ -98,8 +103,8 @@ for t,u in enumerate(actions):
     simulated_vis_scan.update(test_pose[:3], simulated_world_p.T)
 
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
-    visApp.update_solid(drone.solid,"world")
-    visApp.update_solid(simulated_drone.solid,"world")
+    # visApp.update_solid(drone.solid,"world")
+    # visApp.update_solid(simulated_drone.solid,"world")
     visApp.update_solid(vis_scan, "world")
     visApp.update_solid(simulated_vis_scan, "world")
     
