@@ -76,17 +76,17 @@ time.sleep(1)
 dt = 0.0
 start_time = time.time()
 for t,u in enumerate(actions):
-    keyboard.wait('space')
+    # keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
-    test_pose = compose_s(drone.pose, np.array([0.01,0.0,0.0,0.0]))
+    test_pose = compose_s(drone.pose, np.array([0.1,0.0,0.0,0.0]))
     simulated_drone.solid.update_geometry(test_pose)
 
     z, z_ids, _, z_p  = drone.scan(world, project_scan = True, noisy = False)
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
 
-    filters.exact(beliefs, z, simulated_z, simulated_z_ids, 
+    filters.exact2(beliefs, z, simulated_z, simulated_z_ids, 
                     sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     

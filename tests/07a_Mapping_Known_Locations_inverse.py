@@ -13,7 +13,7 @@ import time
 import logging
 import keyboard
 
-np.random.seed(25)
+np.random.seed(24)
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)

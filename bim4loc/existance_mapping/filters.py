@@ -64,6 +64,61 @@ def exact(beliefs : np.ndarray,
         
     return beliefs, p_z
 
+# @njit(parallel = True, cache = True)
+def exact2(beliefs : np.ndarray, 
+            world_z : np.ndarray, 
+            simulated_z : np.ndarray, 
+            simulated_z_ids : np.ndarray,
+            sensor_std : float,
+            sensor_max_range : float) -> np.ndarray:
+    '''
+    CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
+
+    inputs: 
+        beliefs : one dimensional np.ndarray sorted same as solids
+        world_z - range measurements from real-world-sensor 
+                    np.array of shape (n_rays)
+        simulated_z - range measurements from simulated sensor rays
+                    np.array of shape (n_rays, max_hits)
+                    if hit that was not detected, value is set to sensor_max_range
+        simulated_z_ids - ids of solids that were hit from simulated rays
+                    np.array of shape (n_rays, max_hits)
+                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+        sensor_std - standard deviation of sensor
+        sensor_max_range - max range of sensor
+    
+    outputs:
+        beliefs - updated beliefs
+        p_z - np.array of probability of measurements given existance beliefs
+    '''
+
+    N_elements = beliefs.shape[0]
+    N_rays = world_z.shape[0]
+    p_z = np.zeros(N_rays)
+
+    new_beliefs = -np.ones((N_elements,N_rays))
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+
+        pj_zi, p_z_i = inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
+                                sensor_std, sensor_max_range)
+        for j, p in enumerate(pj_zi):
+            szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
+            new_beliefs[szid_ij,i] = p
+        
+        p_z[i] = p_z_i
+    
+    for i in prange(N_elements):
+        element_new_beliefs = new_beliefs[i,:]
+        element_new_beliefs = element_new_beliefs[element_new_beliefs >= 0]
+        if element_new_beliefs.shape[0] > 0:
+            beliefs[i] = np.mean(element_new_beliefs)
+
+    return beliefs, p_z
+
 @njit(parallel = True, cache = True)
 def approx(logodds_beliefs : np.ndarray, 
             world_z : np.ndarray, 
