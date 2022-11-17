@@ -87,8 +87,8 @@ for t,u in enumerate(actions):
     
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
     #scan match?
-    fixed_pose = scan_match(z, simulated_z)
-    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
+    # fixed_pose = scan_match(z, simulated_z)
+    # simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
 
 
     filters.exact2(beliefs, z, simulated_z, simulated_z_ids, 

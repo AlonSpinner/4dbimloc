@@ -88,8 +88,9 @@ u = np.array([0.0 ,0.2 ,0.0 ,0.0])
 U_COV = np.diag([0.0, 0.02, 0.0, 0.0])
 steps_from_resample = 0
 w_slow = w_fast = 0.0
-map_bounds_min = np.array([0.0, 0.0, 0.0]) #filler values
-map_bounds_max = np.array([10.0, 10.0, 0.0]) #filler values
+map_bounds_min, map_bounds_max,_ = simulation.bounds()
+map_bounds_min[0] = 2.9
+map_bounds_max[0] = 3.1
 
 
 #create the sense_fcn
