@@ -261,7 +261,7 @@ for t, u in enumerate(actions):
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     visApp.redraw_all_scenes()
 
-    # time.sleep(0.01)
+    time.sleep(0.04)
     # keyboard.wait('space')
     
 print('finished')

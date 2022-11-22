@@ -1,7 +1,7 @@
 from typing import Tuple
 from numba import njit, prange
 from bim4loc.geometry.pose2z import compose_s
-from bim4loc.existance_mapping.filters import exact
+from bim4loc.existance_mapping.filters import exact, exact2
 from bim4loc.random.multi_dim import sample_normal
 from .lpf_adaptive_resampling import resampler, update_resampling_ws
 from .utils import should_resample
@@ -67,7 +67,7 @@ def fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV,
         particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[k])
 
         #remap and calcualte probability of rays pz
-        particle_beliefs[k], pz = exact(particle_beliefs[k], 
+        particle_beliefs[k], pz = exact2(particle_beliefs[k], 
                                         z, 
                                         particle_z_values, 
                                         particle_z_ids, 
