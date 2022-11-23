@@ -129,7 +129,7 @@ for t, u in enumerate(actions):
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_belief = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(best_belief)        
+        simulation.update_solids_beliefs(estimate_beliefs)        
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)

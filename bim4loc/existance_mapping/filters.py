@@ -115,7 +115,11 @@ def exact2(beliefs : np.ndarray,
         element_new_beliefs = new_beliefs[i,:]
         element_new_beliefs = element_new_beliefs[element_new_beliefs >= 0]
         if element_new_beliefs.shape[0] > 0:
-            beliefs[i] = np.mean(element_new_beliefs)
+            exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
+            if exist_beliefs.shape[0] > 0:
+                beliefs[i] = np.mean(exist_beliefs)
+            else:
+                beliefs[i] = np.mean(element_new_beliefs)
 
     return beliefs, p_z
 
