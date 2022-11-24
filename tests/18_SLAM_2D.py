@@ -2,7 +2,7 @@ from tkinter import N
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ScanSolid, ParticlesSolid
+from bim4loc.solids import ifc_converter, ScanSolid, ParticlesSolid, ArrowSolid
 from bim4loc.agents import Drone
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.sensors.models import inverse_lidar_model
@@ -64,7 +64,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES UNIFORMLY
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 10
+N_particles = 30
 
 # particle_poses = np.vstack((np.random.uniform(bounds_min[0], bounds_max[0], N_particles),
 #                        np.random.uniform(bounds_min[1], bounds_max[1], N_particles),
@@ -108,6 +108,8 @@ visApp.add_scene("initial_state", "world")
 visApp.redraw("initial_state")
 visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
+dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
+visApp.add_solid(dead_reck, "initial_state")
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
 ETA_THRESHOLD = 5.0/N_particles
@@ -259,6 +261,10 @@ for t, u in enumerate(actions):
     visApp.update_solid(vis_particles.lines, "simulation")
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
+
+    u_noisy = np.random.multivariate_normal(u, U_COV)
+    dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
+    visApp.update_solid(dead_reck, "initial_state")
     visApp.redraw_all_scenes()
 
     time.sleep(0.04)

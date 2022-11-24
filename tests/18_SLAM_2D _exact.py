@@ -61,7 +61,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 10
+N_particles = 30
 
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
                        np.random.normal(drone.pose[1], 0.5, N_particles),

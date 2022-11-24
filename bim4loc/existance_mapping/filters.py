@@ -18,7 +18,7 @@ def binary_variable_update(current, update):
     #from page 30 in Robotic Mapping and Exporation (Occpuancy Probability Mapping
     return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def exact(beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
