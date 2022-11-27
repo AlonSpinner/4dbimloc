@@ -45,7 +45,7 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2, 30), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/2,np.pi/2, 100), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -131,6 +131,7 @@ for t, u in enumerate(actions):
         expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_map = particle_beliefs[np.argmax(weights)]
         simulation.update_solids_beliefs(expected_map)        
+    
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)

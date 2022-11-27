@@ -10,7 +10,7 @@ from copy import deepcopy, copy
 import time
 import logging
 import keyboard
-import bim4loc.geometry.scan_matcher.new_scan_matcher as scan_matcher
+import bim4loc.geometry.scan_matcher.scan_matcher as scan_matcher
 
 np.random.seed(25)
 
@@ -97,7 +97,7 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids,
+    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals,
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points(),

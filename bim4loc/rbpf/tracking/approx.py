@@ -51,7 +51,6 @@ class RBPF():
         sum_weights = 0.0
         noisy_u = sample_normal(u, U_COV, N_particles)
         for k in range(N_particles):
-            #move with scan matching
 
             particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
 
