@@ -6,7 +6,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.fast_slam.exact_filters import fast_slam_lpf_resampler
+from bim4loc.rbpf.tracking.exact import RBPF
 import time
 import logging
 from copy import deepcopy
@@ -96,6 +96,10 @@ map_bounds_max[0] = 3.1
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
 
+rbpf = RBPF(sense_fcn, 
+            simulated_sensor.std, simulated_sensor.max_range,
+            map_bounds_min, map_bounds_max, resample_rate = 3)
+
 #LOOP
 time.sleep(2)
 for t in range(100):
@@ -107,13 +111,15 @@ for t in range(100):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
-    particle_poses, particle_beliefs, \
-    weights, w_slow, w_fast, w_diff, steps_from_resample = \
-         fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV, z, 
-                    steps_from_resample, w_slow, w_fast,
-                    sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
-                    map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([1,2]))
+    # particle_poses, particle_beliefs, \
+    # weights, w_slow, w_fast, w_diff, steps_from_resample = \
+    #      fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV, z, 
+    #                 steps_from_resample, w_slow, w_fast,
+    #                 sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
+    #                 map_bounds_min, map_bounds_max, initial_beliefs,
+    #                 resample_steps_thresholds = np.array([1,2]))
+
+    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights, u, U_COV, z)
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)

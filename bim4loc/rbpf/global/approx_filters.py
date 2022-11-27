@@ -6,7 +6,7 @@ from bim4loc.random.multi_dim import sample_normal
 from .lpf_adaptive_resampling import resampler, update_resampling_ws
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.utils import logodds2p, p2logodds
-from .utils import should_resample
+from ..utils import should_resample
 import numpy as np
 import logging
 
@@ -85,8 +85,6 @@ def fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV,
                                         lidar_std,
                                         lidar_max_range)
         particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
-        if np.isnan(particle_beliefs[k]).any():
-            a = 1
             
         weights[k] *= np.product(pz)
         sum_weights += weights[k]

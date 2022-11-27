@@ -1,4 +1,4 @@
-from bim4loc.fast_slam.utils import low_variance_sampler
+from bim4loc.rbpf.utils import low_variance_sampler
 from bim4loc.random.multi_dim import sample_uniform
 from typing import Tuple
 from numba import njit
