@@ -36,7 +36,10 @@ sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_drone = Drone(copy(drone.pose))
-simulated_sensor = deepcopy(sensor)
+simulated_sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 300),
+                 angles_v = np.array([0])); 
+simulated_sensor.max_range = 100.0
+# simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
 simulated_drone.mount_sensor(simulated_sensor)
 simulation_solids = [s.clone() for s in solids]
@@ -80,7 +83,7 @@ for t,u in enumerate(actions):
     
     z, z_ids, _, z_p = drone.scan(world, project_scan = True, noisy = False)
 
-    errT = np.array([1.0, 0.0, 0.0, 1 *np.pi/8])
+    errT = np.array([0.5, 0.0, 0.0, 5 *np.pi/180])
     simulated_drone.pose = compose_s(drone.pose,errT)
     simulated_drone.solid.update_geometry(simulated_drone.pose)
 
@@ -94,10 +97,11 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, 
+    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids,
                 beliefs, 
                 sensor.std, sensor.max_range,
-                sensor.get_scan_to_points())
+                sensor.get_scan_to_points(),
+                simulated_sensor.get_scan_to_points())
     
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]

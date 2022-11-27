@@ -21,11 +21,14 @@ l) Additional Thoughts: Autonmous agent!
 m) Writing Writing Writing... god who has time for this.
 n) wrapping the filter up and throwing it into a gazebo simulation?
 o) Additional Thoughts: Importance Sampling so that each particle chooses its rays? 
-p) different amount of rays per particle with accordance to RIS
+p) different amount of rays per particle with accordance to RIS (https://www.youtube.com/watch?v=gsZiJeaMO48&t=1269s&ab_channel=Josh%27sChannel)
 q) introduce new random samples in a smart way using grid
 s) IF WE HAD GONE WITH 3D GRID, WE COULD HAVE USED DDA TO HASH EVERYTHING OUT
 t) condition element(a) on element(b) such that p(a|not-b) = 0
 u) MCMC after resampling (against particle depletion, see "Rao-Blackwellised Particle Filtering for Dynamic Bayesian Networks"
 v) mesh scaling with scaled regions being weighted when intersected
+w) exact2: use histogram bins instead of average for outlier rejection
+x) exact2: assume mean of gaussian is ray to center of element. Think of it like a drone with 1 ray that you have to turn around.
+y) exact2: we can defintly use importance sampling or weighting with truncuated gaussian (signed distance field - like)
 
 

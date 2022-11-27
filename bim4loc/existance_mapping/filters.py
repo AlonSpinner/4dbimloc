@@ -113,13 +113,19 @@ def exact2(beliefs : np.ndarray,
     
     for i in prange(N_elements):
         element_new_beliefs = new_beliefs[i,:]
-        element_new_beliefs = element_new_beliefs[element_new_beliefs >= 0]
+        element_new_beliefs = element_new_beliefs[element_new_beliefs >= 0] #remove -1s
+
+        hist, bin_edges = np.histogram(element_new_beliefs, bins = 20, range = (0,1))
+        #create gaussian from previous belief with std ~ 
+        # beliefs[i] = bin_edges[np.argmax(hist)]
+       
         if element_new_beliefs.shape[0] > 0:
-            exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
-            if exist_beliefs.shape[0] > 0:
-                beliefs[i] = np.mean(exist_beliefs)
-            else:
-                beliefs[i] = np.mean(element_new_beliefs)
+              beliefs[i] = np.max(element_new_beliefs)
+        #     exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
+        #     if exist_beliefs.shape[0] > 0:
+        #         beliefs[i] = np.mean(exist_beliefs)
+            # else:
+                # beliefs[i] = np.mean(element_new_beliefs)
 
     return beliefs, p_z
 

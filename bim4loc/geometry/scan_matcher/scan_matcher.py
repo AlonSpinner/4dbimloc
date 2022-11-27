@@ -38,11 +38,11 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     # dst[2,:] = 0.0
 
     # R, t = point2plane_registration(src, dst, normals, 
-                                # np.eye(4), threshold = 0.5, k = sensor_std)
+    #                             np.eye(4), threshold = 0.5, k = sensor_std)
     # R, t = point2point_registration(src, dst, np.eye(4), threshold = 0.1)
-    # R, t = teaser_registration(src, dst)
-    R, t = point2point_ransac_fhph(src, dst, normals)
-
+    R, t = teaser_registration(src, dst)
+    # R, t = point2point_ransac_fhph(src, dst, normals)
+    # R, t = point2point_ransac_max_dist(src, dst)
     plot(src, dst, R, t, False)
     return R,t
 

@@ -80,7 +80,7 @@ for t,u in enumerate(actions):
     step_start = time.time()
     
     drone.move(u)
-    test_pose = compose_s(drone.pose, np.array([0.1,0.0,0.0,0.0]))
+    test_pose = compose_s(drone.pose, np.array([0.0,0.0,0.0,0.0]))
     simulated_drone.solid.update_geometry(test_pose)
 
     z, z_ids, _, z_p  = drone.scan(world, project_scan = True, noisy = False)

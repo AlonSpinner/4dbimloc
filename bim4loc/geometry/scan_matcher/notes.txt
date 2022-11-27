@@ -1,0 +1,4 @@
+1) We are matching shapes and not individual rays
+2) to prevent one area of the shape (closer regions) 
+    having significant more cost related to it, we need to downsample
+3) we can use as many points as we please in the simulated point cloud for optimal shape

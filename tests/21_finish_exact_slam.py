@@ -30,7 +30,7 @@ simulated_solids = [s.clone() for s in solids]
 [s.set_existance_belief_and_shader(0.5) for s in simulated_solids]
 
 simulation = RayCastingMap(simulated_solids)
-particle_poses = np.array([[10.0, 2.5, 1.5, 0.0]])
+particle_poses = np.array([[10 +0.5, 2.5, 1.5, 0.0]])
 particle_beliefs = 0.5*np.ones(len(simulation.solids))
 
 #DRAW
@@ -50,7 +50,7 @@ visApp.add_solid(particle_vis_scan, "world")
 
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 10, noisy = False)
 for time_step in range(10):
-    keyboard.wait('space')
+    # keyboard.wait('space')
 
     #produce measurement
     z, z_ids, z_normals, z_p = drone.scan(world, project_scan = True, 
@@ -62,7 +62,7 @@ for time_step in range(10):
     particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[0])
 
     #remap and calcualte probability of rays pz
-    particle_beliefs, pz = filters.exact(particle_beliefs, 
+    particle_beliefs, pz = filters.exact2(particle_beliefs, 
                                     z, 
                                     particle_z_values, 
                                     particle_z_ids, 
