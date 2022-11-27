@@ -62,7 +62,7 @@ for time_step in range(10):
     particle_z_values, particle_z_ids, _, _, _ = sense_fcn(particle_poses[0])
 
     #remap and calcualte probability of rays pz
-    particle_beliefs, pz = filters.exact2(particle_beliefs, 
+    particle_beliefs, pz = filters.exact(particle_beliefs, 
                                     z, 
                                     particle_z_values, 
                                     particle_z_ids, 
