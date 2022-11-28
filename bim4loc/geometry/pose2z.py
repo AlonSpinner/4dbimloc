@@ -31,6 +31,11 @@ def s_from_T(T : np.ndarray) -> np.ndarray:
     return s
 
 @njit(cache = True)
+def s_from_Rt(R : np.ndarray, t : np.ndarray) -> np.ndarray:
+    s = np.array((t[0,0],t[1,0], t[2,0], np.arctan2(R[1,0], R[0,0])))
+    return s
+
+@njit(cache = True)
 def compose_s(s : np.ndarray, ds : np.ndarray)  -> np.ndarray:
     Ts = T_from_s(ds)
     Tds = T_from_s(s)

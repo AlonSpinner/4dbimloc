@@ -23,6 +23,7 @@ gaussian_pdf = Gaussian._pdf
 #BUILD WORLD
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
+solids = solids[:10]
 
 constructed_solids = []
 for s in solids:
@@ -61,7 +62,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 30
+N_particles = 50
 
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
                        np.random.normal(drone.pose[1], 0.5, N_particles),
@@ -102,16 +103,16 @@ visApp.setup_default_camera("initial_state")
 dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
 visApp.add_solid(dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
 steps_from_resample = 0
 w_slow = w_fast = 0.0
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
-rbpf = RBPF(sense_fcn, 
+rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
             simulated_sensor.std, simulated_sensor.max_range,
-            map_bounds_min, map_bounds_max, resample_rate = 3)
+            map_bounds_min, map_bounds_max, resample_rate = 2)
 
 #LOOP
 time.sleep(2)
@@ -124,13 +125,14 @@ for t, u in enumerate(actions):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
+    u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
                                                          u, U_COV, z)
 
     if (t % 2) != 0:
         expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_map = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(expected_map)        
+        simulation.update_solids_beliefs(best_map)        
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
@@ -141,7 +143,6 @@ for t, u in enumerate(actions):
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
 
-    u_noisy = np.random.multivariate_normal(u, U_COV)
     dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
     visApp.update_solid(dead_reck, "initial_state")
     visApp.redraw_all_scenes()

@@ -5,7 +5,7 @@ from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
-from bim4loc.geometry.pose2z import compose_s
+from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from copy import deepcopy, copy
 import time
 import logging
@@ -97,7 +97,7 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    R, t, fitness = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals,
+    R, t, rmse = scan_matcher.scan_match(z, simulated_z, simulated_z_ids,
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points(),
@@ -106,6 +106,9 @@ for t,u in enumerate(actions):
                 icp_distance_threshold = 3.0,
                 probability_filter_threshold = 0.3
                 )
+
+    fixed_pose = compose_s(simulated_drone.pose, s_from_Rt(R,t))
+    print(f"chordal fixed pose - real pose = {fixed_pose - drone.pose}")
     
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]

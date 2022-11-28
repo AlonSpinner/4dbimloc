@@ -11,7 +11,7 @@ from bim4loc.geometry.raycaster import NO_HIT
 from numba import njit, prange
 import open3d as o3d
 
-def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
+def scan_match(world_z, simulated_z, simulated_z_ids,
                 beliefs,
                 sensor_std, sensor_max_range,
                 sensor_scan_to_points,
@@ -33,21 +33,17 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     src = qw[:, fw_ids] #from world
     dst = qs[:, fs_ids] #from simulated
 
-    # #point to plane preprocessing - CATASTROPHICALLY BAD RESULTS
-    # dst_normals = simulated_z_normals.reshape(-1, 3)[fs_ids]
-    # src, dst = preprocess_points(src, dst, dst_normals, 
-    #                   voxelsize = downsample_voxelsize)
-    # R, t, fitness = point2plane_registration(src, dst, np.eye(4), 
-    #                   distance_threshold = icp_distance_threshold)
-
     #point to point
     src, dst = preprocess_points(src, dst, 
                             voxelsize = downsample_voxelsize)
     R, t, rmse = point2point_registration(src, dst, np.eye(4), 
                             distance_threshold = icp_distance_threshold)
     
-    plot(np.asarray(src.points).T, np.asarray(dst.points).T, R, t, rmse, False)
-    return R,t, rmse
+    #for debugging purposes, when running 10
+    # plot(np.asarray(src.points).T, np.asarray(dst.points).T, R, t, rmse, False)
+    
+    #adding [R,t] to the simulated pose to get better estimate for world pose
+    return R, t, rmse
 
 @njit(parallel = True, cache = True)
 def compute_weights(simulated_z_ids : np.ndarray, beliefs : np.ndarray):

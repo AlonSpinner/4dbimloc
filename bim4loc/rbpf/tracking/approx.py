@@ -1,9 +1,10 @@
 from typing import Tuple
-from bim4loc.geometry.pose2z import compose_s
+from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.existance_mapping.filters import approx
 from bim4loc.random.multi_dim import sample_normal
 from ..utils import low_variance_sampler
 from bim4loc.sensors.models import inverse_lidar_model
+from bim4loc.geometry.scan_matcher.scan_matcher import scan_match
 import numpy as np
 import logging
 from typing import Callable
@@ -12,6 +13,7 @@ from bim4loc.random.utils import logodds2p, p2logodds
 class RBPF():
     def __init__(self,
                 sense_fcn : Callable,
+                scan_to_points_fcn : Callable,
                 sensor_std : float,
                 sensor_max_range : float,
                 map_bounds_min : np.ndarray,
@@ -28,6 +30,7 @@ class RBPF():
         '''
         
         self._sense_fcn = sense_fcn
+        self._scan_to_points_fcn = scan_to_points_fcn
         self._sensor_std = sensor_std
         self._sensor_max_range = sensor_max_range
         self._map_bounds_min = map_bounds_min
@@ -54,8 +57,6 @@ class RBPF():
 
             particle_poses[k] = compose_s(particle_poses[k], noisy_u[k])
 
-            #particle_poses[k] = scan_match()
-
             # if particle moved outside the map, kill it?
             if np.any(particle_poses[k][:3] < self._map_bounds_min[:3]) \
                 or np.any(particle_poses[k][:3] > self._map_bounds_max[:3]):
@@ -64,6 +65,19 @@ class RBPF():
         
             #sense
             particle_z_values, particle_z_ids, _, _, _ = self._sense_fcn(particle_poses[k])
+
+            R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
+                particle_beliefs[k],
+                self._sensor_std, self._sensor_max_range,
+                self._scan_to_points_fcn,
+                self._scan_to_points_fcn,
+                downsample_voxelsize = 0.5,
+                icp_distance_threshold = 10.0,
+                probability_filter_threshold = 0.3)
+            if rmse < 0.5:
+                compose_s(particle_poses[k], s_from_Rt(R,t))
+                particle_z_values, particle_z_ids, _, _, _ = self._sense_fcn(particle_poses[k])
+
 
             #calcualte importance weight -> find current posterior distribution
             pz = np.zeros(len(z))
@@ -82,7 +96,7 @@ class RBPF():
                                         self._sensor_max_range)
             particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
             
-            weights[k] *= np.sum(pz) #or multiply?
+            weights[k] *= np.product(pz) #or multiply?
             sum_weights += weights[k]
 
         #normalize weights

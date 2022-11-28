@@ -12,6 +12,7 @@ import logging
 from copy import deepcopy
 import keyboard
 from numba import njit
+from bim4loc.geometry.pose2z import compose_s
 
 np.random.seed(25) #25, 24 are bad. 23 looks good :X
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -96,7 +97,7 @@ map_bounds_max[0] = 3.1
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
 
-rbpf = RBPF(sense_fcn, 
+rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
             simulated_sensor.std, simulated_sensor.max_range,
             map_bounds_min, map_bounds_max, resample_rate = 3)
 
@@ -111,7 +112,8 @@ for t in range(100):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
-    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights, u, U_COV, z)
+    u_noisy = compose_s(u, np.random.multivariate_normal(np.zeros(4), U_COV))
+    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights, u_noisy, U_COV, z)
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
