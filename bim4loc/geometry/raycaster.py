@@ -45,9 +45,9 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
-        inv_ray_dir = 1/ray[3:] #infs are acceptable
+        ray_dir = ray[3:]
         for i_m in prange(N_meshes):
-            if not(ray_box_intersection(ray[:3], inv_ray_dir, meshes_bb[i_m])):
+            if not(ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m])):
                 continue
             
             finished_mesh = False
@@ -58,7 +58,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                 triangle = m_v[m_t[i_t]]
                 
                 #DOES NOT ACCELERATE COMPUTATIONS?
-                # if not(ray_box_intersection(ray[:3], inv_ray_dir, triangle_to_AABB(triangle))):
+                # if not(ray_box_intersection(ray[:3], ray_dir, triangle_to_AABB(triangle))):
                 #     continue
 
                 if triangle.sum() == 0: #empty triangle
@@ -148,30 +148,50 @@ def triangle_to_AABB(triangle : np.ndarray) -> np.ndarray:
     return np.hstack((vmin, vmax))
 
 @njit(fastmath = True, cache = True)
-def ray_box_intersection(ray_o : np.ndarray, ray_inv_dir : np.ndarray, box : np.ndarray) -> bool:
+def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndarray) -> bool:
     '''
     based on https://medium.com/@bromanz/another-view-on-the-classic-ray-aabb-intersection-algorithm-for-bvh-traversal-41125138b525
 
     input:
         ray_o - np.array([x,y,z])
-        ray_inv_dir - np.array([dx,dy,dz]), computed as 1/ray_dir and may include infs.
+        ray_dir - np.array([dx,dy,dz])
         box - np.array([minx,miny,minz,maxx,maxy,maxz])
 
     output:
         boolean - True if ray intersects box          
     '''
-
-    t0s = (box[:3] - ray_o) * ray_inv_dir
-    t1s = (box[3:] - ray_o) * ray_inv_dir
+    inv_ray_dir = 1/ray_dir #infs are acceptable
+    t0s = (box[:3] - ray_o) * inv_ray_dir
+    t1s = (box[3:] - ray_o) * inv_ray_dir
 
     t_bigger = np.maximum(t1s, t0s) #second hit
 
     #check the worst case
     tmax = np.min(t_bigger)
     if tmax < 0:
-        return False
+        return 0.0
     else:
-        return True
+        tmin = np.max(np.minimum(t1s,t0s))
+        ray_hit = ray_o + tmin * ray_dir
+        
+        if abs(ray_hit[0] - box[0]) < EPS or abs(ray_hit[0] - box[3]) < EPS: #if intersection in xmin
+            ind_s = np.array([1,2])
+            ind_b = np.array([4,5])
+        elif abs(ray_hit[1] - box[1]) < EPS or abs(ray_hit[1] - box[4]) < EPS: #if intersection in ymin
+            ind_s = np.array([0,2])
+            ind_b = np.array([3,5])
+        elif abs(ray_hit[2] - box[2]) < EPS or abs(ray_hit[2] - box[5]) < EPS: #if intersection in zmin
+            ind_s = np.array([0,1])
+            ind_b = np.array([3,4])
+        else:
+            return 0.0 #no hit
+            # AssertionError('Cant find minimal distance to face')
+        hit_plane = ray_hit[ind_s] #y,z
+        min_plane = box[ind_s]
+        max_plane = box[ind_b]
+        d = min(np.minimum(np.abs(hit_plane - min_plane),
+                    np.abs(hit_plane - max_plane)))
+        return d
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
