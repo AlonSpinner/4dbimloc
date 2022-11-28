@@ -2,7 +2,6 @@
 # https://python.hotexamples.com/examples/cv2/-/estimateRigidTransform/python-estimaterigidtransform-function-examples.html
 # https://stackoverflow.com/questions/20120384/iterative-closest-point-icp-implementation-on-python
 
-THRESHOLD_WEIGHT_FILTER = 0.3
 import numpy as np
 from numba import njit, prange
 import numpy as np
@@ -11,13 +10,15 @@ from bim4loc.random.utils import negate
 from bim4loc.geometry.raycaster import NO_HIT
 from numba import njit, prange
 import open3d as o3d
-from bim4loc.geometry.pose2z import T_from_s
 
 def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
                 beliefs,
                 sensor_std, sensor_max_range,
                 sensor_scan_to_points,
-                simulated_sensor_scan_to_points):
+                simulated_sensor_scan_to_points,
+                downsample_voxelsize = 0.5,
+                icp_distance_threshold = 10.0,
+                probability_filter_threshold = 0.3):
 
     #get points from scans
     qw = sensor_scan_to_points(world_z)
@@ -27,20 +28,26 @@ def scan_match(world_z, simulated_z, simulated_z_ids, simulated_z_normals,
     fw_ids = world_z < sensor_max_range
     pzi_j = compute_weights(simulated_z_ids, beliefs)
     qs_weight = pzi_j.flatten()
-    fs_ids = qs_weight > THRESHOLD_WEIGHT_FILTER
+    fs_ids = qs_weight > probability_filter_threshold
 
     src = qw[:, fw_ids] #from world
     dst = qs[:, fs_ids] #from simulated
-    normals = simulated_z_normals.reshape(-1, 3)[fs_ids]
 
-    src, dst = preprocess_points(src, dst, voxelsize = 0.5)
+    # #point to plane preprocessing - CATASTROPHICALLY BAD RESULTS
+    # dst_normals = simulated_z_normals.reshape(-1, 3)[fs_ids]
+    # src, dst = preprocess_points(src, dst, dst_normals, 
+    #                   voxelsize = downsample_voxelsize)
+    # R, t, fitness = point2plane_registration(src, dst, np.eye(4), 
+    #                   distance_threshold = icp_distance_threshold)
+
+    #point to point
+    src, dst = preprocess_points(src, dst, 
+                            voxelsize = downsample_voxelsize)
+    R, t, rmse = point2point_registration(src, dst, np.eye(4), 
+                            distance_threshold = icp_distance_threshold)
     
-    #robust ICP
-    R, t = point2point_registration(src, dst, np.eye(4))
-    # R, t = point2plane_registration(src, dst, normals, np.eye(4))
-    
-    plot(np.asarray(src.points).T, np.asarray(dst.points).T, R, t, False)
-    return R,t
+    plot(np.asarray(src.points).T, np.asarray(dst.points).T, R, t, rmse, False)
+    return R,t, rmse
 
 @njit(parallel = True, cache = True)
 def compute_weights(simulated_z_ids : np.ndarray, beliefs : np.ndarray):
@@ -65,42 +72,61 @@ def compute_weights(simulated_z_ids : np.ndarray, beliefs : np.ndarray):
 
     return pzij
 
-def point2point_registration(o3d_src, o3d_dst, T0, threshold = 10):
-
-    reg_p2p = o3d.pipelines.registration.registration_icp(
-                    o3d_src, o3d_dst, threshold, T0,
-                    o3d.pipelines.registration.TransformationEstimationPointToPoint())
-    
-    T = reg_p2p.transformation
-    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
-
-    return R, t
-
-def point2plane_registration(o3d_src, o3d_dst, normals, 
-                                T0, threshold = 10, k = 0.1):
-    o3d_dst.normals = o3d.utility.Vector3dVector(normals)
-    
-    loss = o3d.pipelines.registration.TukeyLoss(k = k)
-    reg_p2l = o3d.pipelines.registration.registration_icp(
-                    o3d_src, o3d_dst, threshold, T0,
-                    o3d.pipelines.registration.TransformationEstimationPointToPlane(loss))
-    
-
-    np_o3d_src = np.asarray(o3d_src.points)
-    np_o3d_dst = np.asarray(o3d_dst.points)
-    T = reg_p2l.transformation
-    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
-    return R, t
-
-def preprocess_points(src : np.ndarray, dst : np.ndarray, voxelsize = 0.5):
+def preprocess_points(src : np.ndarray, dst : np.ndarray,
+                        dst_normals = None, voxelsize = 0.5):
     o3d_src = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(src.T))
     o3d_dst = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(dst.T))
+    if dst_normals is not None:
+        o3d_dst.normals = o3d.utility.Vector3dVector(dst_normals)
 
     o3d_src = o3d_src.voxel_down_sample(voxel_size = voxelsize)
     o3d_dst = o3d_dst.voxel_down_sample(voxel_size = voxelsize)
     return o3d_src, o3d_dst
 
-def plot(src, dst, R = np.eye(3), t = np.zeros((3,1)), 
+#-------------------------------------------------------------------------
+#---------------------------REGISTRATION METHODS--------------------------
+#-------------------------------------------------------------------------
+
+def point2point_registration(o3d_src, o3d_dst, T0,  distance_threshold = 10.0):
+    #can also use
+    # open3d.pipelines.registration.registration_icp
+    reg = o3d.pipelines.registration.registration_icp(
+                    o3d_src, o3d_dst, distance_threshold, T0,
+                    o3d.pipelines.registration.TransformationEstimationPointToPoint(),
+                    o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=10))
+    
+    T = reg.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t, reg.inlier_rmse
+
+def point2plane_registration(o3d_src, o3d_dst, 
+                                T0,  distance_threshold = 10.0, k = 5):
+    
+    #did not work out so well
+    loss = o3d.pipelines.registration.TukeyLoss(k = k)
+    reg = o3d.pipelines.registration.registration_icp(
+                    o3d_src, o3d_dst, distance_threshold, T0,
+                    o3d.pipelines.registration.TransformationEstimationPointToPlane(loss),
+                    o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=10))
+
+    T = reg.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t, reg.inlier_rmse
+
+def gicp_registration(o3d_src, o3d_dst, T0, distance_threshold = 10.0):
+    reg = o3d.pipelines.registration.registration_generalized_icp(
+                    o3d_src, o3d_dst, distance_threshold, T0)
+    
+    T = reg.transformation
+    R = T[:3,:3]; t = T[:3,3].reshape(-1,1)
+    return R, t, reg.inlier_rmse
+
+#-------------------------------------------------------------------------
+#----------------------------DEBUGGING TOOL-------------------------------
+#-------------------------------------------------------------------------
+
+
+def plot(src, dst, R = np.eye(3), t = np.zeros((3,1)), rmse = 0.0, 
             threeD = False, plot_correspondences = False):
     src_T = R @ src + t
 
@@ -123,6 +149,6 @@ def plot(src, dst, R = np.eye(3), t = np.zeros((3,1)),
         ax.axis('equal')
     ax.grid('on')
     ax.legend(['dst', 'src', 'src_T'])
-    ax.set_title('red -> blue = purple')
+    ax.set_title(f'red -> blue = purple\nrmse = {rmse}')
     plt.draw()
     plt.show()

@@ -28,7 +28,7 @@ for s in solids:
 world = RayCastingMap(constructed_solids)
 
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 36),
+sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 100),
                  angles_v = np.array([0])); 
 sensor.std = 0.1
 sensor.piercing = False
@@ -36,7 +36,7 @@ sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_drone = Drone(copy(drone.pose))
-simulated_sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 300),
+simulated_sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 100),
                  angles_v = np.array([0])); 
 simulated_sensor.max_range = 100.0
 # simulated_sensor = deepcopy(sensor)
@@ -97,11 +97,15 @@ for t,u in enumerate(actions):
     visApp.update_solid(simulation_scan,"simulation")
 
     visApp.redraw_all_scenes()
-    R, t = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals,
+    R, t, fitness = scan_matcher.scan_match(z, simulated_z, simulated_z_ids, simulated_z_normals,
                 beliefs, 
                 sensor.std, sensor.max_range,
                 sensor.get_scan_to_points(),
-                simulated_sensor.get_scan_to_points())
+                simulated_sensor.get_scan_to_points(),
+                downsample_voxelsize = 0.5,
+                icp_distance_threshold = 3.0,
+                probability_filter_threshold = 0.3
+                )
     
     simulation.update_solids_beliefs(beliefs)
     [visApp.update_solid(s,"simulation") for s in simulation.solids]

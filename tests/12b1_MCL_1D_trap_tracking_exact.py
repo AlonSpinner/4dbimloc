@@ -12,6 +12,7 @@ import logging
 from copy import deepcopy
 import keyboard
 from numba import njit
+from functools import partial
 
 np.random.seed(25) #25, 24 are bad. 23 looks good :X
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -85,7 +86,7 @@ visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
 
 u = np.array([0.0 ,0.2 ,0.0 ,0.0])
-U_COV = np.diag([0.0, 0.1, 0.0, 0.0])
+U_COV = np.diag([0.0, 0.05, 0.0, 0.0])
 steps_from_resample = 0
 w_slow = w_fast = 0.0
 map_bounds_min, map_bounds_max,_ = simulation.bounds()
@@ -115,7 +116,8 @@ for t in range(100):
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
-        simulation.update_solids_beliefs(estimate_beliefs)        
+        best_belief = particle_beliefs[np.argmax(weights)]
+        simulation.update_solids_beliefs(best_belief)        
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
