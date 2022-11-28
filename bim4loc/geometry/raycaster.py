@@ -41,6 +41,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
     z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
     z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float64)
+    z_d_surface = np.full((N_rays, max_hits), -1.0 , dtype = np.float64)
     z_n_hits = np.zeros((N_rays, ), dtype = np.int32)
 
     for i_r in prange(N_rays):
@@ -175,12 +176,15 @@ def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndar
         ray_hit = ray_o + tmin * ray_dir
         
         if abs(ray_hit[0] - box[0]) < EPS or abs(ray_hit[0] - box[3]) < EPS: #if intersection in xmin
+            ind_x = 0
             ind_s = np.array([1,2])
             ind_b = np.array([4,5])
         elif abs(ray_hit[1] - box[1]) < EPS or abs(ray_hit[1] - box[4]) < EPS: #if intersection in ymin
+            ind_x = 1
             ind_s = np.array([0,2])
             ind_b = np.array([3,5])
         elif abs(ray_hit[2] - box[2]) < EPS or abs(ray_hit[2] - box[5]) < EPS: #if intersection in zmin
+            ind_x = 2
             ind_s = np.array([0,1])
             ind_b = np.array([3,4])
         else:
@@ -189,6 +193,7 @@ def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndar
         hit_plane = ray_hit[ind_s] #y,z
         min_plane = box[ind_s]
         max_plane = box[ind_b]
+        #query point, and closest point
         d = min(np.minimum(np.abs(hit_plane - min_plane),
                     np.abs(hit_plane - max_plane)))
         return d
