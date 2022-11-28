@@ -170,8 +170,9 @@ def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndar
     #check the worst case
     tmax = np.min(t_bigger)
     if tmax < 0:
-        return 0.0
+        return False
     else:
+        return True
         tmin = np.max(np.minimum(t1s,t0s))
         ray_hit = ray_o + tmin * ray_dir
         

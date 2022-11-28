@@ -23,7 +23,7 @@ gaussian_pdf = Gaussian._pdf
 #BUILD WORLD
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
-solids = solids[:10]
+# solids = solids[:10]
 
 constructed_solids = []
 for s in solids:
@@ -104,8 +104,6 @@ dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
 visApp.add_solid(dead_reck, "initial_state")
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
-steps_from_resample = 0
-w_slow = w_fast = 0.0
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn

@@ -75,7 +75,7 @@ class RBPF():
                 icp_distance_threshold = 10.0,
                 probability_filter_threshold = 0.3)
             if rmse < 0.5:
-                compose_s(particle_poses[k], s_from_Rt(R,t))
+                particle_poses[k] = compose_s(particle_poses[k], s_from_Rt(R,t))
                 particle_z_values, particle_z_ids, _, _, _ = self._sense_fcn(particle_poses[k])
 
 
