@@ -177,6 +177,7 @@ def approx(logodds_beliefs : np.ndarray,
             elif wz_i < sz_ij + T: #wz has hit bzid
                 logodds_beliefs[szid_ij] += L09
             else: #wz has hit something after bzid, making us think bzid does not exist
+                # if not(logodds_beliefs[szid_ij] > 3.0): #<-----dont allow things to decrease from a certain range
                 logodds_beliefs[szid_ij] += L01
 
     return logodds_beliefs

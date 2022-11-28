@@ -132,7 +132,7 @@ for t, u in enumerate(actions):
     if (t % 2) != 0:
         expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_map = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(best_map)        
+        simulation.update_solids_beliefs(expected_map)        
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
