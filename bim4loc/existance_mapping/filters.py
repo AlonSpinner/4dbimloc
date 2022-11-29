@@ -120,12 +120,14 @@ def exact2(beliefs : np.ndarray,
         # beliefs[i] = bin_edges[np.argmax(hist)]
        
         if element_new_beliefs.shape[0] > 0:
-              beliefs[i] = np.max(element_new_beliefs)
-        #     exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
-        #     if exist_beliefs.shape[0] > 0:
-        #         beliefs[i] = np.mean(exist_beliefs)
+            #   beliefs[i] = np.max(element_new_beliefs)
+            # exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
+            # if exist_beliefs.shape[0] > 0:
+                # beliefs[i] = np.mean(exist_beliefs)
             # else:
-                # beliefs[i] = np.mean(element_new_beliefs)
+                beliefs[i] = np.mean(element_new_beliefs)
+                if beliefs[i] > 0.95:
+                    beliefs[i] = 1.0
 
     return beliefs, p_z
 

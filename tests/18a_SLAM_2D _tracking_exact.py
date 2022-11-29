@@ -1,12 +1,13 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid
+from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid, ArrowSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.rbpf.tracking import fast_slam_lpf_resampler
+from bim4loc.rbpf.tracking.exact import RBPF
+from bim4loc.geometry.pose2z import compose_s
 import time
 import logging
 from copy import deepcopy
@@ -61,12 +62,12 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 30
+N_particles = 10
 
-particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
-                       np.random.normal(drone.pose[1], 0.5, N_particles),
+particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
+                       np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
-                       np.random.normal(drone.pose[3], np.radians(7.0), N_particles))).T
+                       np.random.normal(drone.pose[3], np.radians(5.0), N_particles))).T
 particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
 
 #initalize weights
@@ -98,14 +99,19 @@ visApp.add_scene("initial_state", "world")
 visApp.redraw("initial_state")
 visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
+dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
+visApp.add_solid(dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/100
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
 steps_from_resample = 0
 w_slow = w_fast = 0.0
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
+rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
+            simulated_sensor.std, simulated_sensor.max_range,
+            map_bounds_min, map_bounds_max, resample_rate = 3)
 
 #LOOP
 time.sleep(2)
@@ -118,18 +124,15 @@ for t, u in enumerate(actions):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
-    particle_poses, particle_beliefs, \
-    weights, w_slow, w_fast, w_diff, steps_from_resample = \
-         fast_slam_lpf_resampler(particle_poses, particle_beliefs, weights, u, U_COV, z, 
-                    steps_from_resample, w_slow, w_fast,
-                    sense_fcn, simulated_sensor.std, simulated_sensor.max_range, 
-                    map_bounds_min, map_bounds_max, initial_beliefs,
-                    resample_steps_thresholds = np.array([1,1]))
+    u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
+    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
+                                                         u, U_COV, z)
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_belief = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(best_belief)        
+        simulation.update_solids_beliefs(estimate_beliefs)        
+    
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
@@ -138,5 +141,9 @@ for t, u in enumerate(actions):
     visApp.update_solid(vis_particles.lines, "simulation")
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
+
+    dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
+    visApp.update_solid(dead_reck, "initial_state")
+    visApp.redraw_all_scenes()
 
     # time.sleep(0.1)

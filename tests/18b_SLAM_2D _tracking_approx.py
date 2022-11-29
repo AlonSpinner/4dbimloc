@@ -62,12 +62,12 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 50
+N_particles = 10
 
-particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.5, N_particles),
-                       np.random.normal(drone.pose[1], 0.5, N_particles),
+particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
+                       np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
-                       np.random.normal(drone.pose[3], np.radians(7.0), N_particles))).T
+                       np.random.normal(drone.pose[3], np.radians(5.0), N_particles))).T
 particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
 
 #initalize weights
@@ -110,7 +110,7 @@ map_bounds_min, map_bounds_max, extent = simulation.bounds()
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
 rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
             simulated_sensor.std, simulated_sensor.max_range,
-            map_bounds_min, map_bounds_max, resample_rate = 2)
+            map_bounds_min, map_bounds_max, resample_rate = 3)
 
 #LOOP
 time.sleep(2)
