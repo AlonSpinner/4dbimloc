@@ -103,14 +103,14 @@ visApp.setup_default_camera("initial_state")
 dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
 visApp.add_solid(dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
 sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
 rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
             simulated_sensor.std, simulated_sensor.max_range,
-            map_bounds_min, map_bounds_max, resample_rate = 3)
+            map_bounds_min, map_bounds_max, resample_rate = 2)
 
 #LOOP
 time.sleep(2)
