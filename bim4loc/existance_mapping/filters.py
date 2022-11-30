@@ -139,6 +139,7 @@ def exact2(pose : np.ndarray,
             element_weights/=sum(element_weights)
             
             beliefs[i] = np.sum(hit_rays_beliefs * element_weights)
+            # beliefs[i] = np.mean(hit_rays_beliefs)
 
             # fig, ax = plt.subplots()
             # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])

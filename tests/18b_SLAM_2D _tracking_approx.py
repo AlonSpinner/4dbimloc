@@ -62,7 +62,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 10
+N_particles = 20
 
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
@@ -130,7 +130,7 @@ for t, u in enumerate(actions):
     if (t % 2) != 0:
         expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_map = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(expected_map)        
+        simulation.update_solids_beliefs(best_map)        
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)

@@ -51,7 +51,7 @@ sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 5.0 * sensor.std
+simulated_sensor.std = 1.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
@@ -62,7 +62,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 10
+N_particles = 80
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
@@ -106,8 +106,7 @@ visApp.add_solid(dead_reck, "initial_state")
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
 
 #create the sense_fcn
-sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
-rbpf = RBPF(simulation, simulated_sensor, resample_rate = 3)
+rbpf = RBPF(simulation, simulated_sensor, resample_rate = 2)
 
 #LOOP
 time.sleep(2)
@@ -118,7 +117,7 @@ for t, u in enumerate(actions):
     drone.move(u)
     
     #produce measurement
-    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = False)
+    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
     u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
@@ -127,7 +126,7 @@ for t, u in enumerate(actions):
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_belief = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(estimate_beliefs)        
+        simulation.update_solids_beliefs(best_belief)        
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
