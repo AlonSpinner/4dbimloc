@@ -1,6 +1,6 @@
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
-from bim4loc.solids import o3dSolid
+from bim4loc.solids import o3dSolid, Label3D
 import threading
 import logging
 import numpy as np
@@ -204,13 +204,29 @@ class VisApp():
         vertical = camera.FovType(0)
         camera.set_projection(fov, aspect_ratio, near_plane, far_plane, vertical)
 
-    def add_solid(self, solid : o3dSolid, scene_name = "world") -> None:
+    def add_text(self, label : Label3D, scene_name : str = "world") -> None:
+        #https://github.com/isl-org/Open3D/issues/1157
+        def _add_text(scene_widget, label : Label3D) -> None:
+             scene_widget.add_3d_label(label.position, label.text)
+
+        scene_widget = self._scenes[scene_name]
+        window = self._get_window(scene_name)
+        self._app.post_to_main_thread(window, partial(_add_text,scene_widget, label))
+
+    def add_solid(self, solid : o3dSolid, scene_name = "world", label = False) -> None:
         def _add_solid(scene_widget, solid : o3dSolid) -> None:
             scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
             
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_add_solid,scene_widget, solid))
+
+        if label:
+            if isinstance(label,bool):
+                text = solid.name
+            else:
+                text = label
+            self.add_text(Label3D(text, solid.geometry.get_center()))
 
     def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]

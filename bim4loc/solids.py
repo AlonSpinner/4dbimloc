@@ -58,6 +58,15 @@ class IfcSolid(o3dSolid):
             ifc_color = self.ifc_color.copy(),                                
             )
 
+class Label3D():
+    '''
+    we use this for the visualizer like the rest of the solids, might aswell be here.
+    '''
+    def __init__(self, text: str, 
+                       position : np.ndarray):
+        self.text = text
+        self.position = position
+
 class PcdSolid(o3dSolid):
     def __init__(self, name : str = 'pcd', 
                     pcd : np.ndarray = None,
@@ -359,9 +368,9 @@ def weights2rgb(weights):
     rgb = COLORS[values]
     return rgb
 
-    import matplotlib.pyplot as plt
-    plt.plot(np.linspace(0,1,len(weights)), weights, 'o', color = 'black')
-    plt.plot (np.linspace(0,1,len(values)), values, 'o', color = 'red')
+    # import matplotlib.pyplot as plt
+    # plt.plot(np.linspace(0,1,len(weights)), weights, 'o', color = 'black')
+    # plt.plot (np.linspace(0,1,len(values)), values, 'o', color = 'red')
 
-    weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
-    return CM_MAP(weights)[:,:3]
+    # weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
+    # return CM_MAP(weights)[:,:3]
