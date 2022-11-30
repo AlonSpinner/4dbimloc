@@ -133,23 +133,27 @@ def exact2(pose : np.ndarray,
             element_uv_hull = np.vstack((element_uv_hull,element_uv_hull[0]))
             hit_rays_uv = sensor_uv_angles[indicies]
             hit_rays_beliefs = element_new_beliefs[indicies]
+            
             element_weights = weights[i,indicies]
-
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
-            ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],c=hit_rays_beliefs)
-            ax.plot(hit_rays_uv[:,0],element_weights)
-            plt.draw()
-            plt.show()
+            element_weights[element_weights < np.median(element_weights)] = 0.0
+            element_weights/=sum(element_weights)
             
+            beliefs[i] = np.sum(hit_rays_beliefs * element_weights)
 
-            element_new_beliefs = element_new_beliefs[indicies] #remove -1s
+            # fig, ax = plt.subplots()
+            # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
+            # sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],
+            #                 c=hit_rays_beliefs, s = element_weights*10000, vmin = 0 , vmax= 1.0)
+            # ax.set_title(f"element {i}, with belief {beliefs[i]}")
+            # ax.invert_xaxis()
+            # plt.colorbar(sc)
+            # # ax.set_title(simulation_solids[i].name)
+            # plt.draw()
+            # plt.show()
             
-
-            # beliefs[i] = element_new_beliefs[np.argmax(element_weights)]
-
-            beliefs[i] = np.mean(element_new_beliefs)
+            
+            # beliefs[i] = np.mean(hit_rays_beliefs)
+            
             if beliefs[i] > 0.95:
                 beliefs[i] = 1.0
 

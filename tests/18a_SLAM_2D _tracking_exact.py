@@ -46,7 +46,7 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, 300), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -58,16 +58,17 @@ simulated_sensor.piercing = True
 straight = np.array([0.5,0.0 ,0.0 ,0.0])
 turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
 turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
-actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20
+actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
 N_particles = 10
-
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
                        np.random.normal(drone.pose[3], np.radians(5.0), N_particles))).T
+# N_particles = 1
+# particle_poses = np.reshape(drone.pose, (1,4))
 particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
 
 #initalize weights
@@ -85,7 +86,7 @@ visApp.add_solid(vis_scan, "world")
 
 #create simulation window
 visApp.add_scene("simulation", "world")
-[visApp.add_solid(s,"simulation") for s in simulation.solids]
+[visApp.add_solid(s,"simulation", f"{i}") for i,s in enumerate(simulation.solids)]
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
@@ -121,7 +122,7 @@ for t, u in enumerate(actions):
 
     u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
-                                                         u, U_COV, z)
+                                                         u_noisy, U_COV, z)
 
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)

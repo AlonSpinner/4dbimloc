@@ -79,7 +79,6 @@ class RBPF():
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
         
             #remap and calcualte probability of rays pz
-            
             particle_beliefs[k], pz = exact2(particle_poses[k],
                                             self._simulation_solids,
                                             particle_beliefs[k], 

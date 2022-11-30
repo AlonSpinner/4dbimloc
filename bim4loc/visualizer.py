@@ -226,7 +226,7 @@ class VisApp():
                 text = solid.name
             else:
                 text = label
-            self.add_text(Label3D(text, solid.geometry.get_center()))
+            self.add_text(Label3D(text, solid.geometry.get_center()), scene_name)
 
     def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
