@@ -30,7 +30,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                 as provided in meshes_v and meshes_t
         z_normals - array of shape (n_rays, max_hits, 3) containing normals
         z_cos_incident - array of shape (n_rays, max_hits) containing cos of incident angle
-        z_n_hits - array of shape (n_rays, ) containing number of hits for each ray
+        z_d_surface - array of shape (N_rays, max_hits) containing distance to surface
         
         outputs are sorted by z_values (small to big)
     '''
@@ -41,18 +41,18 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
     z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
     z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float64)
-    z_d_surface = np.full((N_rays, max_hits), -1.0 , dtype = np.float64)
-    z_n_hits = np.zeros((N_rays, ), dtype = np.int32)
+    z_d_surface = np.full((N_rays, N_meshes), -1.0 , dtype = np.float64)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
         ray_dir = ray[3:]
         for i_m in prange(N_meshes):
-            if not(ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m])):
+            d = ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m])
+            if not(d):
                 continue
+            z_d_surface[i_r,i_m] = d
             
             finished_mesh = False
-
             m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]
             m_v = meshes_v[i_m * inc_v : (i_m + 1) * inc_v]
             for i_t in prange(m_t.shape[0]):
@@ -77,18 +77,16 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
                         z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
                         z_cos_incident[i_r] = np.hstack((np.array([c]), z_cos_incident[i_r][:-1]))
-                        z_n_hits[i_r] += 1
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
                         z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
                         z_cos_incident[i_r] = np.hstack((z_cos_incident[i_r][:ii], np.array([c]), z_cos_incident[i_r][ii:-1]))
-                        z_n_hits[i_r] += 1
             
             if finished_mesh:
                 break
     
-    return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
+    return z_values, z_ids, z_normals, z_cos_incident, z_d_surface
 
 @njit(fastmath = True, cache = True)
 def ray_triangle_intersection(ray : np.ndarray, triangle : np.ndarray):
@@ -172,28 +170,28 @@ def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndar
     if tmax < 0:
         return False
     else:
-        return True
+        # return True
         tmin = np.max(np.minimum(t1s,t0s))
         ray_hit = ray_o + tmin * ray_dir
         
-        if abs(ray_hit[0] - box[0]) < EPS or abs(ray_hit[0] - box[3]) < EPS: #if intersection in xmin
-            ind_x = 0
+        #find closest point on box
+        closest_face = np.argmin(np.abs(np.hstack((ray_hit,ray_hit)) - box))
+
+        if closest_face == 0 or closest_face == 3:
             ind_s = np.array([1,2])
             ind_b = np.array([4,5])
-        elif abs(ray_hit[1] - box[1]) < EPS or abs(ray_hit[1] - box[4]) < EPS: #if intersection in ymin
-            ind_x = 1
+        elif closest_face == 1 or closest_face == 4:
             ind_s = np.array([0,2])
             ind_b = np.array([3,5])
-        elif abs(ray_hit[2] - box[2]) < EPS or abs(ray_hit[2] - box[5]) < EPS: #if intersection in zmin
-            ind_x = 2
+        elif closest_face == 2 or closest_face == 5:
             ind_s = np.array([0,1])
             ind_b = np.array([3,4])
         else:
             return 0.0 #no hit
             # AssertionError('Cant find minimal distance to face')
-        hit_plane = ray_hit[ind_s] #y,z
-        min_plane = box[ind_s]
-        max_plane = box[ind_b]
+        hit_plane = ray_hit[ind_s] #example: we hit the yz plane, so we have x = const
+        min_plane = box[ind_s] #min yz
+        max_plane = box[ind_b] #max yz
         #query point, and closest point
         d = min(np.minimum(np.abs(hit_plane - min_plane),
                     np.abs(hit_plane - max_plane)))

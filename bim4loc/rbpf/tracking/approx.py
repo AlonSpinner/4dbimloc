@@ -96,7 +96,7 @@ class RBPF():
                                         self._sensor_max_range)
             particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
             
-            weights[k] *= np.product(pz) #or multiply?
+            weights[k] *= np.product(0.1 + pz) #or multiply?
             sum_weights += weights[k]
 
         #normalize weights

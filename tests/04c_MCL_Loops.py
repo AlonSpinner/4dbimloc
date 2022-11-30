@@ -11,6 +11,7 @@ import time
 import logging
 import copy
 import keyboard
+from bim4loc.sensors.models import inverse_lidar_model
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -22,6 +23,7 @@ gaussian_pdf = Gaussian._pdf
 solids = ifc_converter(IFC_ONLY_WALLS_PATH)
 world = RayCastingMap(solids)
 bounds_min, bounds_max, extent = world.bounds()
+beliefs = np.ones(len(world.solids),dtype = np.float64)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
@@ -95,12 +97,20 @@ for t, u in enumerate(actions):
                                      world, n_hits = 5, 
                                      noisy = False)
         
-        particle_stds = simulated_sensor.std#/np.maximum(np.abs(particle_z_cos_incident), 1e-16)
-        pz = 0.9 + 0.1 * gaussian_pdf(particle_z_values, particle_stds, z, pseudo = True)
-        
+        # particle_stds = simulated_sensor.std#/np.maximum(np.abs(particle_z_cos_incident), 1e-16)
+        # pz = 0.9 + 0.1 * gaussian_pdf(particle_z_values, particle_stds, z, pseudo = True)        
         #line 205 in https://github.com/ros-planning/navigation/blob/noetic-devel/amcl/src/amcl/sensors/amcl_laser.cpp
-        weights[i] = 1.0 + np.sum(pz**3)
-        # weights[i] = np.product(pz)
+        
+        pz = np.zeros(len(z))
+        for j in range(len(z)):
+            _, pz[j] = inverse_lidar_model(z[j], 
+                                        np.array([particle_z_values[j]]),
+                                        np.array([particle_z_ids[j]]), 
+                                        beliefs, 
+                             simulated_sensor.std,simulated_sensor.max_range)
+
+        weights[i] = 1.0 + np.sum(pz)
+        # weights[i] = np.product(0.1 + pz)
         
         sum_weights += weights[i]
     
