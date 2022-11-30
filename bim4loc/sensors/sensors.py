@@ -37,11 +37,13 @@ class Lidar(Sensor):
 
         #build rays
         rays = np.zeros((self._Nu*self._Nv, 6))
+        uv = np.zeros((self._Nu*self._Nv, 2))
         for i, u in enumerate(angles_u):
             for j, v in enumerate(angles_v):
                 rays[i*self._Nv + j, 3:6] = spherical_coordiantes(u,v)
+                uv[i*self._Nv + j] = np.array([u,v])
         self._rays = rays
-
+        self.uv = uv
 
     def sense(self, pose : np.ndarray, m : RayCastingMap, n_hits = 10, noisy = True):
         rays = self.transform_rays(pose)

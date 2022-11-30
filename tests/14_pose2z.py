@@ -10,3 +10,12 @@ x1 = pose2z.compose_s(x0, dx)
 print(x1)
 
 print(pose2z.compose_s_array(np.vstack((x0,x0)), dx))
+
+
+x = np.array([1.0,0,0,0])
+p_world = np.array([[2.0, 1.0, 1.0],
+                    [2.0, 2.0, 2.0]]).T
+pose2z.transform_from(x, p_world)
+pose2z.transform_to(x, p_world)
+theta = pose2z.angle(x, p_world)
+print(theta)

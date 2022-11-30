@@ -61,3 +61,26 @@ def transform_from(s : np.ndarray, p : np.ndarray)  -> np.ndarray:
     t = s[:3].reshape(3,1)
     return R @ p + t
 
+@njit(cache = True)
+def transform_to(s : np.ndarray, p : np.ndarray)  -> np.ndarray:
+    # p - 3 x m
+    R = R_from_theta(s[3])
+    print(s[3])
+    t = s[:3]
+    invR = R.T
+    invt = -invR @ t.reshape(3,1)
+    return invR @ p + invt
+
+@njit(cache = True)
+def angle(s: np.ndarray, p : np.ndarray) -> np.ndarray:
+    # p - 3 x m
+    # returns [theta, phi] - 2 x m
+    p_robot = transform_to(s,p)
+    m = p_robot.shape[1]
+    theta, phi = np.zeros(m), np.zeros(m)
+    for i in prange(m):
+        r = np.linalg.norm(p_robot[:,i])
+        theta[i] = np.arctan2(p_robot[1,i], p_robot[0,i])
+        phi[i] = np.arcsin(p_robot[2,i]/r)
+    return np.vstack((theta, phi))
+

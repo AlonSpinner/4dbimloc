@@ -7,15 +7,14 @@ from ..utils import low_variance_sampler
 import numpy as np
 import logging
 from typing import Callable
+from bim4loc.solids import IfcSolid
+from bim4loc.sensors.sensors import Lidar
+from bim4loc.maps import RayCastingMap
 
 class RBPF():
     def __init__(self,
-                sense_fcn : Callable,
-                scan_to_points_fcn : Callable,
-                sensor_std : float,
-                sensor_max_range : float,
-                map_bounds_min : np.ndarray,
-                map_bounds_max : np.ndarray,
+                simulation : RayCastingMap,
+                sensor : Lidar,
                 resample_rate : int):
         '''
         PARAMTERS
@@ -26,11 +25,12 @@ class RBPF():
         map_bounds_min, map_bounds_max - arrays of shape (3)
         resample_steps_thresholds - array of two elements.
         '''
-        
-        self._sense_fcn = sense_fcn
-        self._scan_to_points_fcn = scan_to_points_fcn
-        self._sensor_std = sensor_std
-        self._sensor_max_range = sensor_max_range
+        self._simulation_solids = simulation.solids
+        self._sensor = sensor
+        self._sense_fcn = lambda x: sensor.sense(x, simulation, n_hits = 5, noisy = False)
+        self._scan_to_points_fcn = sensor.get_scan_to_points()
+
+        map_bounds_min, map_bounds_max, extent = simulation.bounds()
         self._map_bounds_min = map_bounds_min
         self._map_bounds_max = map_bounds_max
         self._steps_from_resample = 0
@@ -67,7 +67,7 @@ class RBPF():
 
             R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
                 particle_beliefs[k],
-                self._sensor_std, self._sensor_max_range,
+                self._sensor.std, self._sensor.max_range,
                 self._scan_to_points_fcn,
                 self._scan_to_points_fcn,
                 downsample_voxelsize = 0.5,
@@ -80,14 +80,17 @@ class RBPF():
         
             #remap and calcualte probability of rays pz
 
-            particle_beliefs[k], pz = exact2(particle_beliefs[k], 
+            particle_beliefs[k], pz = exact2(particle_poses[k],
+                                            self._simulation_solids,
+                                            particle_beliefs[k], 
                                             z, 
                                             particle_z_values, 
                                             particle_z_ids, 
                                             particle_z_cos_incident,
                                             particle_z_d,
-                                            self._sensor_std,
-                                            self._sensor_max_range)
+                                            self._sensor.uv,
+                                            self._sensor.std,
+                                            self._sensor.max_range)
             
             # weights[k] *= np.product(pz) #or multiply?
             weights[k] *= 1.0 + np.sum(pz)

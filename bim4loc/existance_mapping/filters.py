@@ -6,6 +6,8 @@ from numba import njit
 from numba import prange
 import matplotlib.pyplot as plt
 from bim4loc.sensors.models import inverse_lidar_model
+from bim4loc.geometry.pose2z import angle
+from scipy.spatial import ConvexHull
 
 EPS = 1e-16
 
@@ -65,12 +67,15 @@ def exact(beliefs : np.ndarray,
     return beliefs, p_z
 
 # @njit(parallel = True, cache = True)
-def exact2(beliefs : np.ndarray, 
+def exact2(pose : np.ndarray,
+            simulation_solids,
+            beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
             simulated_z_cos : np.ndarray,
             simulated_z_d : np.ndarray,
+            sensor_uv_angles : np.ndarray,
             sensor_std : float,
             sensor_max_range : float) -> np.ndarray:
     '''
@@ -120,21 +125,38 @@ def exact2(beliefs : np.ndarray,
         indicies = element_new_beliefs >= 0
 
         if np.any(indicies) > 0:
+            element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
+            element_uv = angle(np.ascontiguousarray(pose), element_world_v.T)
+            element_uv = element_uv.T
+            hull = ConvexHull(element_uv)
+            element_uv_hull = element_uv[hull.vertices]
+            element_uv_hull = np.vstack((element_uv_hull,element_uv_hull[0]))
+            hit_rays_uv = sensor_uv_angles[indicies]
+            hit_rays_beliefs = element_new_beliefs[indicies]
+
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
+            ax.scatter(element_uv[:,0],element_uv[:,1])
+            ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],c=hit_rays_beliefs)
+            plt.draw()
+            plt.show()
+            
+
             element_new_beliefs = element_new_beliefs[indicies] #remove -1s
             element_weights = weights[i,indicies]
 
-            beliefs[i] = element_new_beliefs[np.argmax(element_weights)]
+            # beliefs[i] = element_new_beliefs[np.argmax(element_weights)]
 
-            # beliefs[i] = np.mean(element_new_beliefs)
-            # if beliefs[i] > 0.95:
-            #     beliefs[i] = 1.0
+            beliefs[i] = np.mean(element_new_beliefs)
+            if beliefs[i] > 0.95:
+                beliefs[i] = 1.0
 
-            # fig = plt.figure()
-            # ax = fig.add_subplot(111)
-            # ax.plot(element_new_beliefs)
-            # ax.plot(element_weights)
-            # plt.draw()
-            # plt.show()
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax.plot(element_new_beliefs)
+            plt.draw()
+            plt.show()
 
     return beliefs, p_z
 
