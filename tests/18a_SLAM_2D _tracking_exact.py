@@ -117,7 +117,7 @@ for t, u in enumerate(actions):
     drone.move(u)
     
     #produce measurement
-    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
+    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = False)
 
     u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,

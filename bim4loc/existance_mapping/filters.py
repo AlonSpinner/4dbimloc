@@ -133,30 +133,25 @@ def exact2(pose : np.ndarray,
             element_uv_hull = np.vstack((element_uv_hull,element_uv_hull[0]))
             hit_rays_uv = sensor_uv_angles[indicies]
             hit_rays_beliefs = element_new_beliefs[indicies]
+            element_weights = weights[i,indicies]
 
             fig = plt.figure()
             ax = fig.add_subplot(111)
             ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
-            ax.scatter(element_uv[:,0],element_uv[:,1])
             ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],c=hit_rays_beliefs)
+            ax.plot(hit_rays_uv[:,0],element_weights)
             plt.draw()
             plt.show()
             
 
             element_new_beliefs = element_new_beliefs[indicies] #remove -1s
-            element_weights = weights[i,indicies]
+            
 
             # beliefs[i] = element_new_beliefs[np.argmax(element_weights)]
 
             beliefs[i] = np.mean(element_new_beliefs)
             if beliefs[i] > 0.95:
                 beliefs[i] = 1.0
-
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            ax.plot(element_new_beliefs)
-            plt.draw()
-            plt.show()
 
     return beliefs, p_z
 

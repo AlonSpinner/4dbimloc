@@ -65,7 +65,6 @@ def transform_from(s : np.ndarray, p : np.ndarray)  -> np.ndarray:
 def transform_to(s : np.ndarray, p : np.ndarray)  -> np.ndarray:
     # p - 3 x m
     R = R_from_theta(s[3])
-    print(s[3])
     t = s[:3]
     invR = R.T
     invt = -invR @ t.reshape(3,1)
