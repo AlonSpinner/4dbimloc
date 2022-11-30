@@ -41,7 +41,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
     z_ids = np.full((N_rays, max_hits), NO_HIT, dtype = np.int32)
     z_normals = np.full((N_rays, max_hits, 3), 0.0 , dtype = np.float64)
     z_cos_incident = np.full((N_rays, max_hits), 0.0 , dtype = np.float64)
-    z_d_surface = np.full((N_rays, N_meshes), -1.0 , dtype = np.float64)
+    z_d_surface = np.full((N_rays, max_hits), -1.0 , dtype = np.float64)
 
     for i_r in prange(N_rays):
         ray = rays[i_r]
@@ -50,7 +50,6 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
             d = ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m])
             if not(d):
                 continue
-            z_d_surface[i_r,i_m] = d
             
             finished_mesh = False
             m_t = meshes_t[i_m * inc_t : (i_m + 1) * inc_t]
@@ -75,11 +74,13 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                     elif ii == 0:
                         z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
+                        z_d_surface[i_r] = np.hstack((np.array([d]), z_d_surface[i_r][:-1]))
                         z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
                         z_cos_incident[i_r] = np.hstack((np.array([c]), z_cos_incident[i_r][:-1]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
+                        z_d_surface[i_r] = np.hstack((z_d_surface[i_r][:ii], np.array([d]), z_d_surface[i_r][ii:-1]))
                         z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
                         z_cos_incident[i_r] = np.hstack((z_cos_incident[i_r][:ii], np.array([c]), z_cos_incident[i_r][ii:-1]))
             

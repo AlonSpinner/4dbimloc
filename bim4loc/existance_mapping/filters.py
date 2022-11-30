@@ -4,7 +4,7 @@ import bim4loc.random.one_dim as r_1d
 import numpy as np
 from numba import njit
 from numba import prange
-
+import matplotlib.pyplot as plt
 from bim4loc.sensors.models import inverse_lidar_model
 
 EPS = 1e-16
@@ -69,6 +69,8 @@ def exact2(beliefs : np.ndarray,
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
+            simulated_z_cos : np.ndarray,
+            simulated_z_d : np.ndarray,
             sensor_std : float,
             sensor_max_range : float) -> np.ndarray:
     '''
@@ -97,6 +99,7 @@ def exact2(beliefs : np.ndarray,
     p_z = np.zeros(N_rays)
 
     new_beliefs = -np.ones((N_elements,N_rays))
+    weights = np.zeros((N_elements,N_rays))
 
     for i in prange(N_rays):
         wz_i = world_z[i]
@@ -108,26 +111,30 @@ def exact2(beliefs : np.ndarray,
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             new_beliefs[szid_ij,i] = p
+            weights[szid_ij,i] =  abs(simulated_z_cos[i,j]) * simulated_z_d[i,j]
         
         p_z[i] = p_z_i
     
     for i in prange(N_elements):
         element_new_beliefs = new_beliefs[i,:]
-        element_new_beliefs = element_new_beliefs[element_new_beliefs >= 0] #remove -1s
+        indicies = element_new_beliefs >= 0
 
-        hist, bin_edges = np.histogram(element_new_beliefs, bins = 20, range = (0,1))
-        #create gaussian from previous belief with std ~ 
-        # beliefs[i] = bin_edges[np.argmax(hist)]
-       
-        if element_new_beliefs.shape[0] > 0:
-            #   beliefs[i] = np.max(element_new_beliefs)
-            # exist_beliefs = element_new_beliefs[element_new_beliefs > 0.5]
-            # if exist_beliefs.shape[0] > 0:
-                # beliefs[i] = np.mean(exist_beliefs)
-            # else:
-                beliefs[i] = np.mean(element_new_beliefs)
-                if beliefs[i] > 0.95:
-                    beliefs[i] = 1.0
+        if np.any(indicies) > 0:
+            element_new_beliefs = element_new_beliefs[indicies] #remove -1s
+            element_weights = weights[i,indicies]
+
+            beliefs[i] = element_new_beliefs[np.argmax(element_weights)]
+
+            # beliefs[i] = np.mean(element_new_beliefs)
+            # if beliefs[i] > 0.95:
+            #     beliefs[i] = 1.0
+
+            # fig = plt.figure()
+            # ax = fig.add_subplot(111)
+            # ax.plot(element_new_beliefs)
+            # ax.plot(element_weights)
+            # plt.draw()
+            # plt.show()
 
     return beliefs, p_z
 

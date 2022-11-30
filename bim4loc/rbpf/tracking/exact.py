@@ -62,7 +62,8 @@ class RBPF():
                 continue
 
             #sense
-            particle_z_values, particle_z_ids, _, _, _ = self._sense_fcn(particle_poses[k])
+            particle_z_values, particle_z_ids, _, \
+            particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
 
             R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
                 particle_beliefs[k],
@@ -74,17 +75,22 @@ class RBPF():
                 probability_filter_threshold = 0.3)
             if rmse < 0.5:
                 particle_poses[k] = compose_s(particle_poses[k], s_from_Rt(R,t))
-                particle_z_values, particle_z_ids, _, _, _ = self._sense_fcn(particle_poses[k])
+                particle_z_values, particle_z_ids, _, \
+                particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
         
             #remap and calcualte probability of rays pz
+
             particle_beliefs[k], pz = exact2(particle_beliefs[k], 
                                             z, 
                                             particle_z_values, 
                                             particle_z_ids, 
+                                            particle_z_cos_incident,
+                                            particle_z_d,
                                             self._sensor_std,
                                             self._sensor_max_range)
             
-            weights[k] *= np.product(pz) #or multiply?
+            # weights[k] *= np.product(pz) #or multiply?
+            weights[k] *= 1.0 + np.sum(pz)
             sum_weights += weights[k]
 
         #normalize weights
