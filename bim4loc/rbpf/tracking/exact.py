@@ -91,7 +91,7 @@ class RBPF():
                                             self._sensor.std,
                                             self._sensor.max_range)
             
-            # weights[k] *= np.product(0.1 + pz**2) #or multiply?
+            # weights[k] *= np.product(pz) #or multiply?
             weights[k] *= 1.0 + np.sum(pz)
             sum_weights += weights[k]
 

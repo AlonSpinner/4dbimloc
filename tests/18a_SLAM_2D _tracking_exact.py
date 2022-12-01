@@ -40,7 +40,7 @@ for i, s in enumerate(solids):
     s_simulation_belief = s.schedule.cdf(current_time)
     s_simulation.set_existance_belief_and_shader(s_simulation_belief)
     
-    initial_beliefs[i] = 0.5#s_simulation_belief
+    initial_beliefs[i] = s_simulation_belief
     simulation_solids.append(s_simulation)
 simulation = RayCastingMap(simulation_solids)
 
@@ -62,7 +62,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 80
+N_particles = 20
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
@@ -106,7 +106,7 @@ visApp.add_solid(dead_reck, "initial_state")
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
 
 #create the sense_fcn
-rbpf = RBPF(simulation, simulated_sensor, resample_rate = 2)
+rbpf = RBPF(simulation, simulated_sensor, resample_rate = 3)
 
 #LOOP
 time.sleep(2)
@@ -126,7 +126,7 @@ for t, u in enumerate(actions):
     if (t % 2) != 0:
         estimate_beliefs = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
         best_belief = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(best_belief)        
+        simulation.update_solids_beliefs(estimate_beliefs)        
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)

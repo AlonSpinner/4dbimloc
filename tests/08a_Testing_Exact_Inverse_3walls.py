@@ -49,7 +49,7 @@ simulated_sensor.max_range = 20.0
 N = 1000
 history_pz_ij = np.zeros((N,4))
 bias = np.linspace(-3, 6, N)
-beliefs = [0.01, 0.01, 0.01]
+beliefs = [0.5, 0.5, 0.5]
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):

@@ -138,21 +138,22 @@ def exact2(pose : np.ndarray,
             element_weights[element_weights < np.median(element_weights)] = 0.0
             element_weights/=sum(element_weights)
             
-            beliefs[i] = np.sum(hit_rays_beliefs * element_weights)
+            new_element_belief = np.sum(hit_rays_beliefs * element_weights)
             # beliefs[i] = np.mean(hit_rays_beliefs)
 
             # fig, ax = plt.subplots()
             # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
             # sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],
             #                 c=hit_rays_beliefs, s = element_weights*10000, vmin = 0 , vmax= 1.0)
-            # ax.set_title(f"element {i}, with belief {beliefs[i]}")
+            # ax.set_title(f"element {i}, with old belief: {beliefs[i]}\n \
+            #                  and with new belief {new_element_belief}")
+            # # ax.set_title(simulation_solids[i].name)
             # ax.invert_xaxis()
             # plt.colorbar(sc)
-            # # ax.set_title(simulation_solids[i].name)
             # plt.draw()
             # plt.show()
             
-            
+            beliefs[i] = new_element_belief
             # beliefs[i] = np.mean(hit_rays_beliefs)
             
             if beliefs[i] > 0.95:
