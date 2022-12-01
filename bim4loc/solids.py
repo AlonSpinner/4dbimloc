@@ -150,6 +150,30 @@ class LinesSolid(o3dSolid):
         c = np.tile(self.color, (indicies.shape[0], 1))
         self.geometry.colors = o3d.utility.Vector3dVector(c)
 
+class TrailSolid(LinesSolid):
+    def __init__(self, name, p0):
+        super().__init__(name = name, pts = np.vstack((p0,p0+0.0001)), #points have to be different
+                         indicies = np.array([[0,1]]), 
+                         line_width = 5.0, 
+                         color = np.array([0.0, 0.0, 0.0]))
+    def update(self, pts) -> None:
+        '''
+        input:
+        pts - mx3 matrix
+
+        adds points to existing line
+        '''
+        old_points = np.asarray(self.geometry.points)
+        self.geometry.points = o3d.utility.Vector3dVector(np.vstack((old_points, pts)))
+        old_lines = np.asarray(self.geometry.lines)
+        new_lines_left = old_lines[-1,1] + np.arange(0,pts.shape[0])
+        new_lines_right = new_lines_left + 1
+        new_lines = np.hstack((new_lines_left, new_lines_right))
+        lines = np.vstack((old_lines, new_lines))
+        self.geometry.lines = o3d.utility.Vector2iVector(lines)
+        c = np.tile(self.color, (lines.shape[0], 1))
+        self.geometry.colors = o3d.utility.Vector3dVector(c)                                                     
+
 class ScanSolid(o3dSolid):
     def __init__(self, name = 'scan',
                 p0 : np.ndarray = None,

@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid, ArrowSolid
+from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid, ArrowSolid, TrailSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
@@ -102,8 +102,10 @@ visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
 dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
 visApp.add_solid(dead_reck, "initial_state")
+trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
+visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
@@ -143,6 +145,9 @@ for t, u in enumerate(actions):
 
     dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
     visApp.update_solid(dead_reck, "initial_state")
+    trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
+    visApp.update_solid(trail_dead_reck, "initial_state")
     visApp.redraw_all_scenes()
+
 
     # time.sleep(0.1)
