@@ -12,6 +12,9 @@ import time
 import logging
 from copy import deepcopy
 import keyboard
+from bim4loc.evaluation import evaluation
+from bim4loc.random.multi_dim import gauss_fit
+import matplotlib.pyplot as plt
 
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -114,6 +117,11 @@ rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
             simulated_sensor.std, simulated_sensor.max_range,
             map_bounds_min, map_bounds_max, resample_rate = 3)
 
+#history
+mu, cov = gauss_fit(particle_poses.T, weights)
+history = {'gt_traj': [drone.pose], 'dead_reck' : [drone.pose],
+           'est_traj': [mu], 'est_covs': [cov], 'est_beliefs': []}
+
 #LOOP
 time.sleep(2)
 for t, u in enumerate(actions):
@@ -149,5 +157,18 @@ for t, u in enumerate(actions):
     visApp.update_solid(trail_dead_reck, "initial_state")
     visApp.redraw_all_scenes()
 
+    #log history
+    history['gt_traj'].append(drone.pose)
+    history['dead_reck'].append(dead_reck.pose)
+    mu, cov = gauss_fit(particle_poses.T, weights)
+    history['est_traj'].append(mu)
+    history['est_covs'].append(cov)
 
     # time.sleep(0.1)
+
+#run simulation of perfect mapping
+evaluation.localiztion_error(np.array(history['gt_traj']), 
+                             np.array(history['est_traj']),
+                             np.array(history['est_covs']),
+                             np.array(history['dead_reck']))
+plt.show()
