@@ -119,8 +119,9 @@ rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
 
 #history
 mu, cov = gauss_fit(particle_poses.T, weights)
-history = {'gt_traj': [drone.pose], 'dead_reck' : [drone.pose],
-           'est_traj': [mu], 'est_covs': [cov], 'est_beliefs': []}
+history = {'gt_traj': [drone.pose], 'perfect_beliefs': [initial_beliefs],
+            'dead_reck' : [drone.pose],
+           'est_traj': [mu], 'est_covs': [cov], 'est_beliefs': [initial_beliefs]}
 
 #LOOP
 time.sleep(2)
@@ -137,12 +138,12 @@ for t, u in enumerate(actions):
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
                                                          u, U_COV, z)
 
-    if (t % 2) != 0:
-        expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
-        best_map = particle_beliefs[np.argmax(weights)]
-        simulation.update_solids_beliefs(best_map)        
+    expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
+    best_map = particle_beliefs[np.argmax(weights)]
     
     #updating drawings
+    simulation.update_solids_beliefs(best_map)
+    
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
@@ -163,6 +164,7 @@ for t, u in enumerate(actions):
     mu, cov = gauss_fit(particle_poses.T, weights)
     history['est_traj'].append(mu)
     history['est_covs'].append(cov)
+    history['est_beliefs'].append(expected_map)
 
     # time.sleep(0.1)
 
@@ -171,4 +173,5 @@ evaluation.localiztion_error(np.array(history['gt_traj']),
                              np.array(history['est_traj']),
                              np.array(history['est_covs']),
                              np.array(history['dead_reck']))
+evaluation.map_entropy(np.array(history['est_beliefs']))
 plt.show()

@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 EPS = 1e-16
 
@@ -23,3 +23,11 @@ def p2logodds(p):
 def logodds2p(l):
     l = np.minimum(l, 5.0)
     return  np.exp(l) / (1.0 + np.exp(l))
+
+@njit(cache = True)
+def compute_entropy(p):
+    entropy = 0.0
+    for i in prange(p.shape[0]):
+        if p[i] != 0.0:
+            entropy = entropy - p[i] * np.log(p[i])
+    return entropy

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from bim4loc.random.utils import compute_entropy
 
 def localiztion_error(gt_trajectory,
                       estimated_trajectory,
@@ -32,8 +33,9 @@ def localiztion_error(gt_trajectory,
     ax.set_xlabel('Time')
     ax.set_ylabel('Error')
     ax.grid(True)
+    ax.legend()
 
-def map_entropy(perfect_beliefs,estimated_beliefs):
+def map_entropy(estimated_beliefs, perfect_beliefs = None):
     """
     Args:
         perfect_beliefs - np.array of shape (n, n_elements), assuming perfect trajectory
@@ -41,13 +43,16 @@ def map_entropy(perfect_beliefs,estimated_beliefs):
     Returns:
         plots map entropy
     """
-    perfect = -np.sum(perfect_beliefs * np.log(perfect_beliefs), axis=1)
-    estimated = -np.sum(estimated_beliefs * np.log(estimated_beliefs), axis=1)
+    estimated = compute_entropy(estimated_beliefs)
 
     fig, ax = plt.subplots()
-    ax.plot(perfect, label='perfect')
     ax.plot(estimated, label='estimated')
+    if perfect_beliefs is not None:
+            perfect = compute_entropy(perfect_beliefs)
+            ax.plot(perfect, label='perfect')
     ax.set_title('Map Entropy')
     ax.set_xlabel('Time')
     ax.set_ylabel('Entropy')
+    ax.grid(True)
+    ax.legend()
     return 
