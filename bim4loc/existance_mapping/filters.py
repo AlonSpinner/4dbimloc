@@ -70,6 +70,7 @@ def exact(beliefs : np.ndarray,
 def exact2(pose : np.ndarray,
             simulation_solids,
             beliefs : np.ndarray, 
+            particle_weight : np.ndarray,
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
@@ -138,8 +139,8 @@ def exact2(pose : np.ndarray,
             element_weights[element_weights < np.median(element_weights)] = 0.0
             element_weights/=sum(element_weights)
             
-            new_element_belief = np.sum(hit_rays_beliefs * element_weights)
-            # beliefs[i] = np.mean(hit_rays_beliefs)
+            # new_element_belief = np.sum(hit_rays_beliefs * element_weights)
+            new_element_belief = np.mean(hit_rays_beliefs)
 
             # fig, ax = plt.subplots()
             # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
@@ -153,7 +154,7 @@ def exact2(pose : np.ndarray,
             # plt.draw()
             # plt.show()
             
-            beliefs[i] = (new_element_belief - beliefs[i]) * 0.2 + beliefs[i]
+            beliefs[i] = (new_element_belief - beliefs[i]) * particle_weight + beliefs[i]
             # beliefs[i] = np.mean(hit_rays_beliefs)
             
             if beliefs[i] > 0.95:

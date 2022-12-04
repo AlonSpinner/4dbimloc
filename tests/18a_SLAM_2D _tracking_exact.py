@@ -140,7 +140,7 @@ for t, u in enumerate(actions):
     best_map = particle_beliefs[np.argmax(weights)]
     
     #updating drawings
-    simulation.update_solids_beliefs(best_map)        
+    simulation.update_solids_beliefs(expected_map)        
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)

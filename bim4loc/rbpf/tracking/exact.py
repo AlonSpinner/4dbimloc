@@ -82,6 +82,7 @@ class RBPF():
             particle_beliefs[k], pz = exact2(particle_poses[k],
                                             self._simulation_solids,
                                             particle_beliefs[k], 
+                                            weights[k],
                                             z, 
                                             particle_z_values, 
                                             particle_z_ids, 
