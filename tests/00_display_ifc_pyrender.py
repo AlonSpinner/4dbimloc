@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_TEST_PATH
+from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH, IFC_SUZANNE_PATH
 from bim4loc.solids import ifc_converter
 import trimesh
 import numpy as np
@@ -7,7 +7,7 @@ import pyrender
 scene = pyrender.Scene()
 cam = pyrender.PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=1.414)
 
-solids = ifc_converter(IFC_ONLY_WALLS_PATH)
+solids = ifc_converter(IFC_SUZANNE_PATH)
 
 for s in solids:
     tm = trimesh.base.Trimesh(vertices = s.geometry.vertices, faces = s.geometry.triangles)

@@ -39,7 +39,7 @@ class RBPF():
         self._resample_rate = resample_rate
 
     def step(self, particle_poses, particle_beliefs, weights,
-                   u, U_COV, z):
+                   u, U_COV, z, use_scan_match = True):
         '''
         particle_poses - array of shape (N_particles, 4)
         particle_beliefs - array of shape (N_particles, N_cells)
@@ -66,17 +66,18 @@ class RBPF():
             #sense
             particle_z_values, particle_z_ids, _, particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
 
-            R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
-                particle_beliefs[k],
-                self._sensor_std, self._sensor_max_range,
-                self._scan_to_points_fcn,
-                self._scan_to_points_fcn,
-                downsample_voxelsize = 0.5,
-                icp_distance_threshold = 10.0,
-                probability_filter_threshold = 0.3)
-            if rmse < 0.5:
-                particle_poses[k] = compose_s(particle_poses[k], s_from_Rt(R,t))
-                particle_z_values, particle_z_ids, _, particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
+            if use_scan_match:
+                R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
+                    particle_beliefs[k],
+                    self._sensor_std, self._sensor_max_range,
+                    self._scan_to_points_fcn,
+                    self._scan_to_points_fcn,
+                    downsample_voxelsize = 0.5,
+                    icp_distance_threshold = 10.0,
+                    probability_filter_threshold = 0.3)
+                if rmse < 0.5:
+                    particle_poses[k] = compose_s(particle_poses[k], s_from_Rt(R,t))
+                    particle_z_values, particle_z_ids, _, particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
 
 
             #calcualte importance weight -> find current posterior distribution

@@ -1,22 +1,22 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_SUZANNE_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid, ArrowSolid, TrailSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.rbpf.tracking.exact import RBPF
+from bim4loc.rbpf.tracking.approx import RBPF
 from bim4loc.geometry.pose2z import compose_s
-from bim4loc.random.multi_dim import gauss_fit
-from bim4loc.existance_mapping import filters as existence_filters
-from bim4loc.evaluation import evaluation
-import matplotlib.pyplot as plt
+from bim4loc.random.utils import p2logodds, logodds2p
+import bim4loc.existance_mapping.filters as existence_filters
 import time
 import logging
 from copy import deepcopy
 import keyboard
-from numba import njit
+from bim4loc.evaluation import evaluation
+from bim4loc.random.multi_dim import gauss_fit
+import matplotlib.pyplot as plt
 
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -29,12 +29,7 @@ gaussian_pdf = Gaussian._pdf
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 
-constructed_solids = []
-for s in solids:
-    s.set_random_completion_time()
-    if s.completion_time < current_time:
-        constructed_solids.append(s.clone())
-world = RayCastingMap(constructed_solids)
+world = RayCastingMap([solids[0]])
 
 #BUILD SIMULATION
 initial_beliefs = np.zeros(len(solids))
@@ -49,30 +44,28 @@ for i, s in enumerate(solids):
 simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
-drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+drone = Drone(pose = np.array([1.0, 5.0, 0.0, -np.pi/2]))
+sensor = Lidar(angles_u = np.linspace(-np.pi/5,np.pi/5, int(60)), angles_v = np.array([0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 5.0 * sensor.std
+simulated_sensor.std = 5 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
-straight = np.array([0.5,0.0 ,0.0 ,0.0])
-turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
-turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
-actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4
+dtheta = (2 * np.pi)/20
+dr = 2.0
+actions = [np.array([dr * np.sin(dtheta), dr*np.cos(dtheta), 0.0, -dtheta])] * 20
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
 N_particles = 20
+
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
                        np.random.normal(drone.pose[3], np.radians(5.0), N_particles))).T
-N_particles = 1
-particle_poses = np.reshape(drone.pose, (1,4))
 particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
 perfect_belief  = initial_beliefs.copy()
 
@@ -88,10 +81,11 @@ visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
+visApp.redraw_all_scenes()
 
 #create simulation window
 visApp.add_scene("simulation", "world")
-[visApp.add_solid(s,"simulation", f"{i}") for i,s in enumerate(simulation.solids)]
+[visApp.add_solid(s,"simulation") for s in simulation.solids]
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
@@ -110,10 +104,16 @@ visApp.add_solid(dead_reck, "initial_state")
 trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)]) * 1e-25
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
+# map_bounds_min, map_bounds_max, extent = simulation.bounds()
+map_bounds_min = [-100.0,-100.0,-100.0]
+map_bounds_max = [100.0,100.0,100.0]
 
 #create the sense_fcn
-rbpf = RBPF(simulation, simulated_sensor, resample_rate = 3)
+sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = False)
+rbpf = RBPF(sense_fcn, simulated_sensor.get_scan_to_points(),
+            simulated_sensor.std, simulated_sensor.max_range,
+            map_bounds_min, map_bounds_max, resample_rate = 2)
 
 #history
 mu, cov = gauss_fit(particle_poses.T, weights)
@@ -134,13 +134,14 @@ for t, u in enumerate(actions):
 
     u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
-                                                         u_noisy, U_COV, z)
+                                                         u, U_COV, z, use_scan_match = False)
 
     expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
     best_map = particle_beliefs[np.argmax(weights)]
     
     #updating drawings
-    simulation.update_solids_beliefs(best_map)        
+    simulation.update_solids_beliefs(expected_map)
+    
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
@@ -156,10 +157,12 @@ for t, u in enumerate(actions):
     visApp.redraw_all_scenes()
 
     #calculate perfect mapping with known poses
+    logodds_perfect_belief = p2logodds(perfect_belief)
     perfect_simulated_z, perfect_simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 5, noisy = False)
-    existence_filters.exact(perfect_belief, z, 
+    existence_filters.approx(logodds_perfect_belief, z, 
                             perfect_simulated_z, perfect_simulated_z_ids, 
                             simulated_sensor.std, simulated_sensor.max_range)
+    perfect_belief = logodds2p(logodds_perfect_belief)
 
     #log history
     history['gt_traj'].append(drone.pose)

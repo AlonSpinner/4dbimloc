@@ -89,7 +89,6 @@ visApp.add_solid(drone.solid, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
 
-
 #create simulation window
 visApp.add_scene("simulation", "world")
 [visApp.add_solid(s,"simulation") for s in simulation.solids]
@@ -145,7 +144,7 @@ for t, u in enumerate(actions):
     best_map = particle_beliefs[np.argmax(weights)]
     
     #updating drawings
-    simulation.update_solids_beliefs(best_map)
+    simulation.update_solids_beliefs(expected_map)
     
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
@@ -168,7 +167,6 @@ for t, u in enumerate(actions):
                             perfect_simulated_z, perfect_simulated_z_ids, 
                             simulated_sensor.std, simulated_sensor.max_range)
     perfect_belief = logodds2p(logodds_perfect_belief)
-
 
     #log history
     history['gt_traj'].append(drone.pose)
