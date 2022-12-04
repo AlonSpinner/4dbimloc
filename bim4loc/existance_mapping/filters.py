@@ -153,7 +153,7 @@ def exact2(pose : np.ndarray,
             # plt.draw()
             # plt.show()
             
-            beliefs[i] = new_element_belief
+            beliefs[i] = (new_element_belief - beliefs[i]) * 0.2 + beliefs[i]
             # beliefs[i] = np.mean(hit_rays_beliefs)
             
             if beliefs[i] > 0.95:
