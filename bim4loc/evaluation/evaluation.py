@@ -46,10 +46,10 @@ def map_entropy(estimated_beliefs, perfect_beliefs = None):
     estimated = compute_entropy(estimated_beliefs)
 
     fig, ax = plt.subplots()
-    ax.plot(estimated, label='estimated')
+    ax.plot(estimated, label='rbpf')
     if perfect_beliefs is not None:
             perfect = compute_entropy(perfect_beliefs)
-            ax.plot(perfect, label='perfect')
+            ax.plot(perfect, label='mapping with known poses')
     ax.set_title('Map Entropy')
     ax.set_xlabel('Time')
     ax.set_ylabel('Entropy')

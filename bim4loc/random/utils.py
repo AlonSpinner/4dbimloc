@@ -25,9 +25,17 @@ def logodds2p(l):
     return  np.exp(l) / (1.0 + np.exp(l))
 
 @njit(cache = True)
-def compute_entropy(p):
-    entropy = 0.0
-    for i in prange(p.shape[0]):
-        if p[i] != 0.0:
-            entropy = entropy - p[i] * np.log(p[i])
+def compute_entropy(p : np.ndarray) -> np.ndarray:
+    if p.ndim == 1:
+        entropy = 0.0
+        for i in prange(p.shape[0]):
+            if p[i] != 0.0:
+                entropy = entropy - p[i] * np.log(p[i])
+        return np.array([entropy])
+    elif p.ndim == 2:
+        entropy = np.zeros(p.shape[0])
+        for i in prange(p.shape[0]):
+            for j in prange(p.shape[1]):
+                if p[i,j] != 0.0:
+                    entropy[i] = entropy[i] - p[i,j] * np.log(p[i,j])
     return entropy

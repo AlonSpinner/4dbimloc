@@ -8,6 +8,8 @@ from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
 from bim4loc.rbpf.tracking.approx import RBPF
 from bim4loc.geometry.pose2z import compose_s
+from bim4loc.random.utils import p2logodds, logodds2p
+import bim4loc.existance_mapping.filters as existence_filters
 import time
 import logging
 from copy import deepcopy
@@ -49,7 +51,7 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, 300), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -72,6 +74,7 @@ particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
                        np.random.normal(drone.pose[3], np.radians(5.0), N_particles))).T
 particle_beliefs = np.tile(initial_beliefs, (N_particles,1))
+perfect_belief  = initial_beliefs.copy()
 
 #initalize weights
 weights = np.ones(N_particles) / N_particles
@@ -108,7 +111,7 @@ visApp.add_solid(dead_reck, "initial_state")
 trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/1.0
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn
@@ -158,6 +161,15 @@ for t, u in enumerate(actions):
     visApp.update_solid(trail_dead_reck, "initial_state")
     visApp.redraw_all_scenes()
 
+    #calculate perfect mapping with known poses
+    logodds_perfect_belief = p2logodds(perfect_belief)
+    perfect_simulated_z, perfect_simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 5, noisy = False)
+    existence_filters.approx(logodds_perfect_belief, z, 
+                            perfect_simulated_z, perfect_simulated_z_ids, 
+                            simulated_sensor.std, simulated_sensor.max_range)
+    perfect_belief = logodds2p(logodds_perfect_belief)
+
+
     #log history
     history['gt_traj'].append(drone.pose)
     history['dead_reck'].append(dead_reck.pose)
@@ -165,6 +177,7 @@ for t, u in enumerate(actions):
     history['est_traj'].append(mu)
     history['est_covs'].append(cov)
     history['est_beliefs'].append(expected_map)
+    history['perfect_beliefs'].append(perfect_belief)
 
     # time.sleep(0.1)
 
@@ -173,5 +186,6 @@ evaluation.localiztion_error(np.array(history['gt_traj']),
                              np.array(history['est_traj']),
                              np.array(history['est_covs']),
                              np.array(history['dead_reck']))
-evaluation.map_entropy(np.array(history['est_beliefs']))
+evaluation.map_entropy(np.array(history['est_beliefs']),
+                 np.array(history['perfect_beliefs']))
 plt.show()
