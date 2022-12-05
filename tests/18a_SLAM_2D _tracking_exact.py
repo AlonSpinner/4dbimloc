@@ -55,7 +55,7 @@ sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 5.0 * sensor.std
+simulated_sensor.std = 1.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
@@ -78,6 +78,7 @@ perfect_belief  = initial_beliefs.copy()
 
 #initalize weights
 weights = np.ones(N_particles) / N_particles
+particle_reservoirs = np.zeros((N_particles, len(solids)))
 
 #DRAW
 visApp = VisApp()
@@ -110,7 +111,7 @@ visApp.add_solid(dead_reck, "initial_state")
 trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 1e-25, np.radians(1.0)])
+U_COV = np.diag([0.05, 0.05, 1e-25, np.radians(1.0)])/10
 
 #create the sense_fcn
 rbpf = RBPF(simulation, simulated_sensor, resample_rate = 3, U_COV = U_COV)
@@ -133,8 +134,10 @@ for t, u in enumerate(actions):
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
     u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
-    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, weights,
+    particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, 
+                                                          weights, particle_reservoirs,
                                                          u_noisy, U_COV, z)
+
 
     expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
     best_map = particle_beliefs[np.argmax(weights)]

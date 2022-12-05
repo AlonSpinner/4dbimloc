@@ -110,7 +110,7 @@ visApp.add_solid(dead_reck, "initial_state")
 trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/1.0
+U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])/10.0
 map_bounds_min, map_bounds_max, extent = simulation.bounds()
 
 #create the sense_fcn

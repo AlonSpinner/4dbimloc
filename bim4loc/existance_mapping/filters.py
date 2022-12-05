@@ -71,6 +71,7 @@ def exact2(pose : np.ndarray,
             simulation_solids,
             beliefs : np.ndarray, 
             particle_weight : np.ndarray,
+            particle_reservoir : np.ndarray,
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
@@ -137,10 +138,9 @@ def exact2(pose : np.ndarray,
             
             element_weights = weights[i,indicies]
             element_weights[element_weights < np.median(element_weights)] = 0.0
-            element_weights/=sum(element_weights)
             
-            # new_element_belief = np.sum(hit_rays_beliefs * element_weights)
-            new_element_belief = np.mean(hit_rays_beliefs)
+            sum_element_weights = np.sum(element_weights)
+            new_element_belief = np.sum(hit_rays_beliefs * element_weights/sum_element_weights)
 
             # fig, ax = plt.subplots()
             # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
@@ -156,12 +156,14 @@ def exact2(pose : np.ndarray,
             
             # beliefs[i] = (new_element_belief - beliefs[i]) * particle_weight + beliefs[i]
             # beliefs[i] = np.mean(hit_rays_beliefs)
-            beliefs[i] = new_element_belief
+            beliefs[i] = (new_element_belief * sum_element_weights + \
+                        beliefs[i] * particle_reservoir[i]) / (sum_element_weights + particle_reservoir[i])
+            particle_reservoir[i] += sum_element_weights
             
             # if beliefs[i] > 0.95:
             #     beliefs[i] = 1.0
 
-    return beliefs, p_z
+    return beliefs, p_z, particle_reservoir
 
 @njit(parallel = True, cache = True)
 def approx(logodds_beliefs : np.ndarray, 

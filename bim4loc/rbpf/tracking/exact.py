@@ -45,12 +45,14 @@ class RBPF():
         sigmapoints = SigmaPoints(n = 3, alpha = 1.2, beta = 2.0, mu = np.zeros(3), cov = U_COV_remove_z)
         self._sigmapoints = sigmapoints
 
-    def step(self, particle_poses, particle_beliefs, weights,
+
+    def step(self, particle_poses, particle_beliefs, weights, particle_reservoirs,
                    u, U_COV, z):
         '''
         particle_poses - array of shape (N_particles, 4)
         particle_beliefs - array of shape (N_particles, N_cells)
         weights - array of shape (N_particles)
+        particle_reservoirs - array of shape (N_particles, N_cells)
         u - delta pose, array of shape (4)
         U_COV - covariance matrix of delta pose, array of shape (4,4)
         z - lidar scan, array of shape (N_lidar_beams)
@@ -93,19 +95,22 @@ class RBPF():
             #remap and calcualte probability of rays pz
             new_particle_beliefs = np.zeros_like(particle_beliefs[k])
             pz = np.zeros_like(z)
+            new_particle_reservoir = np.zeros_like(particle_reservoirs[k])
 
             for sigmapoint, sigmapoint_weight in zip(self._sigmapoints.points, self._sigmapoints.weights):
                 particle_beliefs_m = particle_beliefs[k].copy()
+                particle_reservoir_m = particle_reservoirs[k].copy()
                 pose_m = compose_s(particle_poses[k], sigmapoint)
 
                 #sense
                 particle_z_values, particle_z_ids, _, \
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(pose_m)
 
-                particle_beliefs_m, pz_m = exact2(pose_m,
+                particle_beliefs_m, pz_m, particle_reservoir_m = exact2(pose_m,
                                                 self._simulation_solids,
                                                 particle_beliefs[k].copy(), 
                                                 weights[k],
+                                                particle_reservoirs[k].copy(),
                                                 z, 
                                                 particle_z_values, 
                                                 particle_z_ids, 
@@ -114,9 +119,12 @@ class RBPF():
                                                 self._sensor.uv,
                                                 self._sensor.std,
                                                 self._sensor.max_range)
-                new_particle_beliefs = new_particle_beliefs + sigmapoint_weight * particle_beliefs_m
-                pz = pz + sigmapoint_weight * pz_m 
+                new_particle_beliefs += sigmapoint_weight * particle_beliefs_m
+                pz += sigmapoint_weight * pz_m 
+                new_particle_reservoir += sigmapoint_weight * particle_reservoir_m
+            
             particle_beliefs[k] = new_particle_beliefs 
+            particle_reservoirs[k] = new_particle_reservoir
             
             # weights[k] *= np.product(pz) #or multiply?
             weights[k] *= 1.0 + np.sum(pz)
