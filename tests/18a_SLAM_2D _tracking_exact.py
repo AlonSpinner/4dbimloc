@@ -66,7 +66,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 10
+N_particles = 20
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
@@ -99,6 +99,8 @@ visApp.setup_default_camera("simulation")
 vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
 visApp.add_solid(vis_particles.tails, "simulation")
+trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
+visApp.add_solid(trail_est, "simulation")
 
 #create initial map state window
 visApp.add_scene("initial_state", "world")
@@ -114,7 +116,7 @@ visApp.add_solid(trail_dead_reck, "initial_state")
 U_COV = np.diag([0.05, 0.05, 1e-25, np.radians(1.0)])/10
 
 #create the sense_fcn
-rbpf = RBPF(simulation, simulated_sensor, resample_rate = 3, U_COV = U_COV)
+rbpf = RBPF(simulation, simulated_sensor, resample_rate = 4, U_COV = U_COV)
 
 #history
 mu, cov = gauss_fit(particle_poses.T, weights)
@@ -141,6 +143,7 @@ for t, u in enumerate(actions):
 
     expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
     best_map = particle_beliefs[np.argmax(weights)]
+    expected_pose = np.sum(weights.reshape(-1,1) * particle_poses, axis = 0)
     
     #updating drawings
     simulation.update_solids_beliefs(expected_map)        
@@ -151,7 +154,8 @@ for t, u in enumerate(actions):
     visApp.update_solid(vis_particles.lines, "simulation")
     visApp.update_solid(vis_particles.tails, "simulation")
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
-
+    trail_est.update(expected_pose[:3].reshape(1,-1))
+    visApp.update_solid(trail_est, "simulation")
     dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
     visApp.update_solid(dead_reck, "initial_state")
     trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
@@ -171,7 +175,7 @@ for t, u in enumerate(actions):
     history['est_traj'].append(mu)
     history['est_covs'].append(cov)
     history['est_beliefs'].append(expected_map)
-    history['perfect_beliefs'].append(perfect_belief)
+    history['perfect_beliefs'].append(perfect_belief.copy())
 
     # time.sleep(0.1)
 
@@ -182,4 +186,8 @@ evaluation.localiztion_error(np.array(history['gt_traj']),
                              np.array(history['dead_reck']))
 evaluation.map_entropy(np.array(history['est_beliefs']),
                  np.array(history['perfect_beliefs']))
+ground_truth_beliefs = np.array([1.0 if s.name in [c.name for c in constructed_solids] else 0.0 for s in solids])
+evaluation.cross_entropy_error(ground_truth_beliefs,
+                                np.array(history['est_beliefs']),
+                                np.array(history['perfect_beliefs']))
 plt.show()

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from bim4loc.random.utils import compute_entropy
+from bim4loc.random.utils import compute_entropy, compute_cross_entropy
 
 def localiztion_error(gt_trajectory,
                       estimated_trajectory,
@@ -55,4 +55,20 @@ def map_entropy(estimated_beliefs, perfect_beliefs = None):
     ax.set_ylabel('Entropy')
     ax.grid(True)
     ax.legend()
-    return 
+
+def cross_entropy_error(ground_truth, estimated_beliefs, perfect_beliefs = None):
+    ground_truth = np.tile(ground_truth, (estimated_beliefs.shape[0], 1))
+    estimated = compute_cross_entropy(ground_truth, estimated_beliefs)
+    
+    fig, ax = plt.subplots()
+    ax.plot(estimated, label='rbpf')
+    if perfect_beliefs is not None:
+            perfect = compute_cross_entropy(ground_truth, perfect_beliefs)
+            ax.plot(perfect, label='mapping with known poses')
+    ax.set_title('Cross Entropy Error')
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Entropy')
+    ax.grid(True)
+    ax.legend()
+
+    return

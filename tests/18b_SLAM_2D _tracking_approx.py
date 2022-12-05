@@ -186,4 +186,9 @@ evaluation.localiztion_error(np.array(history['gt_traj']),
                              np.array(history['dead_reck']))
 evaluation.map_entropy(np.array(history['est_beliefs']),
                  np.array(history['perfect_beliefs']))
+ground_truth_beliefs = np.array([1.0 if s.name in [c.name for c in constructed_solids] else 0.0 for s in solids])
+evaluation.cross_entropy_error(ground_truth_beliefs,
+                                np.array(history['est_beliefs']),
+                                np.array(history['perfect_beliefs']))
+
 plt.show()
