@@ -85,7 +85,7 @@ class RBPF():
                 icp_distance_threshold = 10.0,
                 probability_filter_threshold = 0.3)
             pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
-            if rmse < 0.5 and pdf_scan_match > 0.5: #downsample_voxelsize = 0.5
+            if rmse < 0.5 and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
                 particle_poses[k] = compose_s(particle_poses[k], s_from_Rt(R,t))
                 particle_z_values, particle_z_ids, _, \
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(particle_poses[k])
@@ -93,38 +93,51 @@ class RBPF():
             #sample around the mode and average pz and particle beliefs
 
             #remap and calcualte probability of rays pz
-            new_particle_beliefs = np.zeros_like(particle_beliefs[k])
-            pz = np.zeros_like(z)
-            new_particle_reservoir = np.zeros_like(particle_reservoirs[k])
+            # new_particle_beliefs = np.zeros_like(particle_beliefs[k])
+            # pz = np.zeros_like(z)
+            # new_particle_reservoir = np.zeros_like(particle_reservoirs[k])
+            # for sigmapoint, sigmapoint_weight in zip(self._sigmapoints.points, self._sigmapoints.weights):
+            #     particle_beliefs_m = particle_beliefs[k].copy()
+            #     particle_reservoir_m = particle_reservoirs[k].copy()
+            #     pose_m = compose_s(particle_poses[k], sigmapoint)
 
-            for sigmapoint, sigmapoint_weight in zip(self._sigmapoints.points, self._sigmapoints.weights):
-                particle_beliefs_m = particle_beliefs[k].copy()
-                particle_reservoir_m = particle_reservoirs[k].copy()
-                pose_m = compose_s(particle_poses[k], sigmapoint)
+            #     #sense
+            #     particle_z_values, particle_z_ids, _, \
+            #     particle_z_cos_incident, particle_z_d = self._sense_fcn(pose_m)
 
-                #sense
-                particle_z_values, particle_z_ids, _, \
-                particle_z_cos_incident, particle_z_d = self._sense_fcn(pose_m)
-
-                particle_beliefs_m, pz_m, particle_reservoir_m = exact2(pose_m,
-                                                self._simulation_solids,
-                                                particle_beliefs[k].copy(), 
-                                                weights[k],
-                                                particle_reservoirs[k].copy(),
-                                                z, 
-                                                particle_z_values, 
-                                                particle_z_ids, 
-                                                particle_z_cos_incident,
-                                                particle_z_d,
-                                                self._sensor.uv,
-                                                self._sensor.std,
-                                                self._sensor.max_range)
-                new_particle_beliefs += sigmapoint_weight * particle_beliefs_m
-                pz += sigmapoint_weight * pz_m 
-                new_particle_reservoir += sigmapoint_weight * particle_reservoir_m
+            #     particle_beliefs_m, pz_m, particle_reservoir_m = exact2(pose_m,
+            #                                     self._simulation_solids,
+            #                                     particle_beliefs[k].copy(), 
+            #                                     weights[k],
+            #                                     particle_reservoirs[k].copy(),
+            #                                     z, 
+            #                                     particle_z_values, 
+            #                                     particle_z_ids, 
+            #                                     particle_z_cos_incident,
+            #                                     particle_z_d,
+            #                                     self._sensor.uv,
+            #                                     self._sensor.std,
+            #                                     self._sensor.max_range)
+            #     new_particle_beliefs += sigmapoint_weight * particle_beliefs_m
+            #     pz += sigmapoint_weight * pz_m 
+            #     new_particle_reservoir += sigmapoint_weight * particle_reservoir_m
             
-            particle_beliefs[k] = new_particle_beliefs 
-            particle_reservoirs[k] = new_particle_reservoir
+            # particle_beliefs[k] = new_particle_beliefs 
+            # particle_reservoirs[k] = new_particle_reservoir
+
+            particle_beliefs[k], pz, particle_reservoirs[k] = exact2(particle_poses[k],
+                                            self._simulation_solids,
+                                            particle_beliefs[k].copy(), 
+                                            weights[k],
+                                            particle_reservoirs[k].copy(),
+                                            z, 
+                                            particle_z_values, 
+                                            particle_z_ids, 
+                                            particle_z_cos_incident,
+                                            particle_z_d,
+                                            self._sensor.uv,
+                                            self._sensor.std,
+                                            self._sensor.max_range)
             
             # weights[k] *= np.product(pz) #or multiply?
             weights[k] *= 1.0 + np.sum(pz)

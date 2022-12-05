@@ -118,7 +118,8 @@ def exact2(pose : np.ndarray,
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             new_beliefs[szid_ij,i] = p
-            weights[szid_ij,i] =  abs(simulated_z_cos[i,j]) * simulated_z_d[i,j]
+            weights[szid_ij,i] =  abs(simulated_z_cos[i,j])# * simulated_z_d[i,j] * simulated_z[i,j]
+            # weights[szid_ij,i] = 1/simulated_z_d[i,j]**2
         
         p_z[i] = p_z_i
     
@@ -137,7 +138,7 @@ def exact2(pose : np.ndarray,
             hit_rays_beliefs = element_new_beliefs[indicies]
             
             element_weights = weights[i,indicies]
-            element_weights[element_weights < np.median(element_weights)] = 0.0
+            # element_weights[element_weights < np.median(element_weights)] = 0.0
             
             sum_element_weights = np.sum(element_weights)
             new_element_belief = np.sum(hit_rays_beliefs * element_weights/sum_element_weights)
@@ -157,7 +158,7 @@ def exact2(pose : np.ndarray,
             # beliefs[i] = (new_element_belief - beliefs[i]) * particle_weight + beliefs[i]
             # beliefs[i] = np.mean(hit_rays_beliefs)
             beliefs[i] = (new_element_belief * sum_element_weights + \
-                        beliefs[i] * particle_reservoir[i]) / (sum_element_weights + particle_reservoir[i])
+                        beliefs[i] * 0.4*particle_reservoir[i]) / (sum_element_weights + 0.4*particle_reservoir[i])
             particle_reservoir[i] += sum_element_weights
             
             # if beliefs[i] > 0.95:
