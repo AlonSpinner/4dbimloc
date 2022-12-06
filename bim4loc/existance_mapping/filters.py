@@ -127,6 +127,9 @@ def exact2(pose : np.ndarray,
         element_new_beliefs = new_beliefs[i,:]
         indicies = element_new_beliefs >= 0
 
+        if beliefs[i] > 0.9:
+            continue
+
         if np.any(indicies) > 0:
             element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
             element_uv = angle(np.ascontiguousarray(pose), element_world_v.T)
@@ -138,22 +141,23 @@ def exact2(pose : np.ndarray,
             hit_rays_beliefs = element_new_beliefs[indicies]
             
             element_weights = weights[i,indicies]
-            # element_weights[element_weights < np.median(element_weights)] = 0.0
+            element_weights[element_weights < np.median(element_weights)] = 0.0
             
             sum_element_weights = np.sum(element_weights)
             new_element_belief = np.sum(hit_rays_beliefs * element_weights/sum_element_weights)
 
-            # fig, ax = plt.subplots()
-            # ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
-            # sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],
-            #                 c=hit_rays_beliefs, s = element_weights*10000, vmin = 0 , vmax= 1.0)
-            # ax.set_title(f"element {i}, with old belief: {beliefs[i]}\n \
-            #                  and with new belief {new_element_belief}")
-            # # ax.set_title(simulation_solids[i].name)
-            # ax.invert_xaxis()
-            # plt.colorbar(sc)
-            # plt.draw()
-            # plt.show()
+            # if i == 2:
+            #     fig, ax = plt.subplots()
+            #     ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
+            #     sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],
+            #                     c=hit_rays_beliefs, s = element_weights*10000, vmin = 0 , vmax= 1.0)
+            #     ax.set_title(f"element {i}, with old belief: {beliefs[i]}\n \
+            #                     and with new belief {new_element_belief}")
+            #     # ax.set_title(simulation_solids[i].name)
+            #     ax.invert_xaxis()
+            #     plt.colorbar(sc)
+            #     plt.draw()
+            #     plt.show()
             
             # beliefs[i] = (new_element_belief - beliefs[i]) * particle_weight + beliefs[i]
             # beliefs[i] = np.mean(hit_rays_beliefs)

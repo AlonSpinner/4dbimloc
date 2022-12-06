@@ -53,12 +53,12 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/4,np.pi/4, int(300/4)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 1.0 * sensor.std
+simulated_sensor.std = 2.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
@@ -69,7 +69,7 @@ actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 +
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
-N_particles = 20
+N_particles = 10
 particle_poses = np.vstack((np.random.normal(drone.pose[0], 0.2, N_particles),
                        np.random.normal(drone.pose[1], 0.2, N_particles),
                        np.full(N_particles,drone.pose[2]),
@@ -116,7 +116,7 @@ visApp.add_solid(dead_reck, "initial_state")
 trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_dead_reck, "initial_state")
 
-U_COV = np.diag([0.05, 0.05, 1e-25, np.radians(1.0)])/10
+U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])/10
 
 #create the sense_fcn
 rbpf = RBPF(simulation, simulated_sensor, resample_rate = 4, U_COV = U_COV)
@@ -150,15 +150,15 @@ for t, u in enumerate(actions):
 
     #calculate dead reck
     dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
-    if z_prev is not None:
-        R,t, rmse = dead_reck_scan_match(z_prev, z, sensor.max_range,
-                    sensor.get_scan_to_points(),
-                    downsample_voxelsize = 0.5,
-                    icp_distance_threshold = 10.0)
-        pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
-        if rmse < 0.5: #and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
-            dead_reck.pose = compose_s(dead_reck.pose, s_from_Rt(R,t))
-    z_prev = z
+    # if z_prev is not None:
+    #     R,t, rmse = dead_reck_scan_match(z_prev, z, sensor.max_range,
+    #                 sensor.get_scan_to_points(),
+    #                 downsample_voxelsize = 0.5,
+    #                 icp_distance_threshold = 10.0)
+    #     pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
+    #     if rmse < 0.5: #and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
+    #         dead_reck.pose = compose_s(dead_reck.pose, s_from_Rt(R,t))
+    # z_prev = z
     
     #updating drawings
     simulation.update_solids_beliefs(best_map)        

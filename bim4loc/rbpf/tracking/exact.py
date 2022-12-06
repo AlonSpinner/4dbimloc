@@ -156,20 +156,3 @@ class RBPF():
         else:
             self._steps_from_resample += 1
         return particle_poses, particle_beliefs, weights
-
-def generate_sigma_points(mu, cov, beta = 2, alpha = 1, n = 2):
-    κ = 3 - n
-    λ = alpha^2 * (n+κ) - n
-    M = np.sqrt(n+λ)*cov
-    sigma_points = np.zeros((2*n+1, n))
-    sigma_points[0] = mu
-    for i in range(n):
-        sigma_points[i+1] = mu + M[i]
-        sigma_points[i+1+n] = mu - M[i]
-
-
-    L = np.linalg.cholesky((n + alpha) * np.cov(normal))
-    sigma_points = np.zeros((2*n, normal.shape[1]))
-    sigma_points[:n] = normal + L
-    sigma_points[n:] = normal - L
-    return sigma_points
