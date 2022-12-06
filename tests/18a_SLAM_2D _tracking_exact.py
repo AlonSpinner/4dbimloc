@@ -7,7 +7,7 @@ from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
 from bim4loc.rbpf.tracking.exact import RBPF
-from bim4loc.geometry.pose2z import compose_s
+from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.random.multi_dim import gauss_fit
 from bim4loc.existance_mapping import filters as existence_filters
 from bim4loc.evaluation import evaluation
@@ -17,6 +17,8 @@ import logging
 from copy import deepcopy
 import keyboard
 from numba import njit
+from bim4loc.geometry.scan_matcher.scan_matcher import dead_reck_scan_match
+from bim4loc.random.multi_dim import gauss_likelihood
 
 np.random.seed(25)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -39,6 +41,7 @@ world = RayCastingMap(constructed_solids)
 #BUILD SIMULATION
 initial_beliefs = np.zeros(len(solids))
 simulation_solids = []
+z_prev = None
 for i, s in enumerate(solids):
     s_simulation = s.clone()
     s_simulation_belief = s.schedule.cdf(current_time)
@@ -144,9 +147,21 @@ for t, u in enumerate(actions):
     expected_map = np.sum(weights.reshape(-1,1) * particle_beliefs, axis = 0)
     best_map = particle_beliefs[np.argmax(weights)]
     expected_pose = np.sum(weights.reshape(-1,1) * particle_poses, axis = 0)
+
+    #calculate dead reck
+    dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
+    if z_prev is not None:
+        R,t, rmse = dead_reck_scan_match(z_prev, z, sensor.max_range,
+                    sensor.get_scan_to_points(),
+                    downsample_voxelsize = 0.5,
+                    icp_distance_threshold = 10.0)
+        pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
+        if rmse < 0.5: #and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
+            dead_reck.pose = compose_s(dead_reck.pose, s_from_Rt(R,t))
+    z_prev = z
     
     #updating drawings
-    simulation.update_solids_beliefs(expected_map)        
+    simulation.update_solids_beliefs(best_map)        
     vis_scan.update(drone.pose[:3], z_p.T)
     vis_particles.update(particle_poses, weights)
     visApp.update_solid(vis_scan)
@@ -156,7 +171,6 @@ for t, u in enumerate(actions):
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     trail_est.update(expected_pose[:3].reshape(1,-1))
     visApp.update_solid(trail_est, "simulation")
-    dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
     visApp.update_solid(dead_reck, "initial_state")
     trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
     visApp.update_solid(trail_dead_reck, "initial_state")

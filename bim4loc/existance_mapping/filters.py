@@ -162,8 +162,8 @@ def exact2(pose : np.ndarray,
                         beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i])
             particle_reservoir[i] += sum_element_weights
             
-            # if beliefs[i] > 0.95:
-            #     beliefs[i] = 1.0
+            if beliefs[i] > 0.90:
+                beliefs[i] = 1.0
 
     return beliefs, p_z, particle_reservoir
 

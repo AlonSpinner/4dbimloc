@@ -11,6 +11,33 @@ from bim4loc.geometry.raycaster import NO_HIT
 from numba import njit, prange
 import open3d as o3d
 
+def dead_reck_scan_match(z_prev, z, sensor_max_range,
+                sensor_scan_to_points,
+                downsample_voxelsize = 0.5,
+                icp_distance_threshold = 10.0):
+    #get points from scans
+    q = sensor_scan_to_points(z_prev)
+    p = sensor_scan_to_points(z)
+
+    #prep to filter, filtering max range points and low probability points
+    fq_ids = z_prev < sensor_max_range
+    fp_ids = z < sensor_max_range
+
+    src = q[:, fq_ids] #from prev
+    dst = p[:, fp_ids] #from current
+
+    #point to point
+    src, dst = preprocess_points(src, dst, 
+                            voxelsize = downsample_voxelsize)
+    R, t, rmse = point2point_registration(src, dst, np.eye(4), 
+                            distance_threshold = icp_distance_threshold)
+    
+    #for debugging purposes, when running 10
+    # plot(np.asarray(src.points).T, np.asarray(dst.points).T, R, t, rmse, False)
+    
+    #adding [R,t] to the simulated pose to get better estimate for world pose
+    return R, t, rmse
+
 def scan_match(world_z, simulated_z, simulated_z_ids,
                 beliefs,
                 sensor_std, sensor_max_range,
