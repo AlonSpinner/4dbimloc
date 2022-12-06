@@ -11,7 +11,7 @@ from bim4loc.geometry.raycaster import NO_HIT
 from numba import njit, prange
 import open3d as o3d
 
-def dead_reck_scan_match(z_prev, z, sensor_max_range,
+def dead_reck_scan_match(T0, z_prev, z, sensor_max_range,
                 sensor_scan_to_points,
                 downsample_voxelsize = 0.5,
                 icp_distance_threshold = 10.0):
@@ -29,7 +29,7 @@ def dead_reck_scan_match(z_prev, z, sensor_max_range,
     #point to point
     src, dst = preprocess_points(src, dst, 
                             voxelsize = downsample_voxelsize)
-    R, t, rmse = point2point_registration(src, dst, np.eye(4), 
+    R, t, rmse = point2point_registration(src, dst, T0, 
                             distance_threshold = icp_distance_threshold)
     
     #for debugging purposes, when running 10

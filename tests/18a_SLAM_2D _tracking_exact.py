@@ -7,7 +7,7 @@ from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
 from bim4loc.rbpf.tracking.exact import RBPF
-from bim4loc.geometry.pose2z import compose_s, s_from_Rt
+from bim4loc.geometry.pose2z import compose_s, s_from_Rt, T_from_s
 from bim4loc.random.multi_dim import gauss_fit
 from bim4loc.existance_mapping import filters as existence_filters
 from bim4loc.evaluation import evaluation
@@ -53,7 +53,7 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/4,np.pi/4, int(300/4)), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
@@ -149,16 +149,21 @@ for t, u in enumerate(actions):
     expected_pose = np.sum(weights.reshape(-1,1) * particle_poses, axis = 0)
 
     #calculate dead reck
-    dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
-    # if z_prev is not None:
-    #     R,t, rmse = dead_reck_scan_match(z_prev, z, sensor.max_range,
-    #                 sensor.get_scan_to_points(),
-    #                 downsample_voxelsize = 0.5,
-    #                 icp_distance_threshold = 10.0)
-    #     pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
-    #     if rmse < 0.5: #and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
-    #         dead_reck.pose = compose_s(dead_reck.pose, s_from_Rt(R,t))
-    # z_prev = z
+    # dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
+    if z_prev is not None:
+        R,t, rmse = dead_reck_scan_match(T_from_s(u_noisy),z_prev, z, sensor.max_range,
+                    sensor.get_scan_to_points(),
+                    downsample_voxelsize = 0.5,
+                    icp_distance_threshold = 10.0)
+        pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),U_COV)
+        if rmse < 0.5: #and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
+            dead_reck.pose = compose_s(dead_reck.pose, s_from_Rt(R.T,-R.T@t))
+        else:
+            dead_reck.pose = compose_s(dead_reck.pose, u_noisy)
+    else:
+        dead_reck.pose = compose_s(dead_reck.pose, u_noisy)
+    z_prev = z
+    dead_reck.update_geometry(dead_reck.pose)
     
     #updating drawings
     simulation.update_solids_beliefs(best_map)        
