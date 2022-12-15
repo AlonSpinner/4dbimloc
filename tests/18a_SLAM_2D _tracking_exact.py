@@ -53,12 +53,12 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi/4,np.pi/4, int(300/4)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 2.0 * sensor.std
+simulated_sensor.std = 5.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
@@ -95,7 +95,8 @@ visApp.add_solid(vis_scan, "world")
 
 #create simulation window
 visApp.add_scene("simulation", "world")
-[visApp.add_solid(s,"simulation", f"{i}") for i,s in enumerate(simulation.solids)]
+# [visApp.add_solid(s,"simulation", f"{i}") for i,s in enumerate(simulation.solids)]
+[visApp.add_solid(s,"simulation") for i,s in enumerate(simulation.solids)]
 visApp.redraw("simulation")
 visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
@@ -138,7 +139,7 @@ for t, u in enumerate(actions):
     #produce measurement
     z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
 
-    u_noisy = compose_s(np.zeros(4),np.random.multivariate_normal(u, U_COV))
+    u_noisy = compose_s(u,np.random.multivariate_normal(np.zeros(4), U_COV))
     particle_poses, particle_beliefs, weights = rbpf.step(particle_poses, particle_beliefs, 
                                                           weights, particle_reservoirs,
                                                          u_noisy, U_COV, z)
@@ -149,7 +150,6 @@ for t, u in enumerate(actions):
     expected_pose = np.sum(weights.reshape(-1,1) * particle_poses, axis = 0)
 
     #calculate dead reck
-    # dead_reck.update_geometry(compose_s(dead_reck.pose, u_noisy))
     if z_prev is not None:
         R,t, rmse = dead_reck_scan_match(T_from_s(u_noisy),z_prev, z, sensor.max_range,
                     sensor.get_scan_to_points(),

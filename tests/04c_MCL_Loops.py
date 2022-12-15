@@ -110,7 +110,7 @@ for t, u in enumerate(actions):
                              simulated_sensor.std,simulated_sensor.max_range)
 
         weights[i] = 1.0 + np.sum(pz)
-        # weights[i] = np.product(0.1 + pz)
+        # weights[i] = np.product(pz)
         
         sum_weights += weights[i]
     
