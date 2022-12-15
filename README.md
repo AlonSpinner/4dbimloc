@@ -1,4 +1,4 @@
-Rao-Blackwellized Particle FIlter for Building Information Update
+Rao-Blackwellized Particle Filter for Building Information Update
 
 #Still under construction
 
