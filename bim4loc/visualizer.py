@@ -80,7 +80,7 @@ class VisApp():
             scene_widget = gui.SceneWidget()
             scene_widget.scene = visualization.rendering.Open3DScene(window.renderer)
             scene_widget.scene.set_background([1, 1, 1, 1])  # White background
-            scene_widget.scene.show_ground_plane(True,visualization.rendering.Scene.GroundPlane.XY)
+            # scene_widget.scene.show_ground_plane(True,visualization.rendering.Scene.GroundPlane.XY)
             scene_widget.enable_scene_caching(False)
 
             def _on_mouse_widget3d(window, scene_widget, info, event):

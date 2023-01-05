@@ -53,19 +53,20 @@ simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi/4,np.pi/4, int(300/4)), angles_v = np.array([0.0])); 
-sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 100.0
+sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 10.0
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
-simulated_sensor.std = 5.0 * sensor.std
+simulated_sensor.std = 1.0 * sensor.std
 simulated_sensor.piercing = True
 
 #BUILDING ACTION SET
 straight = np.array([0.5,0.0 ,0.0 ,0.0])
 turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8])
 turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8])
-actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4
+stay = np.zeros(4)
+actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4 + [stay] * 8
 
 #SPREAD PARTICLES
 bounds_min, bounds_max, extent = world.bounds()
@@ -87,18 +88,20 @@ particle_reservoirs = np.zeros((N_particles, len(solids)))
 visApp = VisApp()
 [visApp.add_solid(s,"world") for s in world.solids]
 visApp.redraw("world")
-visApp.show_axes(True,"world")
+# visApp.show_axes(True,"world")
 visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan, "world")
+trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
+visApp.add_solid(trail_ground_truth, "world")
 
 #create simulation window
 visApp.add_scene("simulation", "world")
 # [visApp.add_solid(s,"simulation", f"{i}") for i,s in enumerate(simulation.solids)]
 [visApp.add_solid(s,"simulation") for i,s in enumerate(simulation.solids)]
 visApp.redraw("simulation")
-visApp.show_axes(True,"simulation")
+# visApp.show_axes(True,"simulation")
 visApp.setup_default_camera("simulation")
 vis_particles = ParticlesSolid(poses = particle_poses)
 visApp.add_solid(vis_particles.lines, "simulation")
@@ -110,12 +113,12 @@ visApp.add_solid(trail_est, "simulation")
 visApp.add_scene("initial_state", "world")
 [visApp.add_solid(s,"initial_state") for s in simulation.solids]
 visApp.redraw("initial_state")
-visApp.show_axes(True,"initial_state")
+# visApp.show_axes(True,"initial_state")
 visApp.setup_default_camera("initial_state")
 dead_reck = ArrowSolid("dead_reck", 1.0, drone.pose)
-visApp.add_solid(dead_reck, "initial_state")
-trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
-visApp.add_solid(trail_dead_reck, "initial_state")
+# visApp.add_solid(dead_reck, "initial_state")
+# trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
+# visApp.add_solid(trail_dead_reck, "initial_state")
 
 U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])/10
 
@@ -163,7 +166,7 @@ for t, u in enumerate(actions):
     else:
         dead_reck.pose = compose_s(dead_reck.pose, u_noisy)
     z_prev = z
-    dead_reck.update_geometry(dead_reck.pose)
+    # dead_reck.update_geometry(dead_reck.pose)
     
     #updating drawings
     simulation.update_solids_beliefs(best_map)        
@@ -176,9 +179,11 @@ for t, u in enumerate(actions):
     [visApp.update_solid(s,"simulation") for s in simulation.solids]
     trail_est.update(expected_pose[:3].reshape(1,-1))
     visApp.update_solid(trail_est, "simulation")
-    visApp.update_solid(dead_reck, "initial_state")
-    trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
-    visApp.update_solid(trail_dead_reck, "initial_state")
+    # visApp.update_solid(dead_reck, "initial_state")
+    # trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
+    # visApp.update_solid(trail_dead_reck, "initial_state")
+    trail_ground_truth.update(drone.pose[:3].reshape(1,-1))
+    visApp.update_solid(trail_ground_truth, "world")
     visApp.redraw_all_scenes()
 
     #calculate perfect mapping with known poses

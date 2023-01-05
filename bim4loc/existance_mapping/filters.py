@@ -127,8 +127,8 @@ def exact2(pose : np.ndarray,
         element_new_beliefs = new_beliefs[i,:]
         indicies = element_new_beliefs >= 0
 
-        if beliefs[i] > 0.9:
-            continue
+        # if beliefs[i] > 0.9:
+        #     continue
 
         if np.any(indicies) > 0:
             element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
@@ -146,7 +146,7 @@ def exact2(pose : np.ndarray,
             sum_element_weights = np.sum(element_weights)
             new_element_belief = np.sum(hit_rays_beliefs * element_weights/sum_element_weights)
 
-            # if i == 2:
+            # if i == 0:
             #     fig, ax = plt.subplots()
             #     ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
             #     sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],

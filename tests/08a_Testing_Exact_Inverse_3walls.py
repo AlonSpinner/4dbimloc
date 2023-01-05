@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.matlib import repmat
-from bim4loc.binaries.paths import IFC_THREE_WALLS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_THREE_WALLS_SMALL_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import IfcSolid, ifc_converter
 from bim4loc.agents import Drone
@@ -21,8 +21,8 @@ np.set_printoptions(precision=3)
 solids = ifc_converter(IFC_PATH)
 world = RayCastingMap(solids)
 
-drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
-sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.1; 
+drone = Drone(pose = np.array([0.0, 3.0, 0.5, 0.0]))
+sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.05; 
 sensor.piercing = False
 sensor.max_range = 1000.0
 drone.mount_sensor(sensor)
@@ -64,7 +64,7 @@ for i, b in enumerate(bias):
     print(f"pz_ij:\n {history_pz_ij[:3]}")
 
 def plot_solid_on_xz(ax, solid : IfcSolid, color):
-    v = np.asarray(solid.geometry.vertices)[:,[0,2]]
+    v = np.asarray(solid.geometry.vertices)[:,[0,2]] - np.array([8,0])
     f = np.asarray(solid.geometry.triangles)
 
     triangles = v[f]
@@ -75,21 +75,28 @@ def plot_solid_on_xz(ax, solid : IfcSolid, color):
                     alpha = solid.material.base_color[3],
                     edgecolor = None))
 
-    ax.text(np.mean(v[:,0]), np.mean(v[:,1]), f" belief = {solid.material.base_color[3]}", 
-                        fontsize = 10,
-                        horizontalalignment='center',
-                        verticalalignment='center')
-
-fig = plt.figure()
+    # ax.text(np.mean(v[:,0]), np.mean(v[:,1]), f" belief = {solid.material.base_color[3]}", 
+    #                     fontsize = 10,
+    #                     horizontalalignment='center',
+    #                     verticalalignment='center')
+plt.rcParams['font.size'] = '24'
+fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
-xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0])
-g_pz_1, = ax.plot(bias + xhit, history_pz_ij[:,0], color = 'blue'); 
+ax2 = ax.twinx()
+xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0]) - 8
+g_pz_1, = ax2.plot(bias + xhit, history_pz_ij[:,0], color = 'blue'); 
 plot_solid_on_xz(ax, world.solids[0], color = 'blue')
-g_pz_2, = ax.plot(bias + xhit, history_pz_ij[:,1], color = 'red'); 
+g_pz_2, = ax2.plot(bias + xhit, history_pz_ij[:,1], color = 'red'); 
 plot_solid_on_xz(ax, world.solids[1], color = 'red')
-g_pz_3, = ax.plot(bias + xhit, history_pz_ij[:,2], color = 'green'); 
+g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green'); 
 plot_solid_on_xz(ax, world.solids[2], color = 'green')
 g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3], color = 'black')
-fig.legend([g_pz_1, g_pz_2, g_pz_3, g_pz], ['pm1|z', 'pm2|z', 'pm3|z', 'g_pz'])
+ax.set_xlabel('range, m', fontsize = 28)
+ax.set_ylabel('unnormalized probability density', fontsize = 28)
+ax.set_ybound(0,1)
+ax2.set_ybound(0,1)
+ax2.set_ylabel('probability', fontsize = 28)
+
+# fig.legend([g_pz_1, g_pz_2, g_pz_3, g_pz], ['pm1|z', 'pm2|z', 'pm3|z', 'g_pz'])
 ax.grid(True)
 plt.show()
