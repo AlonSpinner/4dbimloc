@@ -44,7 +44,7 @@ visApp.add_solid(drone.solid, "world")
 drone.sensor.bias = 0.0
 drone.sensor.std = 0.000001
 simulated_sensor.std = 0.5
-simulated_sensor.max_range = 20.0
+simulated_sensor.max_range = 8.0
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
