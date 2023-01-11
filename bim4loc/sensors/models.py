@@ -29,7 +29,7 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     '''
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-@njit(cache = True)
+# @njit(cache = True)
 def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
                         sensor_std, sensor_max_range):
     '''
@@ -60,7 +60,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     pj_z_i_wave = np.zeros(valid_hits)
 
     #random hit
-    p_random = exponentialT_pdf(0.1, sensor_max_range, wz_i) #<<<--- super important to relax exact
+    p_random = exponentialT_pdf(0.4, sensor_max_range, wz_i) #<<<--- super important to relax exact
     inv_eta += p_random
 
     #solids
@@ -79,5 +79,5 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     inv_eta += Pjbar * forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    p_z_i = inv_eta/(1.0 + p_random) #small normalization for 1.0 maximum value
+    p_z_i = inv_eta #/ (1.0 + p_random) #normalize so maximal value is 1
     return pj_z_i, p_z_i

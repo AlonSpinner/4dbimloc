@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.matlib import repmat
-from bim4loc.binaries.paths import IFC_THREE_WALLS_SMALL_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_THREE_WALLS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import IfcSolid, ifc_converter
 from bim4loc.agents import Drone
@@ -48,8 +48,8 @@ simulated_sensor.max_range = 20.0
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
-bias = np.linspace(-3, 6, N)
-beliefs = [0.5, 0.5, 0.5]
+bias = np.linspace(-2.8, 7, N)
+beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):
@@ -64,7 +64,7 @@ for i, b in enumerate(bias):
     print(f"pz_ij:\n {history_pz_ij[:3]}")
 
 def plot_solid_on_xz(ax, solid : IfcSolid, color):
-    v = np.asarray(solid.geometry.vertices)[:,[0,2]] - np.array([8,0])
+    v = np.asarray(solid.geometry.vertices)[:,[0,2]]
     f = np.asarray(solid.geometry.triangles)
 
     triangles = v[f]
@@ -83,18 +83,19 @@ plt.rcParams['font.size'] = '24'
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax2 = ax.twinx()
-xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0]) - 8
+xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0])
 g_pz_1, = ax2.plot(bias + xhit, history_pz_ij[:,0], color = 'blue'); 
 plot_solid_on_xz(ax, world.solids[0], color = 'blue')
 g_pz_2, = ax2.plot(bias + xhit, history_pz_ij[:,1], color = 'red'); 
 plot_solid_on_xz(ax, world.solids[1], color = 'red')
 g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green'); 
 plot_solid_on_xz(ax, world.solids[2], color = 'green')
-g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3], color = 'black')
+normalizer = np.sum(history_pz_ij[:,3])*(bias[1]-bias[0])
+g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black')
 ax.set_xlabel('range, m', fontsize = 28)
-ax.set_ylabel('unnormalized probability density', fontsize = 28)
-ax.set_ybound(0,1)
-ax2.set_ybound(0,1)
+ax.set_ylabel('probability density', fontsize = 28)
+ax.set_ybound(0,0.7)
+ax2.set_ybound(0,1.1)
 ax2.set_ylabel('probability', fontsize = 28)
 
 # fig.legend([g_pz_1, g_pz_2, g_pz_3, g_pz], ['pm1|z', 'pm2|z', 'pm3|z', 'g_pz'])
