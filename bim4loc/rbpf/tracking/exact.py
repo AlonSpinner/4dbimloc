@@ -137,7 +137,8 @@ class RBPF():
                                             particle_z_d,
                                             self._sensor.uv,
                                             self._sensor.std,
-                                            self._sensor.max_range)
+                                            self._sensor.max_range,
+                                            self._sensor.p0)
             
             # weights[k] *= np.product(pz) #or multiply?
             weights[k] *= 1.0 + np.sum(pz)

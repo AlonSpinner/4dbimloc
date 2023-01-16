@@ -24,7 +24,8 @@ world = RayCastingMap(solids)
 drone = Drone(pose = np.array([0.0, 3.0, 0.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.05; 
 sensor.piercing = False
-sensor.max_range = 1000.0
+sensor.max_range = 10.0
+sensor.p0 = 0.4
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
@@ -42,13 +43,12 @@ visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
 
 drone.sensor.bias = 0.0
-drone.sensor.std = 0.000001
-simulated_sensor.std = 0.5
-simulated_sensor.max_range = 8.0
+drone.sensor.std = 0.00000000001
+simulated_sensor.std = 0.2
 
 N = 1000
 history_pz_ij = np.zeros((N,4))
-bias = np.linspace(-2.8, 7, N)
+bias = np.linspace(-2.8, sensor.max_range-2.8, N)
 beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
@@ -58,7 +58,8 @@ for i, b in enumerate(bias):
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
     pj_z_i, pz = inverse_lidar_model(z[0], simulated_z[0], simulated_z_ids[0], \
-                        beliefs, simulated_sensor.std, simulated_sensor.max_range)
+                        beliefs, 
+                        simulated_sensor.std, simulated_sensor.max_range, simulated_sensor.p0)
     history_pz_ij[i] = np.hstack((pj_z_i, pz))
     
     print(f"pz_ij:\n {history_pz_ij[:3]}")
@@ -94,7 +95,7 @@ normalizer = np.sum(history_pz_ij[:,3])*(bias[1]-bias[0])
 g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black')
 ax.set_xlabel('range, m', fontsize = 28)
 ax.set_ylabel('probability density', fontsize = 28)
-ax.set_ybound(0,0.7)
+ax.set_ybound(0,0.8)
 ax2.set_ybound(0,1.1)
 ax2.set_ylabel('probability', fontsize = 28)
 

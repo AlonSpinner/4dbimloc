@@ -29,9 +29,9 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     '''
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
-# @njit(cache = True)
+@njit(cache = True)
 def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
-                        sensor_std, sensor_max_range):
+                        sensor_std, sensor_max_range, sensor_p0 = 0.4):
     '''
     based on the awesome papers "Autonomous Exploration with Exact Inverse Sensor Models"
     and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
@@ -43,6 +43,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     beliefs - probability of existance of each solid (np.array of floats [0,1])
     sensor_std - standard deviation of sensor (float)
     sensor_max_range - maximum range of sensor (float)
+    sensor_p0 - probablity density at range = 0
 
     output:
     pj_z_i - updated existance beliefs given measurement (probabilty of solid j, given z_i)
@@ -60,7 +61,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     pj_z_i_wave = np.zeros(valid_hits)
 
     #random hit
-    p_random = exponentialT_pdf(0.4, sensor_max_range, wz_i) #<<<--- super important to relax exact
+    p_random = exponentialT_pdf(sensor_p0, sensor_max_range, wz_i) #<<<--- super important to relax exact
     inv_eta += p_random
 
     #solids
@@ -79,5 +80,5 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     inv_eta += Pjbar * forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    p_z_i = inv_eta #/ (1.0 + p_random) #normalize so maximal value is 1
+    p_z_i = inv_eta #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
     return pj_z_i, p_z_i

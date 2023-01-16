@@ -22,10 +22,12 @@ class Lidar(Sensor):
                 angles_u : np.ndarray = np.linspace(-np.pi/2, np.pi/2, num = 36), 
                 angles_v : np.ndarray = np.linspace(-np.pi/30, np.pi/30, num = 3), 
                 max_range : float = 10.0,
+                p0 : float = 0.3, 
                 std : float = 0.0,
                 bias : float = 0.0):
         
         self.max_range = max_range
+        self.p0 = p0
         self.std = std
         self.bias = bias
         self.piercing = True

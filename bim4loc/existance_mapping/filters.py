@@ -79,7 +79,8 @@ def exact2(pose : np.ndarray,
             simulated_z_d : np.ndarray,
             sensor_uv_angles : np.ndarray,
             sensor_std : float,
-            sensor_max_range : float) -> np.ndarray:
+            sensor_max_range : float,
+            sensor_p0 : float) -> np.ndarray:
     '''
     CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
 
@@ -114,7 +115,7 @@ def exact2(pose : np.ndarray,
         szid_i =  simulated_z_ids[i]
 
         pj_zi, p_z_i = inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
-                                sensor_std, sensor_max_range)
+                                sensor_std, sensor_max_range, sensor_p0)
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             new_beliefs[szid_ij,i] = p

@@ -9,7 +9,7 @@ from functools import partial
 # gui.Application : http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Application.html#open3d.visualization.gui.Application
 # gui.Window :  http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Window.html?highlight=gui%20application%20instance%20create_window
 # sceneWidget : http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.SceneWidget.html?highlight=scenewidget#open3d.visualization.gui.SceneWidget.scene
-#rendering.Open3DScene : http://www.open3d.org/docs/release/python_api/open3d.visualization.rendering.Open3DScene.html?highlight=rendering%20open3dscene#open3d.visualization.rendering.Open3DScene
+# rendering.Open3DScene : http://www.open3d.org/docs/release/python_api/open3d.visualization.rendering.Open3DScene.html?highlight=rendering%20open3dscene#open3d.visualization.rendering.Open3DScene
 # camera : http://www.open3d.org/docs/release/python_api/open3d.visualization.rendering.Camera.html
 
 class VisApp():
@@ -19,6 +19,7 @@ class VisApp():
         self._windows : dict = {}
         self._infos : dict = {} #showing xyz of picked points with ALT modifier
         self._scene2window : dict[str] = {} #stores window_names
+        self._uploaded_camera = []
         # self._scene_heightWidth : dict[tuple] = {}
 
         self._app = gui.Application.instance
@@ -75,6 +76,7 @@ class VisApp():
 
         window = self._windows[window_name]    
         info = self._infos[window_name]
+        uploaded_camera = self._uploaded_camera
 
         def _add_scene(scene_name : str, window) -> None:
             scene_widget = gui.SceneWidget()
@@ -128,9 +130,23 @@ class VisApp():
 
                     scene_widget.scene.scene.render_to_depth_image(depth_callback)
                     return gui.Widget.EventCallbackResult.HANDLED
-                return gui.Widget.EventCallbackResult.IGNORED     
-            
+                return gui.Widget.EventCallbackResult.IGNORED
+
+            def _on_key_widget3d(window, scene_widget, uploaded_camera, event):
+                if event.key == 265 and event.type == gui.KeyEvent.Type.DOWN:
+                    uploaded_camera.append(scene_widget.scene.camera)
+                    print('uploaded camera')
+                elif event.key == 266 and event.type == gui.KeyEvent.Type.DOWN:
+                    if uploaded_camera:
+                        scene_widget.scene.camera.copy_from(uploaded_camera[-1])
+                        print('downloaded last camera')
+                    else:
+                        print("No camera uploaded")
+
+                return gui.Widget.EventCallbackResult.IGNORED
+ 
             scene_widget.set_on_mouse(partial(_on_mouse_widget3d,window,scene_widget,info))
+            scene_widget.set_on_key(partial(_on_key_widget3d,window,scene_widget,uploaded_camera))
             
             window.add_child(scene_widget)
             self._scene2window[scene_name] = window_name
