@@ -1,9 +1,8 @@
 from bim4loc.geometry.minimal_distance import convex_hull, T_from_pitch_yaw
+import bim4loc.geometry.s03 as s03
 import numpy as np
 import matplotlib.pyplot as plt
 
-def vee(Q):
-    return np.array([Q[2,1],Q[0,2],Q[1,0]])
 
 def distance_to_line(p0,p1,q):
     #p0 and p1 are two points on the line
@@ -22,23 +21,26 @@ def point_to_convex_hull_dist(point, hull):
         if test_s < s:
             s = test_s
             projected_point = test_projected_point
-        print(i)
     return s, projected_point
 
 points = np.random.uniform(-np.pi/2,np.pi/2,(30,2))   # 30 random points in 2-D
-hull = convex_hull(points)
-print(hull)
+points = np.hstack((np.zeros((points.shape[0],1)), points))
+rots = [s03.hat(p) for p in points]
+rot_bar = s03.mu_rotations(rots)
 
-query = np.array([np.radians(0),np.radians(30)])
-T = T_from_pitch_yaw(query[0], query[1])
-R = T[:3,:3]
+query = np.array([0, np.radians(0),np.radians(30)])
+rot_query = s03.hat(query)
 
-t = np.arccos((np.trace(R)-1)/2)
-theta = t * vee(R - R.T)/(2*np.sin(t))
-print(np.degrees(theta))
+q = s03.vee(s03.minus(rot_bar,rot_query))
+p = [s03.vee(s03.minus(rot_bar,rot)) for rot in rots]
 
+hull = convex_hull(np.array(p))
 hull_plus = np.vstack((hull,hull[0]))
-s, projected_point = point_to_convex_hull_dist(query, hull)
+s, projected_point = point_to_convex_hull_dist(q, hull)
+
+hull = convex_hull(points)
+hull_plus = np.vstack((hull,hull[0]))
+projected_point = s03.vee(s03.plus(rot_bar, s03.hat(projected_point)))
 
 plt.plot(points[:,0], points[:,1], 'o')
 plt.plot(hull_plus[:,0], hull_plus[:,1], 'r--', lw=2)
