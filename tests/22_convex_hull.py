@@ -1,9 +1,8 @@
-from bim4loc.geometry.minimal_distance import convex_hull, T_from_pitch_yaw
+from bim4loc.geometry.minimal_distance import convex_hull
 import bim4loc.geometry.so3 as so3
 import numpy as np
 import matplotlib.pyplot as plt
-from bim4loc.geometry.pca import pca
-
+from bim4loc.geometry.utils import pca, point_in_polygon
 
 def distance_to_line(p0,p1,q):
     #p0 and p1 are two points on the line
@@ -24,12 +23,16 @@ def point_to_convex_hull_dist(point, hull_plus):
             projected_point = test_projected_point
     return s, projected_point
 
-projected_verts = np.random.uniform(np.pi - np.pi/6,np.pi + np.pi/6,(30,2))   # 30 random points in 2-D
+base_element_angle = np.pi/2
+
+projected_verts = np.random.uniform(base_element_angle - np.pi/6,base_element_angle + np.pi/6,(30,2))   # 30 random points in 2-D
 projected_verts = np.hstack((np.zeros((projected_verts.shape[0],1)), projected_verts)) #roll-pitch-yaw
-rots = [so3.exp(p) for p in projected_verts]
+rots = np.zeros((projected_verts.shape[0],3,3))
+for i in range(projected_verts.shape[0]):
+    rots[i] = so3.exp(projected_verts[i])
 rot_bar = so3.mu_rotations(rots)
 
-query = np.array([0, np.radians(0),0])
+query = np.array([0, np.radians(0),base_element_angle])
 rot_query = so3.exp(query)
 
 d_query = so3.log(so3.minus(rot_bar,rot_query))
@@ -37,7 +40,7 @@ d_vertices = [so3.log(so3.minus(rot_bar,rot)) for rot in rots]
 
 #because the convex hull is in 2D, we need to project the vertices onto the plane
 #defined by the rotation rot_bar
-points = np.array([so3.log(so3.minus(rot_bar,rot)) for rot in rots])
+# points = np.array([so3.log(so3.minus(rot_bar,rot)) for rot in rots])
 p = np.array([so3.log(so3.minus(rot_bar,rot)) for rot in rots])
 q = so3.log(so3.minus(rot_bar,rot_query))
 
@@ -52,6 +55,11 @@ plt.plot(phat[:,0], phat[:,1], 'o')
 plt.plot(hull_plus[:,0], hull_plus[:,1], 'r--', lw=2)
 plt.plot(qhat[0], qhat[1], 'ro')
 plt.plot([qhat[0], projected_point[0]], [qhat[1], projected_point[1]], 'k--')
+if point_in_polygon(qhat, hull_plus):
+    plt.title('Point is inside the convex hull')
+else:
+    plt.title('Point is outside the convex hull')
+
 plt.axis('equal')
 plt.show()
 

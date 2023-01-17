@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, prange
 from scipy.spatial import ConvexHull
 
 def convex_hull(points : np.ndarray) -> np.ndarray:
@@ -9,6 +9,7 @@ def convex_hull(points : np.ndarray) -> np.ndarray:
     hull = ConvexHull(points)
     return points[hull.vertices]
 
+@njit(cache = True)
 def T_from_pitch_yaw(pitch, yaw):
     '''
     pitch - rotation around x axis
@@ -30,6 +31,7 @@ def project_to_ray(T_pose, ray_pitch, ray_yaw, mesh_v):
     projected_mesh_v = np.linalg.inv(T) @ mesh_v
     return projected_mesh_v
 
+@njit(cache = True)
 def minimal_distance_from_projected(projected_mesh_v : np.ndarray,
          point : np.ndarray = np.array([0,0])) -> float:
     '''
@@ -39,7 +41,7 @@ def minimal_distance_from_projected(projected_mesh_v : np.ndarray,
     #go over lines and find the minimal distance from 0,0
     hull = convex_hull(projected_mesh_v)
     s = np.inf
-    for i in range(hull.shape[0]):
+    for i in prange(hull.shape[0]):
         s = min(s, distance_to_line(hull[i-1], hull[i], point))
     s = min(s, distance_to_line(hull[0], hull[-1], point)) #last line
     return s
