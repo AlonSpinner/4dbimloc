@@ -23,20 +23,20 @@ def point_to_convex_hull_dist(point, hull_plus):
             projected_point = test_projected_point
     return s, projected_point
 
-base_element_angle = np.pi/2
+base_element_angle = np.pi
+d_base_element_angle = np.pi/6
 
-projected_verts = np.random.uniform(base_element_angle - np.pi/6,base_element_angle + np.pi/6,(30,2))   # 30 random points in 2-D
+projected_verts = np.random.uniform(base_element_angle - d_base_element_angle,
+                                    base_element_angle + d_base_element_angle,
+                                    (60,2))
 projected_verts = np.hstack((np.zeros((projected_verts.shape[0],1)), projected_verts)) #roll-pitch-yaw
 rots = np.zeros((projected_verts.shape[0],3,3))
 for i in range(projected_verts.shape[0]):
     rots[i] = so3.exp(projected_verts[i])
 rot_bar = so3.mu_rotations(rots)
 
-query = np.array([0, np.radians(0),base_element_angle])
+query = np.array([0, base_element_angle, base_element_angle])
 rot_query = so3.exp(query)
-
-d_query = so3.log(so3.minus(rot_bar,rot_query))
-d_vertices = [so3.log(so3.minus(rot_bar,rot)) for rot in rots]
 
 #because the convex hull is in 2D, we need to project the vertices onto the plane
 #defined by the rotation rot_bar
