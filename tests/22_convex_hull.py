@@ -1,7 +1,8 @@
 from bim4loc.geometry.minimal_distance import convex_hull, T_from_pitch_yaw
-import bim4loc.geometry.s03 as s03
+import bim4loc.geometry.so3 as so3
 import numpy as np
 import matplotlib.pyplot as plt
+from bim4loc.geometry.pca import pca
 
 
 def distance_to_line(p0,p1,q):
@@ -12,10 +13,10 @@ def distance_to_line(p0,p1,q):
     distance = np.linalg.norm(projected_point-q)
     return distance, projected_point
 
-def point_to_convex_hull_dist(point, hull):
+def point_to_convex_hull_dist(point, hull_plus):
+    #hull_plus = np.vstack((hull,hull[0]))
     s = np.inf
     projected_point = np.zeros(2)
-    hull_plus = np.vstack((hull,hull[0]))
     for i in range(1,hull.shape[0]):
         test_s, test_projected_point =  distance_to_line(hull_plus[i-1], hull_plus[i], point)
         if test_s < s:
@@ -23,29 +24,34 @@ def point_to_convex_hull_dist(point, hull):
             projected_point = test_projected_point
     return s, projected_point
 
-points = np.random.uniform(-np.pi/2,np.pi/2,(30,2))   # 30 random points in 2-D
-points = np.hstack((np.zeros((points.shape[0],1)), points))
-rots = [s03.hat(p) for p in points]
-rot_bar = s03.mu_rotations(rots)
+projected_verts = np.random.uniform(np.pi - np.pi/6,np.pi + np.pi/6,(30,2))   # 30 random points in 2-D
+projected_verts = np.hstack((np.zeros((projected_verts.shape[0],1)), projected_verts)) #roll-pitch-yaw
+rots = [so3.exp(p) for p in projected_verts]
+rot_bar = so3.mu_rotations(rots)
 
-query = np.array([0, np.radians(0),np.radians(30)])
-rot_query = s03.hat(query)
+query = np.array([0, np.radians(0),0])
+rot_query = so3.exp(query)
 
-q = s03.vee(s03.minus(rot_bar,rot_query))
-p = [s03.vee(s03.minus(rot_bar,rot)) for rot in rots]
+d_query = so3.log(so3.minus(rot_bar,rot_query))
+d_vertices = [so3.log(so3.minus(rot_bar,rot)) for rot in rots]
 
-hull = convex_hull(np.array(p))
+#because the convex hull is in 2D, we need to project the vertices onto the plane
+#defined by the rotation rot_bar
+points = np.array([so3.log(so3.minus(rot_bar,rot)) for rot in rots])
+p = np.array([so3.log(so3.minus(rot_bar,rot)) for rot in rots])
+q = so3.log(so3.minus(rot_bar,rot_query))
+
+phat, transform = pca(p)
+qhat = q @ transform
+
+hull = convex_hull(np.array(phat))
 hull_plus = np.vstack((hull,hull[0]))
-s, projected_point = point_to_convex_hull_dist(q, hull)
+s, projected_point = point_to_convex_hull_dist(qhat, hull_plus)
 
-hull = convex_hull(points)
-hull_plus = np.vstack((hull,hull[0]))
-projected_point = s03.vee(s03.plus(rot_bar, s03.hat(projected_point)))
-
-plt.plot(points[:,0], points[:,1], 'o')
+plt.plot(phat[:,0], phat[:,1], 'o')
 plt.plot(hull_plus[:,0], hull_plus[:,1], 'r--', lw=2)
-plt.plot(query[0], query[1], 'ro')
-plt.plot([query[0], projected_point[0]], [query[1], projected_point[1]], 'k--')
+plt.plot(qhat[0], qhat[1], 'ro')
+plt.plot([qhat[0], projected_point[0]], [qhat[1], projected_point[1]], 'k--')
 plt.axis('equal')
 plt.show()
 

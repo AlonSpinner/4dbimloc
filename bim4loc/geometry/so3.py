@@ -37,5 +37,5 @@ def mu_rotations(rotation_list : list[np.ndarray]):
     for R_i in rotation_list:
         mu += log(R_i)
     mu /= len(rotation_list)
-    return hat(mu)
+    return exp(mu)
 
