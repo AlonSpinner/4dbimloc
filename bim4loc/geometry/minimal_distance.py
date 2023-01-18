@@ -24,7 +24,7 @@ def distance_point_to_convex_hull(point, hull_plus):
             projected_point = test_projected_point
     return s, projected_point
 
-# @njit(cache = True)
+@njit(cache = True)
 def minimal_distance_from_projected_boundry(ray_point : np.ndarray,
                                             projected_verts : np.ndarray):
     '''
@@ -39,18 +39,22 @@ def minimal_distance_from_projected_boundry(ray_point : np.ndarray,
     #better optimization can be computed with https://github.com/dellaert/ShonanAveraging
     for i in prange(hull_projected_rots.shape[0]):
         hull_projected_rots[i] = so1.exp(hull_projected_verts[i])
-    rot_bar = so1.mu_rotations(hull_projected_rots)
-
     rot_query = so1.exp(ray_point)
+
+    # rot_bar = so1.mu_rotations(hull_projected_rots)
+    rot_bar = rot_query.copy()
 
     p = np.zeros_like(hull_projected_verts)
     for i in prange(hull_projected_rots.shape[0]):
         p[i] = so1.log(so1.minus(hull_projected_rots[i], rot_bar))
     q = so1.log(so1.minus(rot_query,rot_bar))
 
-    p_plus = np.vstack((p,p[0]))
+    p_plus = np.zeros((p.shape[0]+1,p.shape[1]))
+    p_plus[:-1,:] = p
+    p_plus[-1,:] = p[0]
     s, projected_point = distance_point_to_convex_hull(q, p_plus)
 
+    # plt.figure()
     # plt.scatter(p_plus[:,0],p_plus[:,1])
     # plt.scatter(q[0],q[1])
     # plt.scatter(projected_point[0],projected_point[1])

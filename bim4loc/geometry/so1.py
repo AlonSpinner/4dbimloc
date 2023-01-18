@@ -25,9 +25,21 @@ def exp(theta : np.ndarray):
 
 @njit(cache = True)
 def mu_rotations(z_array : np.ndarray):
+    '''
+    This doesnt work for now... averging rotations is not trivial
+
+    example:
+
+    lets say we have a lot of angles -3 and +3 scattered around 3.14
+    averaging in the lie algebra will give us 0, but the average in the manifold is 3.14
+    averging in the manifold in a stupid way breaks the manifold
+    '''
     mu = np.full(z_array[0].shape,fill_value = exp(0))
     for i in prange(len(z_array)):
         mu = plus(mu, z_array[i])
     mu /= len(z_array)
+    #try to normalize.. this doesnt work
+    mu[0] = mu[0]/np.abs(mu[0])
+    mu[1]= mu[1]/np.abs(mu[1])
     return mu
 
