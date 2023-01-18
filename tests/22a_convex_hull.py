@@ -10,7 +10,8 @@ d_base_element_angle = np.pi/6
 projected_verts = np.random.uniform(base_element_angle - d_base_element_angle,
                                     base_element_angle + d_base_element_angle,
                                     (60,2))
-ray_point = np.array([base_element_angle-0.1, base_element_angle + 0.2])
+ray_point = np.array([base_element_angle + np.random.uniform(0,d_base_element_angle/2),
+                     base_element_angle + np.random.uniform(0,d_base_element_angle/2)])
 s, dq = minimal_distance_from_projected_boundry(ray_point, projected_verts)
 
 projected_point = ray_point + dq
