@@ -73,7 +73,7 @@ def transform_to(s : np.ndarray, p : np.ndarray)  -> np.ndarray:
 @njit(cache = True)
 def angle(s: np.ndarray, p : np.ndarray) -> np.ndarray:
     # p - 3 x m
-    # returns [theta, phi] - 2 x m
+    # returns [phi, theta] - 2 x m
     p_robot = transform_to(s,p)
     m = p_robot.shape[1]
     theta, phi = np.zeros(m), np.zeros(m)
@@ -81,5 +81,5 @@ def angle(s: np.ndarray, p : np.ndarray) -> np.ndarray:
         r = np.linalg.norm(p_robot[:,i])
         theta[i] = np.arctan2(p_robot[1,i], p_robot[0,i])
         phi[i] = np.arcsin(p_robot[2,i]/r)
-    return np.vstack((theta, phi))
+    return np.vstack((theta, phi)) #yaw, pitch
 

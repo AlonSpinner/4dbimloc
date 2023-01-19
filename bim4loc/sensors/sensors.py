@@ -19,8 +19,8 @@ class Sensor():
 
 class Lidar(Sensor):
     def __init__(self,
-                angles_u : np.ndarray = np.linspace(-np.pi/2, np.pi/2, num = 36), 
-                angles_v : np.ndarray = np.linspace(-np.pi/30, np.pi/30, num = 3), 
+                angles_u : np.ndarray = np.linspace(-np.pi/2, np.pi/2, num = 36), #yaw
+                angles_v : np.ndarray = np.linspace(-np.pi/30, np.pi/30, num = 3),  #pitch
                 max_range : float = 10.0,
                 p0 : float = 0.3, 
                 std : float = 0.0,
