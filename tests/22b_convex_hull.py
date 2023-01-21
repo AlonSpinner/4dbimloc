@@ -1,7 +1,7 @@
 from bim4loc.geometry.minimal_distance import minimal_distance_from_projected_boundry
 from bim4loc.geometry.convex_hull import convex_hull_jarvis as convex_hull
 import numpy as np
-from bim4loc.binaries.paths import IFC_THREE_WALLS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_CONVEX_HULL_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone

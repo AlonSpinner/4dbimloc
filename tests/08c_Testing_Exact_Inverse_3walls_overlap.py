@@ -64,7 +64,7 @@ beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 
-for _ in range(0):
+for _ in range(1):
     print('in')
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
     pj_z_i, pz = inverse_lidar_model(4.8, simulated_z[0], simulated_z_ids[0], \
@@ -93,7 +93,7 @@ def plot_solid_on_xz(ax, solid : IfcSolid, color):
         if tri.size == np.unique(tri, axis = 0).size: #NO IDEA WHY THIS WORKS. BUT FINE
             ax.add_patch(Polygon(tri, closed = True, 
                     color = color,
-                    alpha = 0.4,#solid.material.base_color[3],
+                    alpha = 0.2,#solid.material.base_color[3],
                     edgecolor = None))
 
     # ax.text(np.mean(v[:,0]), np.mean(v[:,1]), f" belief = {solid.material.base_color[3]}", 
