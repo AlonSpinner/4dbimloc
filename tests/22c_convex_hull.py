@@ -1,7 +1,7 @@
 from bim4loc.geometry.minimal_distance import minimal_distance_from_projected_boundry
 from bim4loc.geometry.convex_hull import convex_hull_jarvis as convex_hull
 import numpy as np
-from bim4loc.binaries.paths import IFC_THREE_WALLS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_CONVEX_HULL_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import PcdSolid, ifc_converter
 from bim4loc.agents import Drone
@@ -15,10 +15,10 @@ import bim4loc.geometry.pose2z as pose2z
 plt.rcParams['image.cmap'] = plt.cm.plasma
 plt.rcParams['font.size'] = '24'
 
-solids = [ifc_converter(IFC_PATH)[0]] #list of first element
+solids = ifc_converter(IFC_PATH) #list of first element
 world = RayCastingMap(solids)
 
-drone = Drone(pose = np.array([2.0, 2.4, 1.5, 0 * np.pi/6]))
+drone = Drone(pose = np.array([10.0, 2.4, 1.5, 0 * np.pi/6]))
 sensor = Lidar(angles_u = np.linspace(-np.pi/4, np.pi/4, 50), 
                angles_v = np.linspace(-np.pi/4, np.pi/4, 50))
 sensor.piercing = False
