@@ -75,7 +75,7 @@ ax.set_aspect(1.0)
 plt.show()
 
 #-----------------------cosine componenet-----------------------
-weight_cos_incident = np.abs(z_cos_incident[z_ids != NO_HIT])
+weight_cos_incident = (z_cos_incident[z_ids != NO_HIT])**2
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
