@@ -42,6 +42,8 @@ class RBPF():
         U_COV_remove_z[:2,:2] = U_COV[:2,:2]
         U_COV_remove_z[2,:] = U_COV[3,[0,1,3]]
         U_COV_remove_z[:,2] = U_COV[[0,1,3],3]
+
+        #abandoned
         sigmapoints = SigmaPoints(n = 3, alpha = 1.2, beta = 2.0, mu = np.zeros(3), cov = U_COV_remove_z)
         self._sigmapoints = sigmapoints
 
