@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit, prange
-from .utils import T_from_pitch_yaw, distance_to_line
+from .utils import T_from_pitch_yaw, distance_to_line, point_in_polygon
 from .convex_hull import convex_hull_jarvis as convex_hull
 from .import so1
 import matplotlib.pyplot as plt
@@ -52,7 +52,11 @@ def minimal_distance_from_projected_boundry(ray_point : np.ndarray,
     p_plus = np.zeros((p.shape[0]+1,p.shape[1]))
     p_plus[:-1,:] = p
     p_plus[-1,:] = p[0]
-    s, projected_point = distance_point_to_convex_hull(q, p_plus)
+    if point_in_polygon(q, p_plus):
+        s, projected_point = distance_point_to_convex_hull(q, p_plus)
+    else:
+        s = 0.0
+        projected_point = q
 
     # plt.figure()
     # plt.scatter(p_plus[:,0],p_plus[:,1])
