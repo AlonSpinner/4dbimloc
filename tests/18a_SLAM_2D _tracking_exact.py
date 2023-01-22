@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, ScanSolid, ArrowSolid, TrailSolid
 from bim4loc.agents import Drone
@@ -52,7 +52,7 @@ for i, s in enumerate(solids):
 simulation = RayCastingMap(simulation_solids)
 
 #INITALIZE DRONE AND SENSOR
-drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
+drone = Drone(pose = np.array([3.0, 3.0, 1.8, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 10.0
 drone.mount_sensor(sensor)
