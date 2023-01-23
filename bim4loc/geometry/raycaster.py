@@ -74,13 +74,11 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                     elif ii == 0:
                         z_values[i_r] = np.hstack((np.array([z]), z_values[i_r][:-1]))
                         z_ids[i_r] = np.hstack((np.array([meshes_iguid[i_m]]), z_ids[i_r][:-1]))
-                        z_d_surface[i_r] = np.hstack((np.array([d]), z_d_surface[i_r][:-1]))
                         z_normals[i_r] = np.vstack((n, z_normals[i_r][ii:-1]))
                         z_cos_incident[i_r] = np.hstack((np.array([c]), z_cos_incident[i_r][:-1]))
                     else:
                         z_values[i_r] = np.hstack((z_values[i_r][:ii], np.array([z]), z_values[i_r][ii:-1]))
                         z_ids[i_r] = np.hstack((z_ids[i_r][:ii], np.array([meshes_iguid[i_m]]), z_ids[i_r][ii:-1]))
-                        z_d_surface[i_r] = np.hstack((z_d_surface[i_r][:ii], np.array([d]), z_d_surface[i_r][ii:-1]))
                         z_normals[i_r] = np.vstack((z_normals[i_r][:ii,:], n, z_normals[i_r][ii:-1,:]))
                         z_cos_incident[i_r] = np.hstack((z_cos_incident[i_r][:ii], np.array([c]), z_cos_incident[i_r][ii:-1]))
             

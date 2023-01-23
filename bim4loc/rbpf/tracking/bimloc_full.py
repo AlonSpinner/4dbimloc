@@ -33,7 +33,7 @@ class RBPF():
         self._map_bounds_max = map_bounds_max
 
         self._U_COV = U_COV
-        self._reservoir_decay_rate = 2.0
+        self._reservoir_decay_rate = 0.5
 
         self._N = initial_particle_poses.shape[0]
         self.particle_poses = initial_particle_poses

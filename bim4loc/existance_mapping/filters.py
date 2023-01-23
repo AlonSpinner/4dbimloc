@@ -7,7 +7,7 @@ from numba import prange
 import matplotlib.pyplot as plt
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.geometry.pose2z import angle
-from scipy.spatial import ConvexHull
+from bim4loc.geometry.minimal_distance import minimal_distance_from_projected_boundry
 
 EPS = 1e-16
 
@@ -107,7 +107,7 @@ def exact2(pose : np.ndarray,
     p_z = np.zeros(N_rays)
 
     new_beliefs = -np.ones((N_elements,N_rays))
-    weights = np.zeros((N_elements,N_rays))
+    intersection_weights = np.zeros((N_elements,N_rays))
 
     for i in prange(N_rays):
         wz_i = world_z[i]
@@ -119,33 +119,36 @@ def exact2(pose : np.ndarray,
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             new_beliefs[szid_ij,i] = p
-            weights[szid_ij,i] =  simulated_z_cos[i,j]**2# * simulated_z_d[i,j]# * simulated_z[i,j]
-            # weights[szid_ij,i] = simulated_z_d[i,j]
+            intersection_weights[szid_ij,i] =  simulated_z_cos[i,j]**2
         
         p_z[i] = p_z_i
     
     for i in prange(N_elements):
+        if beliefs[i] == 1.0 or beliefs[i] == 0.0: #won't be updated anyway
+            continue
         element_new_beliefs = new_beliefs[i,:]
         indicies = element_new_beliefs >= 0
 
-        # if beliefs[i] > 0.9:
-        #     continue
-
         if np.any(indicies) > 0:
             element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
-            element_uv = angle(np.ascontiguousarray(pose), element_world_v.T)
-            element_uv = element_uv.T
-            hull = ConvexHull(element_uv)
-            element_uv_hull = element_uv[hull.vertices]
-            element_uv_hull = np.vstack((element_uv_hull,element_uv_hull[0]))
-            hit_rays_uv = sensor_uv_angles[indicies]
-            hit_rays_beliefs = element_new_beliefs[indicies]
+            element_uv = angle(np.ascontiguousarray(pose), element_world_v.T).T
             
-            element_weights = weights[i,indicies]
-            element_weights[element_weights < np.median(element_weights)] = 0.0
+            nrm_intersection_uv = sensor_uv_angles[indicies]/np.array([np.pi, np.pi/2])
+            nrm_element_uv = element_uv/np.array([np.pi, np.pi/2])
             
-            sum_element_weights = np.sum(element_weights)
-            new_element_belief = np.sum(hit_rays_beliefs * element_weights/sum_element_weights)
+            
+            element_intersection_beliefs = element_new_beliefs[indicies]
+            
+            dist_2_boundry = np.zeros(len(nrm_intersection_uv))
+            for j, bearing in enumerate(nrm_intersection_uv):
+                dist_2_boundry[j], _ = minimal_distance_from_projected_boundry(bearing, nrm_element_uv)
+            element_intersection_weights = intersection_weights[i, indicies] * dist_2_boundry
+            
+            # element_weights = element_intersection_weights[i,indicies]
+            # element_weights[element_weights < np.median(element_weights)] = 0.0
+            
+            sum_element_weights = np.sum(element_intersection_weights) + EPS
+            new_element_belief = np.sum(element_intersection_beliefs * element_intersection_weights/sum_element_weights)
 
             # if i == 0:
             #     fig, ax = plt.subplots()
@@ -160,15 +163,13 @@ def exact2(pose : np.ndarray,
             #     plt.draw()
             #     plt.show()
             
-            # beliefs[i] = (new_element_belief - beliefs[i]) * particle_weight + beliefs[i]
-            # beliefs[i] = np.mean(hit_rays_beliefs)
             a = particle_weight #or 0.35
             beliefs[i] = (new_element_belief * sum_element_weights + \
                         beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i])
             particle_reservoir[i] += sum_element_weights
             
-            if beliefs[i] > 0.90:
-                beliefs[i] = 1.0
+            # if beliefs[i] > 0.90:
+            #     beliefs[i] = 1.0
 
     return beliefs, p_z, particle_reservoir
 
