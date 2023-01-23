@@ -119,7 +119,7 @@ def exact2(pose : np.ndarray,
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             new_beliefs[szid_ij,i] = p
-            weights[szid_ij,i] =  abs(simulated_z_cos[i,j])# * simulated_z_d[i,j]# * simulated_z[i,j]
+            weights[szid_ij,i] =  simulated_z_cos[i,j]**2# * simulated_z_d[i,j]# * simulated_z[i,j]
             # weights[szid_ij,i] = simulated_z_d[i,j]
         
         p_z[i] = p_z_i

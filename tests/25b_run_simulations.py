@@ -7,7 +7,6 @@ import time
 import logging
 import pickle
 import os
-import matplotlib.pyplot as plt
 from bim4loc.rbpf.tracking.bimloc_full import RBPF
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')

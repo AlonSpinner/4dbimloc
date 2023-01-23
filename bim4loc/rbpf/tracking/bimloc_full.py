@@ -33,6 +33,7 @@ class RBPF():
         self._map_bounds_max = map_bounds_max
 
         self._U_COV = U_COV
+        self._reservoir_decay_rate = 2.0
 
         self._N = initial_particle_poses.shape[0]
         self.particle_poses = initial_particle_poses
@@ -40,9 +41,8 @@ class RBPF():
         self._particle_reservoirs = np.zeros((self._N, len(self._simulation_solids)))
         self.weights = np.ones(self._N) / self._N
 
-        #to delete in future
-        self._steps_from_resample = 0
-        self._resample_rate = 4
+    def N_eff(self):
+        return 2.0 / np.sum(self.weights**2)
 
     def get_expected_belief_map(self):
         return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
@@ -51,11 +51,15 @@ class RBPF():
         mu, cov = gauss_fit(self.particle_poses.T, self.weights)
         return mu, cov
 
+    def decay_reservoirs(self):
+        self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
+
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
         z - lidar scan, array of shape (N_lidar_beams)
         '''
+        self.decay_reservoirs()
 
         #compute weights and normalize
         sum_weights = 0.0
@@ -114,11 +118,8 @@ class RBPF():
             self.weights /= sum_weights
 
         #resample
-        if self._steps_from_resample == self._resample_rate-1:
+        if self.N_eff() < self._N:
             self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
                                                                     self.particle_poses, 
                                                                     self.particle_beliefs, 
                                                                     self._N)
-            self._steps_from_resample = 0
-        else:
-            self._steps_from_resample += 1

@@ -1,6 +1,7 @@
 import numpy as np
 from numba import njit, prange
 from typing import Union
+from bim4loc.geometry.minimal_distance import minimal_distance_from_projected_boundry
 
 EPS = 1e-16
 NO_HIT = 2161354
@@ -47,8 +48,7 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
         ray = rays[i_r]
         ray_dir = ray[3:]
         for i_m in prange(N_meshes):
-            d = ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m])
-            if not(d):
+            if not ray_box_intersection(ray[:3], ray_dir, meshes_bb[i_m]):
                 continue
             
             finished_mesh = False
@@ -171,32 +171,7 @@ def ray_box_intersection(ray_o : np.ndarray, ray_dir : np.ndarray, box : np.ndar
     if tmax < 0:
         return False
     else:
-        # return True
-        tmin = np.max(np.minimum(t1s,t0s))
-        ray_hit = ray_o + tmin * ray_dir
-        
-        #find closest point on box
-        closest_face = np.argmin(np.abs(np.hstack((ray_hit,ray_hit)) - box))
-
-        if closest_face == 0 or closest_face == 3:
-            ind_s = np.array([1,2])
-            ind_b = np.array([4,5])
-        elif closest_face == 1 or closest_face == 4:
-            ind_s = np.array([0,2])
-            ind_b = np.array([3,5])
-        elif closest_face == 2 or closest_face == 5:
-            ind_s = np.array([0,1])
-            ind_b = np.array([3,4])
-        else:
-            return 0.0 #no hit
-            # AssertionError('Cant find minimal distance to face')
-        hit_plane = ray_hit[ind_s] #example: we hit the yz plane, so we have x = const
-        min_plane = box[ind_s] #min yz
-        max_plane = box[ind_b] #max yz
-        #query point, and closest point
-        d = min(np.minimum(np.abs(hit_plane - min_plane),
-                    np.abs(hit_plane - max_plane)))
-        return d
+        return True
 
 if __name__ == "__main__":
     #simple test to show functionality and speed
