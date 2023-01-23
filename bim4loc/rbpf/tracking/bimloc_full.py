@@ -5,7 +5,7 @@ from ..utils import low_variance_sampler
 import numpy as np
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.maps import RayCastingMap
-from bim4loc.random.multi_dim import gauss_likelihood, sample_normal
+from bim4loc.random.multi_dim import gauss_likelihood, sample_normal, gauss_fit
 
 class RBPF():
     def __init__(self,
@@ -44,6 +44,12 @@ class RBPF():
         self._steps_from_resample = 0
         self._resample_rate = 4
 
+    def get_expected_belief_map(self):
+        return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
+
+    def get_expect_pose(self):
+        mu, cov = gauss_fit(self.particle_poses.T, self.weights)
+        return mu, cov
 
     def step(self, u, z):
         '''
@@ -105,7 +111,7 @@ class RBPF():
         if sum_weights < 1e-16: #prevent divide by zero
             self.weights = np.ones(self._N) / self._N
         else:
-            self.weights /= self.weights
+            self.weights /= sum_weights
 
         #resample
         if self._steps_from_resample == self._resample_rate-1:

@@ -29,7 +29,7 @@ for i, s in enumerate(simulation_solids):
 simulation = RayCastingMap(simulation_solids)
 
 #ESTIMATION INITALIZATION
-pose0 = data['history']['gt_traj'][0]
+pose0 = data['ground_truth']['trajectory'][0]
 bounds_min, bounds_max, extent = simulation.bounds()
 N_particles = 10
 initial_particle_poses = np.vstack((np.random.normal(pose0[0], 0.2, N_particles),
@@ -69,25 +69,44 @@ visApp.add_solid(sim_vis_particles.tails, "simulation")
 sim_vis_trail_est = TrailSolid("trail_est", pose0[:3].reshape(1,3))
 visApp.add_solid(sim_vis_trail_est, "simulation")
 
+results = {'pose_mu': [],'pose_cov': [],'expected_belief_map': []}
+
 #LOOP
 time.sleep(2)
-for t, (u,z) in enumerate(zip(data['history']['U'],data['history']['Z'])):
+for t, (u,z) in enumerate(zip(data['measurements']['U'],data['measurements']['Z'])):
     #-----------------------------------estimate-------------------------------
     dead_reckoning = compose_s(dead_reckoning, u)
-
     rbpf.step(u, z)
+    pose_mu, pose_cov = rbpf.get_expect_pose()
+    expected_belief_map = rbpf.get_expected_belief_map()
+
+    #-------------------------------store results------------------------------
+    results['pose_mu'].append(pose_mu)
+    results['pose_cov'].append(pose_cov)
+    results['expected_belief_map'].append(expected_belief_map)
 
     #-----------------------------------draw-----------------------------------
     #update solids
     dead_reck_vis_arrow.update_geometry(dead_reckoning - np.array([0,0,0.3,0.0])) #wierd offset required
     dead_reck_vis_trail_est.update(dead_reckoning[:3].reshape(1,-1))
     sim_vis_particles.update(rbpf.particle_poses, rbpf.weights)
+    simulation.update_solids_beliefs(expected_belief_map)
+    sim_vis_trail_est.update(pose_mu[:3].reshape(1,-1))
 
     #updating visApp
     visApp.update_solid(dead_reck_vis_arrow,"world")
     visApp.update_solid(dead_reck_vis_trail_est,"world")
     visApp.update_solid(sim_vis_particles.lines, "simulation")
     visApp.update_solid(sim_vis_particles.tails, "simulation")
+    [visApp.update_solid(s,"simulation") for s in simulation.solids]
+    visApp.update_solid(sim_vis_trail_est,"simulation")
     visApp.redraw_all_scenes()
 
-print('done')
+#--------------------SAVE RESULTS--------------------
+results["expected_belief_map"] = np.array(results["expected_belief_map"])
+results["pose_mu"] = np.array(results["pose_mu"])
+results["pose_cov"] = np.array(results["pose_cov"])
+
+file = os.path.join(dir_path, "25b_results1.p")
+pickle.dump(results, open(file, "wb"))
+print('pickle dumped')

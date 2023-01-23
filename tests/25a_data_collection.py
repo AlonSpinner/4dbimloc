@@ -25,6 +25,7 @@ for s in solids:
     if s.completion_time < current_time:
         constructed_solids.append(s.clone())
 world = RayCastingMap(constructed_solids)
+solids_completion_times = np.array([s.completion_time for s in solids])
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
@@ -53,10 +54,11 @@ visApp.add_solid(trail_ground_truth, "world")
 
 U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])/10
 
-#history
-history = {'gt_traj': [drone.pose],
-            'U' : [],
-            'Z' : []}
+#measurements
+measurements = {'U' : [], 'Z' : []}
+
+#ground truth
+gt_traj = []
 
 #LOOP
 time.sleep(2)
@@ -70,10 +72,10 @@ for t, u in enumerate(actions):
 
     u_noisy = compose_s(u,np.random.multivariate_normal(np.zeros(4), U_COV))
 
-    #update history
-    history['gt_traj'].append(drone.pose)
-    history['U'].append(u_noisy)
-    history['Z'].append(z)
+    #update measurements
+    gt_traj.append(drone.pose)
+    measurements['U'].append(u_noisy)
+    measurements['Z'].append(z)
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
@@ -87,8 +89,9 @@ data = {}
 data['current_time'] = current_time
 data['IFC_PATH'] = IFC_PATH
 data['sensor'] = sensor
-data['actions'] = actions
-data['history'] = history
+data['measurements'] = measurements
+data['ground_truth'] = {'solids_completion_times': solids_completion_times,
+                        'trajectory': np.array(gt_traj)}
 data['U_COV'] = U_COV
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
