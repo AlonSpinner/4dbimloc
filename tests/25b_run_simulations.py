@@ -30,7 +30,7 @@ simulation = RayCastingMap(simulation_solids)
 #ESTIMATION INITALIZATION
 pose0 = data['ground_truth']['trajectory'][0]
 bounds_min, bounds_max, extent = simulation.bounds()
-N_particles = 10
+N_particles = 3
 initial_particle_poses = np.vstack((np.random.normal(pose0[0], 0.2, N_particles),
                        np.random.normal(pose0[1], 0.2, N_particles),
                        np.full(N_particles,pose0[2]),

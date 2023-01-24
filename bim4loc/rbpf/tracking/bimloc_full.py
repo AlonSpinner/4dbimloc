@@ -42,7 +42,7 @@ class RBPF():
         self.weights = np.ones(self._N) / self._N
 
     def N_eff(self):
-        return 2.0 / np.sum(self.weights**2)
+        return 1.0 / np.sum(self.weights**2)
 
     def get_expected_belief_map(self):
         return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
