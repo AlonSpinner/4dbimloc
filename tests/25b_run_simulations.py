@@ -18,6 +18,16 @@ data = pickle.Unpickler(open(file, "rb")).load()
 
 #BUILD SIMULATION ENVIORMENT
 simulation_solids = ifc_converter(data['IFC_PATH'])
+
+solids_existence_dependence = {40 : 14, 41: 14, 42: 14,
+                               37: 21, 48: 21, 47: 21,
+                               38: 1, 45: 1, 46: 1,
+                               39: 2, 43: 2, 44: 2,}
+solids_ivaraition_dependence = np.array([[40, 41, 42], 
+                                        [37, 48, 47], 
+                                        [38, 45, 46], 
+                                        [39, 43, 44]])
+
 initial_beliefs = np.zeros(len(simulation_solids))
 for i, s in enumerate(simulation_solids):
     s_simulation_belief = s.schedule.cdf(data['current_time'])
