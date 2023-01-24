@@ -19,15 +19,6 @@ data = pickle.Unpickler(open(file, "rb")).load()
 #BUILD SIMULATION ENVIORMENT
 simulation_solids = ifc_converter(data['IFC_PATH'])
 
-solids_existence_dependence = {40 : 14,# 41: 14, 42: 14,
-                               37: 21,# 48: 21, 47: 21,
-                               38: 1,# 45: 1, 46: 1,
-                               39: 2}# 43: 2, 44: 2,}
-solids_varaition_dependence = np.array([[40, 41, 42], 
-                                        [37, 48, 47], 
-                                        [38, 45, 46], 
-                                        [39, 43, 44]], dtype = int)
-
 initial_beliefs = np.zeros(len(simulation_solids))
 for i, s in enumerate(simulation_solids):
     s_simulation_belief = s.schedule.cdf(data['current_time'])
@@ -40,7 +31,7 @@ simulation = RayCastingMap(simulation_solids)
 #ESTIMATION INITALIZATION
 pose0 = data['ground_truth']['trajectory'][0]
 bounds_min, bounds_max, extent = simulation.bounds()
-N_particles = 3
+N_particles = 10
 initial_particle_poses = np.vstack((np.random.normal(pose0[0], 0.2, N_particles),
                        np.random.normal(pose0[1], 0.2, N_particles),
                        np.full(N_particles,pose0[2]),
@@ -51,9 +42,10 @@ rbpf = RBPF(simulation,
             simulated_sensor,
             initial_particle_poses,
             initial_beliefs,
-            solids_existence_dependence,
-            solids_varaition_dependence,
-            U_COV = data['U_COV'])
+            data['solids_existence_dependence'],
+            data['solids_varaition_dependence'],
+            data['U_COV'],
+            reservoir_decay_rate = 0.2)
 
 dead_reckoning = pose0
 

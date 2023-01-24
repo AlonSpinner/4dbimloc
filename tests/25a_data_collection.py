@@ -11,7 +11,7 @@ import logging
 import pickle
 import os
 
-np.random.seed(22)
+np.random.seed(14)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -19,10 +19,10 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 
-solids_existence_dependence = {40 : 14,# 41: 14, 42: 14,
-                               37: 21,# 48: 21, 47: 21,
-                               38: 1,# 45: 1, 46: 1,
-                               39: 2}# 43: 2, 44: 2,}
+solids_existence_dependence = {40 : 14, 41: 14, 42: 14,
+                               37: 21, 48: 21, 47: 21,
+                               38: 1, 45: 1, 46: 1,
+                               39: 2, 43: 2, 44: 2}
 solids_varaition_dependence = np.array([[40, 41, 42], 
                                         [37, 48, 47], 
                                         [38, 45, 46], 
@@ -34,11 +34,14 @@ for i, s in enumerate(solids):
     if i in duplicate_solids:
         continue
     s.set_random_completion_time()
-    #need to make sure that that dependence works somehow...
-    if s.completion_time < current_time:
-        constructed_solids.append(s.clone())
-
     
+    if s.completion_time < current_time: #think if solid should be constructed
+        if i in solids_existence_dependence.keys():
+            if solids[solids_existence_dependence[i]].completion_time < current_time: #assumes order...
+                constructed_solids.append(s.clone())        
+        else:
+            constructed_solids.append(s.clone())
+
 world = RayCastingMap(constructed_solids)
 solids_completion_times = np.array([s.completion_time for s in solids])
 
@@ -67,7 +70,7 @@ visApp.add_solid(vis_scan, "world")
 trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_ground_truth, "world")
 
-U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])/10
+U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])
 
 #measurements
 measurements = {'U' : [], 'Z' : []}
@@ -102,6 +105,8 @@ for t, u in enumerate(actions):
 
 data = {}
 data['current_time'] = current_time
+data['solids_existence_dependence'] = solids_existence_dependence
+data['solids_varaition_dependence'] = solids_varaition_dependence
 data['IFC_PATH'] = IFC_PATH
 data['sensor'] = sensor
 data['measurements'] = measurements

@@ -15,7 +15,8 @@ class RBPF():
                 initial_belief : np.ndarray,
                 solids_existence_dependence : dict[int,int],
                 solids_varaition_dependence : np.ndarray,
-                U_COV : np.ndarray):
+                U_COV : np.ndarray,
+                reservoir_decay_rate : float = 0.3):
         '''
         PARAMTERS
         sense_fcn - NUMBA JITED NO PYTHON FUNCTION 
@@ -35,7 +36,7 @@ class RBPF():
         self._map_bounds_max = map_bounds_max
 
         self._U_COV = U_COV
-        self._reservoir_decay_rate = 0.5
+        self._reservoir_decay_rate = reservoir_decay_rate
 
         self._N = initial_particle_poses.shape[0]
         self.particle_poses = initial_particle_poses
@@ -113,12 +114,12 @@ class RBPF():
                                             self._sensor.max_range,
                                             self._sensor.p0)
 
-            # for variation in self._solids_varaition_dependence:
-            #     for e_k in variation:
-            #         if self.particle_beliefs[k][e_k] > 0.9:
-            #             self.particle_beliefs[k][e_k] = 1.0
-            #             self.particle_beliefs[k][variation[variation != e_k]] = 0.0
-            #             break
+            for variation in self._solids_varaition_dependence:
+                for e_k in variation:
+                    if self.particle_beliefs[k][e_k] > 0.9:
+                        self.particle_beliefs[k][e_k] = 1.0
+                        self.particle_beliefs[k][variation[variation != e_k]] = 0.01
+                        break
 
             for key in self._solids_existence_dependence:
                 #key's existence depends on value's existence
