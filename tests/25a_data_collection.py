@@ -1,5 +1,5 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_ARENA_PLUS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid
 from bim4loc.agents import Drone
@@ -11,7 +11,7 @@ import logging
 import pickle
 import os
 
-np.random.seed(25)
+np.random.seed(22)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -19,11 +19,26 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 
+solids_existence_dependence = {40 : 14,# 41: 14, 42: 14,
+                               37: 21,# 48: 21, 47: 21,
+                               38: 1,# 45: 1, 46: 1,
+                               39: 2}# 43: 2, 44: 2,}
+solids_varaition_dependence = np.array([[40, 41, 42], 
+                                        [37, 48, 47], 
+                                        [38, 45, 46], 
+                                        [39, 43, 44]], dtype = int)
+
 constructed_solids = []
-for s in solids:
+duplicate_solids = solids_varaition_dependence[:, 1:].flatten()
+for i, s in enumerate(solids):
+    if i in duplicate_solids:
+        continue
     s.set_random_completion_time()
+    #need to make sure that that dependence works somehow...
     if s.completion_time < current_time:
         constructed_solids.append(s.clone())
+
+    
 world = RayCastingMap(constructed_solids)
 solids_completion_times = np.array([s.completion_time for s in solids])
 

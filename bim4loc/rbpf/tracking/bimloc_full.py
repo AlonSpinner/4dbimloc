@@ -13,6 +13,8 @@ class RBPF():
                 sensor : Lidar,
                 initial_particle_poses : np.ndarray,
                 initial_belief : np.ndarray,
+                solids_existence_dependence : dict[int,int],
+                solids_varaition_dependence : np.ndarray,
                 U_COV : np.ndarray):
         '''
         PARAMTERS
@@ -41,6 +43,9 @@ class RBPF():
         self._particle_reservoirs = np.zeros((self._N, len(self._simulation_solids)))
         self.weights = np.ones(self._N) / self._N
 
+        self._solids_existence_dependence = solids_existence_dependence
+        self._solids_varaition_dependence = solids_varaition_dependence
+
     def N_eff(self):
         return 1.0 / np.sum(self.weights**2)
 
@@ -59,6 +64,7 @@ class RBPF():
         u - delta pose, array of shape (4)
         z - lidar scan, array of shape (N_lidar_beams)
         '''
+        #initalize
         self.decay_reservoirs()
 
         #compute weights and normalize
@@ -106,6 +112,18 @@ class RBPF():
                                             self._sensor.std,
                                             self._sensor.max_range,
                                             self._sensor.p0)
+
+            # for variation in self._solids_varaition_dependence:
+            #     for e_k in variation:
+            #         if self.particle_beliefs[k][e_k] > 0.9:
+            #             self.particle_beliefs[k][e_k] = 1.0
+            #             self.particle_beliefs[k][variation[variation != e_k]] = 0.0
+            #             break
+
+            for key in self._solids_existence_dependence:
+                #key's existence depends on value's existence
+                value = self._solids_existence_dependence[key]
+                self.particle_beliefs[k][value] = max(self.particle_beliefs[k][key],self.particle_beliefs[k][value])
             
             # weights[k] *= np.product(pz) #or multiply?
             self.weights[k] *= 1.0 + np.sum(pz)

@@ -10,3 +10,4 @@ _configtest.c
 _configtest.o
 tests/25b_results1.p
 tests/25a_data.p
+tests/25a_data.p
