@@ -53,21 +53,29 @@ def map_entropy(estimated_beliefs, perfect_beliefs = None, plot = False):
     """
     estimated = compute_entropy(estimated_beliefs)
 
+    perfect = np.zeros_like(estimated)
+    if perfect_beliefs is not None:
+                perfect = compute_entropy(perfect_beliefs)
+
     if plot is True:
         fig, ax = plt.subplots()
         ax.plot(estimated, label='rbpf')
-        if perfect_beliefs is not None:
-                perfect = compute_entropy(perfect_beliefs)
-                ax.plot(perfect, label='mapping with known poses')
+        if perfect is not None:
+            ax.plot(perfect, label='mapping with known poses')
         ax.set_title('Map Entropy')
         ax.set_xlabel('Time')
         ax.set_ylabel('Entropy')
         ax.grid(True)
         ax.legend()
 
-    return estimated
+    return estimated,perfect
 
 def cross_entropy_error(ground_truth, estimated_beliefs, perfect_beliefs = None, plot = False):
+    '''
+    perfect_beliefs - np.array of shape (n, n_elements), assuming perfect trajectory
+    estimated_beliefs - np.array of shape (n, n_elements)
+    ground_truth - np.array of shape (n_elements)
+    '''
     ground_truth = np.tile(ground_truth, (estimated_beliefs.shape[0], 1))
     estimated = compute_cross_entropy(ground_truth, estimated_beliefs)
 

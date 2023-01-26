@@ -126,6 +126,8 @@ for t, u in enumerate(actions):
     visApp.update_solid(dead_reck_vis_arrow, "initial_condition")
     visApp.update_solid(dead_reck_vis_trail_est, "initial_condition")
 
+measurements['dead_reck'] = np.array(measurements['dead_reck'])
+
 data = {}
 data['current_time'] = current_time
 data['solids_existence_dependence'] = solids_existence_dependence
@@ -133,10 +135,9 @@ data['solids_varaition_dependence'] = solids_varaition_dependence
 data['IFC_PATH'] = IFC_PATH
 data['sensor'] = sensor
 data['measurements'] = measurements
-data['ground_truth'] = {'solids_completion_times': solids_completion_times,
+data['ground_truth'] = {'constructed_solids_names': [s.name for s in constructed_solids],
                         'trajectory': np.array(gt_traj)}
 data['U_COV'] = U_COV
-data['constructed_solids_names'] = [s.name for s in constructed_solids]
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 file = os.path.join(dir_path, "25a_data.p")

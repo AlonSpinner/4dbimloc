@@ -21,7 +21,7 @@ solids = ifc_converter(data['IFC_PATH'])
 
 constructed_solids = []
 for s in solids:
-    if s.name in data['constructed_solids_names']:
+    if s.name in data['ground_truth']['constructed_solids_names']:
         constructed_solids.append(s.clone())
 
 results = {0: {}, 1: {}, 2: {}}
@@ -78,7 +78,10 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
     sim_vis_trail_est = TrailSolid("trail_est", pose0[:3].reshape(1,3))
     visApp.add_solid(sim_vis_trail_est, "simulation")
 
-    results_rbpf = {'pose_mu': [],'pose_cov': [],'expected_belief_map': []}
+    pose_mu, pose_cov = rbpf.get_expect_pose()
+    expected_belief_map = rbpf.get_expected_belief_map()
+    results_rbpf = {'pose_mu': [pose_mu],'pose_cov': [pose_cov],
+                    'expected_belief_map': [expected_belief_map]}
 
     #LOOP
     time.sleep(2)
