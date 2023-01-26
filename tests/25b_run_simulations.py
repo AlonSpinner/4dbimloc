@@ -6,9 +6,9 @@ import time
 import logging
 import pickle
 import os
-from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_1
-from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_2
-from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_3
+from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_0
+from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_1
+from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_2
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -24,7 +24,8 @@ for s in solids:
     if s.name in data['constructed_solids_names']:
         constructed_solids.append(s.clone())
 
-for rbpf_enum, RBPF in enumerate([RBPF_1, RBPF_2, RBPF_3]):
+results = {0: {}, 1: {}, 2: {}}
+for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
     solids = ifc_converter(data['IFC_PATH'])
@@ -77,7 +78,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_1, RBPF_2, RBPF_3]):
     sim_vis_trail_est = TrailSolid("trail_est", pose0[:3].reshape(1,3))
     visApp.add_solid(sim_vis_trail_est, "simulation")
 
-    results = {'pose_mu': [],'pose_cov': [],'expected_belief_map': []}
+    results_rbpf = {'pose_mu': [],'pose_cov': [],'expected_belief_map': []}
 
     #LOOP
     time.sleep(2)
@@ -88,9 +89,9 @@ for rbpf_enum, RBPF in enumerate([RBPF_1, RBPF_2, RBPF_3]):
         expected_belief_map = rbpf.get_expected_belief_map()
 
         #-------------------------------store results------------------------------
-        results['pose_mu'].append(pose_mu)
-        results['pose_cov'].append(pose_cov)
-        results['expected_belief_map'].append(expected_belief_map)
+        results_rbpf['pose_mu'].append(pose_mu)
+        results_rbpf['pose_cov'].append(pose_cov)
+        results_rbpf['expected_belief_map'].append(expected_belief_map)
 
         #-----------------------------------draw-----------------------------------
         #update solids
@@ -104,13 +105,15 @@ for rbpf_enum, RBPF in enumerate([RBPF_1, RBPF_2, RBPF_3]):
         [visApp.update_solid(s,"simulation") for s in simulation.solids]
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
+        
     #--------------------SAVE RESULTS--------------------
-    results["expected_belief_map"] = np.array(results["expected_belief_map"])
-    results["pose_mu"] = np.array(results["pose_mu"])
-    results["pose_cov"] = np.array(results["pose_cov"])
+    results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
+    results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])
+    results_rbpf["pose_cov"] = np.array(results_rbpf["pose_cov"])
 
-    file = os.path.join(dir_path, f"25b_results{rbpf_enum}.p")
-    pickle.dump(results, open(file, "wb"))
-    print('pickle dumped')
-
+    results[rbpf_enum] = results_rbpf
     visApp.quit()
+
+file = os.path.join(dir_path, f"25b_results.p")
+pickle.dump(results, open(file, "wb"))
+print('pickle dumped')
