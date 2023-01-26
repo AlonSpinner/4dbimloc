@@ -21,7 +21,7 @@ def binary_variable_update(current, update):
     return np.reciprocal(1.0 + p2odds(negate(current)) * p2odds(negate(update)))
 
 # @njit(parallel = True, cache = True)
-def exact(beliefs : np.ndarray, 
+def exact_simple(beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
@@ -67,7 +67,7 @@ def exact(beliefs : np.ndarray,
     return beliefs, p_z
 
 # @njit(parallel = True, cache = True)
-def exact2(pose : np.ndarray,
+def exact_robust(pose : np.ndarray,
             simulation_solids,
             beliefs : np.ndarray, 
             particle_weight : np.ndarray,
@@ -144,9 +144,6 @@ def exact2(pose : np.ndarray,
                 dist_2_boundry[j], _ = minimal_distance_from_projected_boundry(bearing, nrm_element_uv)
             element_intersection_weights = intersection_weights[i, indicies] * dist_2_boundry
             
-            # element_weights = element_intersection_weights[i,indicies]
-            # element_weights[element_weights < np.median(element_weights)] = 0.0
-            
             sum_element_weights = np.sum(element_intersection_weights) + EPS
             new_element_belief = np.sum(element_intersection_beliefs * element_intersection_weights/sum_element_weights)
 
@@ -174,7 +171,7 @@ def exact2(pose : np.ndarray,
     return beliefs, p_z, particle_reservoir
 
 @njit(parallel = True, cache = True)
-def approx(logodds_beliefs : np.ndarray, 
+def approx_logodds(logodds_beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
@@ -227,10 +224,10 @@ def approx(logodds_beliefs : np.ndarray,
     return logodds_beliefs
 
 if __name__ == '__main__':
-    approx(logodds_beliefs = np.array([0.5]),
+    approx_logodds(logodds_beliefs = np.array([0.5]),
                     world_z = np.array([0.5]), 
                     simulated_z = np.array([[0.5]]),
                     simulated_z_ids = np.array([[0]]),
                     sensor_std = 0.2,
                     sensor_max_range = 100.0)
-    approx.parallel_diagnostics()
+    approx_logodds.parallel_diagnostics()

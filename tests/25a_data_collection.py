@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ARENA_PLUS_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid
+from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
@@ -42,6 +42,13 @@ for i, s in enumerate(solids):
         else:
             constructed_solids.append(s.clone())
 
+initial_beliefs = np.zeros(len(solids))
+for i, s in enumerate(solids):
+    s_simulation_belief = s.schedule.cdf(current_time)
+    s.set_existance_belief_and_shader(s_simulation_belief)
+    initial_beliefs[i] = s_simulation_belief
+simulation = RayCastingMap(solids)
+
 world = RayCastingMap(constructed_solids)
 solids_completion_times = np.array([s.completion_time for s in solids])
 
@@ -70,13 +77,22 @@ visApp.add_solid(vis_scan, "world")
 trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_ground_truth, "world")
 
-U_COV = np.diag([0.1, 0.05, 1e-25, np.radians(1.0)])
+visApp.add_scene("initial_condition","world")
+[visApp.add_solid(s,"initial_condition") for s in simulation.solids]
+visApp.redraw("initial_condition")
+visApp.setup_default_camera("initial_condition")
+dead_reck_vis_arrow = ArrowSolid("dead_reck_arrow", 1.0, drone.pose)
+visApp.add_solid(dead_reck_vis_arrow, "initial_condition")
+dead_reck_vis_trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
+visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
+
+U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])
 
 #measurements
-measurements = {'U' : [], 'Z' : []}
+measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}
 
 #ground truth
-gt_traj = []
+gt_traj = [drone.pose]
 
 #LOOP
 time.sleep(2)
@@ -92,6 +108,8 @@ for t, u in enumerate(actions):
 
     #update measurements
     gt_traj.append(drone.pose)
+    dead_reck_prev = measurements['dead_reck'][-1]
+    measurements['dead_reck'].append(compose_s(dead_reck_prev,u_noisy))
     measurements['U'].append(u_noisy)
     measurements['Z'].append(z)
     
@@ -103,6 +121,11 @@ for t, u in enumerate(actions):
     visApp.update_solid(trail_ground_truth, "world")
     visApp.redraw_all_scenes()
 
+    dead_reck_vis_arrow.update_geometry(measurements['dead_reck'][-1] - np.array([0,0,0.3,0.0])) #wierd offset required
+    dead_reck_vis_trail_est.update(measurements['dead_reck'][-1][:3].reshape(1,-1))
+    visApp.update_solid(dead_reck_vis_arrow, "initial_condition")
+    visApp.update_solid(dead_reck_vis_trail_est, "initial_condition")
+
 data = {}
 data['current_time'] = current_time
 data['solids_existence_dependence'] = solids_existence_dependence
@@ -113,6 +136,7 @@ data['measurements'] = measurements
 data['ground_truth'] = {'solids_completion_times': solids_completion_times,
                         'trajectory': np.array(gt_traj)}
 data['U_COV'] = U_COV
+data['constructed_solids_names'] = [s.name for s in constructed_solids]
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 file = os.path.join(dir_path, "25a_data.p")

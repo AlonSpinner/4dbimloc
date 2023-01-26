@@ -1,6 +1,6 @@
 from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.geometry.scan_matcher.scan_matcher import scan_match
-from bim4loc.existance_mapping.filters import exact2
+from bim4loc.existance_mapping.filters import exact_robust as existence_filter
 from ..utils import low_variance_sampler
 import numpy as np
 from bim4loc.sensors.sensors import Lidar
@@ -99,7 +99,7 @@ class RBPF():
                 particle_z_values, particle_z_ids, _, \
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
         
-            self.particle_beliefs[k], pz, self._particle_reservoirs[k] = exact2(self.particle_poses[k],
+            self.particle_beliefs[k], pz, self._particle_reservoirs[k] = existence_filter(self.particle_poses[k],
                                             self._simulation_solids,
                                             self.particle_beliefs[k].copy(), 
                                             self.weights[k],

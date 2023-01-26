@@ -6,7 +6,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.rbpf.tracking.exact import RBPF
+from bim4loc.rbpf.tracking.bimloc_partial import RBPF
 from bim4loc.geometry.pose2z import compose_s, s_from_Rt, T_from_s
 from bim4loc.random.multi_dim import gauss_fit
 from bim4loc.existance_mapping import filters as existence_filters

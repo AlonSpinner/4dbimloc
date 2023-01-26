@@ -24,12 +24,15 @@ class VisApp():
 
         self._app = gui.Application.instance
         self._app.initialize()
-        threading.Thread(target = self.run, name = 'app_thread').start() #executes the run method in a different thread
+        self._thread = threading.Thread(target = self.run, name = 'app_thread').start() #executes the run method in a different thread
         
         #wait for scene and window to be created. 
         #since no window, cant use _app_thread_finished()
         while len(self._scenes) == 0:
             pass 
+
+    def quit(self) -> None:
+        self._app.quit()
 
     def run(self) -> None:
         self.add_window("world")
