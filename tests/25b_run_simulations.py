@@ -3,10 +3,12 @@ from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
+from bim4loc.geometry import pose2z
 import time
 import logging
 import pickle
 import os
+from copy import deepcopy
 from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_0
 from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_1
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_2
@@ -62,7 +64,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
             initial_beliefs,
             data['solids_existence_dependence'],
             data['solids_varaition_dependence'],
-            data['U_COV'],
+            data['U_COV'] * 1e-25,
             reservoir_decay_rate = 0.2)
 
     #DRAW
@@ -118,9 +120,10 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
         #update solids
         sim_vis_particles.update(rbpf.particle_poses, rbpf.weights)
         simulation.update_solids_beliefs(expected_belief_map)
+        perfect_traj_simulation.update_solids_beliefs(rbpf_perfect.particle_beliefs[0])
         sim_vis_trail_est.update(pose_mu[:3].reshape(1,-1))
         drone.update_pose(rbpf_perfect.particle_poses[0])
-        z_p = drone.sensor.scan_to_points(z)
+        z_p = pose2z.transform_from(drone.pose, drone.sensor.scan_to_points(z))
         vis_scan.update(drone.pose[:3], z_p.T)
         trail_ground_truth.update(drone.pose[:3].reshape(1,-1))
         

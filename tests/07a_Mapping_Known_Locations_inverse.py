@@ -79,7 +79,7 @@ for t,u in enumerate(actions):
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
     # simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
 
-    filters.approx(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
+    filters.approx_logodds(logodds_beliefs, z, simulated_z, simulated_z_ids, sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(logodds2p(logodds_beliefs))
     
     pcd_scan.update(z_p.T)

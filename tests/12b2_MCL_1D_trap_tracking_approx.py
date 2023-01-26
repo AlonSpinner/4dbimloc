@@ -6,7 +6,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.random.one_dim import Gaussian
-from bim4loc.rbpf.tracking.approx import RBPF
+from bim4loc.rbpf.tracking.bimloc_logodds import RBPF
 import time
 import logging
 from copy import deepcopy

@@ -76,7 +76,7 @@ time.sleep(1)
 dt = 0.0
 start_time = time.time()
 for t,u in enumerate(actions):
-    keyboard.wait('space')
+    # keyboard.wait('space')
     step_start = time.time()
     
     drone.move(u)
@@ -91,7 +91,7 @@ for t,u in enumerate(actions):
     # simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(test_pose, simulation, 10, noisy = False)
 
 
-    filters.exact2(beliefs, z, simulated_z, simulated_z_ids, 
+    filters.exact_simple(beliefs, z, simulated_z, simulated_z_ids, 
                     sensor.std, sensor.max_range)
     simulation.update_solids_beliefs(beliefs)
     

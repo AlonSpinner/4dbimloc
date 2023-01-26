@@ -99,7 +99,7 @@ sense_fcn = lambda x: simulated_sensor.sense(x, simulation, n_hits = 5, noisy = 
 
 rbpf = RBPF(sense_fcn, 
             simulated_sensor.std, simulated_sensor.max_range,
-            map_bounds_min, map_bounds_max, resample_rate = 3)
+            map_bounds_min, map_bounds_max)
 
 #LOOP
 time.sleep(2)
