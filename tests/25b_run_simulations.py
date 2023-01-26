@@ -58,7 +58,14 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
                 data['U_COV'],
                 reservoir_decay_rate = 0.2)
 
-    dead_reckoning = pose0
+    rbpf_perfect = RBPF(simulation, 
+            simulated_sensor,
+            np.array([pose0]),
+            initial_beliefs,
+            data['solids_existence_dependence'],
+            data['solids_varaition_dependence'],
+            data['U_COV'],
+            reservoir_decay_rate = 0.2)
 
     #DRAW
     #--------------INITIAL CONDITION AND DEAD RECKONING------------
@@ -81,7 +88,8 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
     pose_mu, pose_cov = rbpf.get_expect_pose()
     expected_belief_map = rbpf.get_expected_belief_map()
     results_rbpf = {'pose_mu': [pose_mu],'pose_cov': [pose_cov],
-                    'expected_belief_map': [expected_belief_map]}
+                    'expected_belief_map': [expected_belief_map],
+                    'perfect_traj_belief_map': [expected_belief_map]}
 
     #LOOP
     time.sleep(2)
@@ -91,10 +99,15 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
 
+        #-----------------------------perfect trajectory---------------------------
+        rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
+        rbpf_perfect.step(np.zeros(4), z)
+
         #-------------------------------store results------------------------------
         results_rbpf['pose_mu'].append(pose_mu)
         results_rbpf['pose_cov'].append(pose_cov)
         results_rbpf['expected_belief_map'].append(expected_belief_map)
+        results_rbpf['perfect_traj_belief_map'].append(rbpf_perfect.particle_beliefs[0])
 
         #-----------------------------------draw-----------------------------------
         #update solids
@@ -113,6 +126,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
     results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])
     results_rbpf["pose_cov"] = np.array(results_rbpf["pose_cov"])
+    results_rbpf['perfect_traj_belief_map'] = np.array(results_rbpf['perfect_traj_belief_map'])
 
     results[rbpf_enum] = results_rbpf
     visApp.quit()
