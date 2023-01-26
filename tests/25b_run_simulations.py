@@ -1,6 +1,7 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid
+from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid
+from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 import time
 import logging
@@ -17,27 +18,24 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(file, "rb")).load()
 
-solids = ifc_converter(data['IFC_PATH'])
-
-constructed_solids = []
-for s in solids:
-    if s.name in data['ground_truth']['constructed_solids_names']:
-        constructed_solids.append(s.clone())
-
 results = {0: {}, 1: {}, 2: {}}
 for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
-    solids = ifc_converter(data['IFC_PATH'])
-
-    initial_beliefs = np.zeros(len(solids))
-    for i, s in enumerate(solids):
+    simulation_solids = ifc_converter(data['IFC_PATH'])
+    perfect_traj_solids = ifc_converter(data['IFC_PATH'])
+    
+    initial_beliefs = np.zeros(len(simulation_solids))
+    for i, s in enumerate(simulation_solids):
         s_simulation_belief = s.schedule.cdf(data['current_time'])
         s.set_existance_belief_and_shader(s_simulation_belief)
         
+        perfect_traj_solids[i] = s.clone()
+        
         initial_beliefs[i] = s_simulation_belief
 
-    simulation = RayCastingMap(solids)
+    simulation = RayCastingMap(simulation_solids)
+    perfect_traj_simulation = RayCastingMap(perfect_traj_solids)
 
     #ESTIMATION INITALIZATION
     pose0 = data['ground_truth']['trajectory'][0]
@@ -58,7 +56,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
                 data['U_COV'],
                 reservoir_decay_rate = 0.2)
 
-    rbpf_perfect = RBPF(simulation, 
+    rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
             np.array([pose0]),
             initial_beliefs,
@@ -68,11 +66,18 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
             reservoir_decay_rate = 0.2)
 
     #DRAW
-    #--------------INITIAL CONDITION AND DEAD RECKONING------------
+    #--------------INITIAL CONDITION AND PERFECT MAPPING------------
+    drone = Drone(pose = pose0)
+    drone.mount_sensor(data["sensor"])
     visApp = VisApp()
-    [visApp.add_solid(s,"world") for s in constructed_solids]
+    [visApp.add_solid(s,"world") for s in perfect_traj_simulation.solids]
     visApp.redraw("world")
     visApp.setup_default_camera("world")
+    visApp.add_solid(drone.solid, "world")
+    vis_scan = ScanSolid("scan")
+    visApp.add_solid(vis_scan, "world")
+    trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
+    visApp.add_solid(trail_ground_truth, "world")
 
     #----------------------METHOD-------------------------------
     visApp.add_scene("simulation","world")
@@ -114,14 +119,23 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
         sim_vis_particles.update(rbpf.particle_poses, rbpf.weights)
         simulation.update_solids_beliefs(expected_belief_map)
         sim_vis_trail_est.update(pose_mu[:3].reshape(1,-1))
+        drone.update_pose(rbpf_perfect.particle_poses[0])
+        z_p = drone.sensor.scan_to_points(z)
+        vis_scan.update(drone.pose[:3], z_p.T)
+        trail_ground_truth.update(drone.pose[:3].reshape(1,-1))
+        
 
         #updating visApp
+        [visApp.update_solid(s,"world") for s in perfect_traj_simulation.solids]
+        visApp.update_solid(vis_scan, "world")
+        visApp.update_solid(drone.solid, "world")
+        visApp.update_solid(trail_ground_truth, "world")
         visApp.update_solid(sim_vis_particles.lines, "simulation")
         visApp.update_solid(sim_vis_particles.tails, "simulation")
         [visApp.update_solid(s,"simulation") for s in simulation.solids]
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
-        
+
     #--------------------SAVE RESULTS--------------------
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
     results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])

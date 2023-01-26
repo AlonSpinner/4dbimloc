@@ -24,6 +24,10 @@ class Drone:
         self.pose = pose
         self.solid.update_geometry(self.pose)
 
+    def update_pose(self, pose : np.ndarray):
+        self.pose = pose
+        self.solid.update_geometry(self.pose)
+
     def mount_sensor(self, sensor : Lidar):
         #currently assume sensor pose is identical to agent pose
         self.sensor : Lidar = sensor
