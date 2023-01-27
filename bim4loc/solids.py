@@ -37,6 +37,7 @@ class IfcSolid(o3dSolid):
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
     ifc_type : str = ''
+    existence_dependence : list[str] = []
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -66,7 +67,8 @@ class IfcSolid(o3dSolid):
             material = mat,
             schedule = deepcopy(self.schedule),
             ifc_color = self.ifc_color.copy(),
-            ifc_type = self.ifc_type #str is immutable
+            ifc_type = self.ifc_type, #str is immutable
+            existence_dependence = self.existence_dependence.copy()
             )
 
 class Label3D():
@@ -423,3 +425,12 @@ def compute_variation_dependence(solids : list[IfcSolid]) -> list[np.ndarray]:
                 solid_variations.append(i)
         solids_varaition_dependence.append(np.array(solid_variations))
     return solids_varaition_dependence
+
+def compute_existence_dependece(solids):
+    solids_existence_dependence = {}
+    for i, s_i in enumerate(solids):
+        if s_i.existence_dependence is False: continue
+        for j, s_j in enumerate(solids):
+            if s_i.existence_dependence == s_j.name:
+                solids_existence_dependence[i] = s_j
+    return solids_existence_dependence

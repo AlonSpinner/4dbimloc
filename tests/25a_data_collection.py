@@ -20,43 +20,11 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 
-#--------------------------------------create solids_varaition_dependence----------------------------
-electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
-duplicate_solids = []
-#create new solids and add the appropiate translations
-translations = [-1, 1]
-for s in electric_boards:
-    for t in translations:
-        s_new = s.clone()
-        verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
-        s_new.set_vertices(verts)
-        solids.append(s_new)
-        duplicate_solids.append(len(solids))
-solids_varaition_dependence = compute_variation_dependence(solids)
-
-#--------------------------------------create solids_existence_dependence----------------------------
-#define existence dependence
-ifc_existence_dependence = {'a' : 'b',
-                            'c' : 'd',
-                            'e' : 'f',
-                            'g' : 'h'}
-solids_existence_dependence = {}
-for i, s_i in enumerate(solids):
-    if s_i.existence_dependence is False: continue
-    for j, s_j in enumerate(solids):
-        if s_i.existence_dependence == s_j.name:
-            solids_existence_dependence[s_i] = s_j
-solids_existence_dependence = {40 : 14, 41: 14, 42: 14,
-                               37: 21, 48: 21, 47: 21,
-                               38: 1, 45: 1, 46: 1,
-                               39: 2, 43: 2, 44: 2}
 constructed_solids = []
 for i, s in enumerate(solids):
-    if i in duplicate_solids:
-        continue
     s.set_random_completion_time()
     
-    if s.completion_time < current_time: #think if solid should be constructed
+    if s.completion_time < current_time:
         if i in solids_existence_dependence.keys():
             if solids[solids_existence_dependence[i]].completion_time < current_time: #assumes order...
                 constructed_solids.append(s.clone())        

@@ -25,6 +25,34 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
+
+    #--------------------------------------create solids_varaition_dependence----------------------------
+    electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
+    duplicate_solids = []
+    #create new solids and add the appropiate translations
+    translations = [-1, 1]
+    for s in electric_boards:
+        for t in translations:
+            s_new = s.clone()
+            verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
+            s_new.set_vertices(verts)
+            solids.append(s_new)
+            duplicate_solids.append(len(solids))
+    solids_varaition_dependence = compute_variation_dependence(solids)
+
+    #--------------------------------------create solids_existence_dependence----------------------------
+    #define existence dependence
+    ifc_existence_dependence = {'a' : 'b',
+                                'c' : 'd',
+                                'e' : 'f',
+                                'g' : 'h'}
+    solids_existence_dependence = {}
+    for i, s_i in enumerate(solids):
+        if s_i.existence_dependence is False: continue
+        for j, s_j in enumerate(solids):
+            if s_i.existence_dependence == s_j.name:
+                solids_existence_dependence[s_i] = s_j
+
     perfect_traj_solids = ifc_converter(data['IFC_PATH'])
     
     initial_beliefs = np.zeros(len(simulation_solids))
