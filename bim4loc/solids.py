@@ -22,11 +22,21 @@ class o3dSolid:
     def update_alpha(self, alpha : float) -> None:
         self.material.base_color = np.hstack((self.material.base_color[:3], max(alpha,self._min_alpha)))
 
+    def get_vertices(self) -> np.ndarray:
+        return np.asarray(self.geometry.vertices)
+    
+    def set_vertices(self, vertices : np.ndarray) -> None:
+        '''
+        vertices ~ mx3 array
+        '''
+        self.geometry.vertices = o3d.utility.Vector3dVector(vertices)
+
 @dataclass()
 class IfcSolid(o3dSolid):
     schedule : r_1d.Distribution1D
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
+    ifc_type : str = ''
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -55,7 +65,8 @@ class IfcSolid(o3dSolid):
             geometry = mesh,
             material = mat,
             schedule = deepcopy(self.schedule),
-            ifc_color = self.ifc_color.copy(),                                
+            ifc_color = self.ifc_color.copy(),
+            ifc_type = self.ifc_type #str is immutable
             )
 
 class Label3D():
@@ -349,6 +360,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
             m = shape.geometry.materials
             ifc_color = np.array(m[0].diffuse)
             element = ifc.by_guid(shape.guid)
+            ifc_type = element.is_a()
                       
             verts = shape.geometry.verts # X Y Z of vertices in flattened list e.g. [v1x, v1y, v1z, v2x, v2y, v2z, ...]
             verts =  o3d.utility.Vector3dVector(np.array(verts).reshape((-1,3)))
@@ -368,7 +380,8 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),
-                                ifc_color = ifc_color,                                
+                                ifc_color = ifc_color,
+                                ifc_type = ifc_type                                
                                 ))
 
     return solids
@@ -398,3 +411,15 @@ def weights2rgb(weights):
 
     # weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
     # return CM_MAP(weights)[:,:3]
+
+def compute_variation_dependence(solids : list[IfcSolid]) -> list[np.ndarray]:
+    solids_names = [s.name for s in solids]
+    dupicate_names = {x for x in solids_names if solids_names.count(x) > 1}
+    solids_varaition_dependence = []
+    for name in dupicate_names:
+        solid_variations = []
+        for i, s_n in enumerate(solids_names):
+            if s_n == name:
+                solid_variations.append(i)
+        solids_varaition_dependence.append(np.array(solid_variations))
+    return solids_varaition_dependence

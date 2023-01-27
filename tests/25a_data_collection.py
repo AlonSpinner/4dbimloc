@@ -1,7 +1,7 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ARENA_PLUS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid
+from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, compute_variation_dependence
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
@@ -10,6 +10,7 @@ import time
 import logging
 import pickle
 import os
+import open3d as o3d
 
 np.random.seed(14)
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
@@ -19,17 +20,37 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 
+#--------------------------------------create solids_varaition_dependence----------------------------
+electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
+duplicate_solids = []
+#create new solids and add the appropiate translations
+translations = [-1, 1]
+for s in electric_boards:
+    for t in translations:
+        s_new = s.clone()
+        verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
+        s_new.set_vertices(verts)
+        solids.append(s_new)
+        duplicate_solids.append(len(solids))
+solids_varaition_dependence = compute_variation_dependence(solids)
+
+#--------------------------------------create solids_existence_dependence----------------------------
+#define existence dependence
+ifc_existence_dependence = {'a' : 'b',
+                            'c' : 'd',
+                            'e' : 'f',
+                            'g' : 'h'}
+solids_existence_dependence = {}
+for i, s_i in enumerate(solids):
+    if s_i.existence_dependence is False: continue
+    for j, s_j in enumerate(solids):
+        if s_i.existence_dependence == s_j.name:
+            solids_existence_dependence[s_i] = s_j
 solids_existence_dependence = {40 : 14, 41: 14, 42: 14,
                                37: 21, 48: 21, 47: 21,
                                38: 1, 45: 1, 46: 1,
                                39: 2, 43: 2, 44: 2}
-solids_varaition_dependence = np.array([[40, 41, 42], 
-                                        [37, 48, 47], 
-                                        [38, 45, 46], 
-                                        [39, 43, 44]], dtype = int)
-
 constructed_solids = []
-duplicate_solids = solids_varaition_dependence[:, 1:].flatten()
 for i, s in enumerate(solids):
     if i in duplicate_solids:
         continue
