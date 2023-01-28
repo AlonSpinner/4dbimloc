@@ -19,7 +19,8 @@ class RBPF():
                 solids_existence_dependence : dict[int,int],
                 solids_varaition_dependence : np.ndarray,
                 U_COV : np.ndarray,
-                max_steps_to_resample : int = 5):
+                max_steps_to_resample : int = 5,
+                reservoir_decay_rate : float = 0.3):
         '''
         PARAMTERS
         sense_fcn - NUMBA JITED NO PYTHON FUNCTION 
@@ -49,7 +50,8 @@ class RBPF():
         self._solids_existence_dependence = solids_existence_dependence
         self._solids_varaition_dependence = solids_varaition_dependence
 
-        self._max_steps_to_resample = 5
+        self._max_steps_to_resample = max_steps_to_resample
+        self._reservoir_decay_rate = reservoir_decay_rate
         self._step_counter = 0
 
     def N_eff(self):
@@ -63,10 +65,6 @@ class RBPF():
         return mu, cov
 
     def decay_reservoirs(self):
-        #adjustable decay rate? N_eff is big when the spread is big
-        #when the spread is big, we want a low decay rate
-        self._reservoir_decay_rate = 1/self.N_eff()
-        logging.info(f'N_eff is {self.N_eff()} and decay rate is {self._reservoir_decay_rate}')
         self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
 
     def resample(self):
@@ -74,6 +72,7 @@ class RBPF():
                                                                     self.particle_poses, 
                                                                     self.particle_beliefs, 
                                                                     self._N)
+        logging.info('resampled')
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
@@ -150,6 +149,5 @@ class RBPF():
 
         #resample
         if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
-            logging.info('resampled')
             self.resample()
         self._step_counter += 1

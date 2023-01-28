@@ -10,11 +10,11 @@ import time
 import logging
 import pickle
 import os
-from bim4loc.rbpf.tracking.bimloc_robust import RBPF as RBPF_1
-from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as RBPF_2
-from bim4loc.rbpf.tracking.bimloc_simple import RBPF as RBPF_3
-# from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as RBPF_4
-from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_5
+from bim4loc.rbpf.tracking.bimloc_robust import RBPF as robust
+from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
+from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
+# from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
+from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
@@ -24,8 +24,9 @@ yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
-results = {i : {} for i in range(1,5)}
-for (rbpf_enum, RBPF) in zip(results.keys(),[RBPF_1, RBPF_2, RBPF_3, RBPF_5]):
+rbpf_methods = [robust, semi_robust, simple, logodds]
+results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
+for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
@@ -63,7 +64,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),[RBPF_1, RBPF_2, RBPF_3, RBPF_5]):
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
-                max_steps_to_resample = 5)
+                max_steps_to_resample = 5,
+                reservoir_decay_rate = 0.3)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,

@@ -82,6 +82,5 @@ class RBPF(RBPF_FULL):
 
         #resample
         if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
-            logging.info('resampled')
             self.resample()
         self._step_counter += 1
