@@ -108,11 +108,12 @@ for rbpf_enum, RBPF in enumerate([RBPF_2]):
     #LOOP
     time.sleep(2)
     for t, (u,z) in enumerate(zip(data['measurements']['U'],data['measurements']['Z'])):
+
         #-----------------------------------estimate-------------------------------
         rbpf.step(u, z)
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
-        if t % 2 == 0:
+        if t % 3 == 0:
             rbpf.resample()
 
         #-----------------------------perfect trajectory---------------------------

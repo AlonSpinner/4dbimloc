@@ -170,7 +170,7 @@ def exact_robust(pose : np.ndarray,
 
     return beliefs, p_z, particle_reservoir
 
-@njit(parallel = True, cache = True)
+# @njit(parallel = True, cache = True)
 def approx_logodds(logodds_beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
@@ -200,8 +200,8 @@ def approx_logodds(logodds_beliefs : np.ndarray,
     N_maxhits = simulated_z.shape[1]
 
     T = 3 * sensor_std
-    L09 = p2logodds(0.9)
-    L01 = p2logodds(0.1)
+    L09 = p2logodds(0.8)
+    L01 = p2logodds(0.2)
 
     for i in prange(N_rays):
         wz_i = world_z[i]
@@ -211,7 +211,7 @@ def approx_logodds(logodds_beliefs : np.ndarray,
         for j in prange(N_maxhits):
             sz_ij = sz_i[j]
             szid_ij = szid_i[j]
-            if szid_ij == NO_HIT or sz_ij > sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+            if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
             if wz_i < sz_ij - T: #wz had hit something before bzid
                 break

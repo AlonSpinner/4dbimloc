@@ -116,7 +116,7 @@ class RBPF():
                                             self.particle_beliefs[k], 
                                 self._sensor.std, self._sensor.max_range)
 
-            logodds_particle_beliefs = existence_filter(p2logodds(self.particle_beliefs[k]), 
+            logodds_particle_beliefs = existence_filter(p2logodds(self.particle_beliefs[k].copy()), 
                                         z, 
                                         particle_z_values, 
                                         particle_z_ids, 
