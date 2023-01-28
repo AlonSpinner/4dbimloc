@@ -23,7 +23,7 @@ data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
 results = {0: {}, 1: {}, 2: {}}
-for rbpf_enum, RBPF in enumerate([RBPF_2]):
+for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
@@ -113,8 +113,8 @@ for rbpf_enum, RBPF in enumerate([RBPF_2]):
         rbpf.step(u, z)
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
-        if t % 3 == 0:
-            rbpf.resample()
+        # if t % 3 == 0:
+        #     rbpf.resample()
 
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
@@ -124,7 +124,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_2]):
         results_rbpf['pose_mu'].append(pose_mu)
         results_rbpf['pose_cov'].append(pose_cov)
         results_rbpf['expected_belief_map'].append(expected_belief_map)
-        results_rbpf['perfect_traj_belief_map'].append(rbpf_perfect.particle_beliefs[0])
+        results_rbpf['perfect_traj_belief_map'].append(rbpf_perfect.particle_beliefs[0].copy())
 
         #-----------------------------------draw-----------------------------------
         #update solids
