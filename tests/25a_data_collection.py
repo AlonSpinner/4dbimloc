@@ -12,7 +12,7 @@ import logging
 import pickle
 import os
 
-np.random.seed(10) #14
+np.random.seed(14) #10 is rough
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 dir_path = os.path.dirname(os.path.realpath(__file__))
-yaml_file = os.path.join(dir_path, "25_existence_dependence.yaml")
+yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 update_existence_dependence_from_yaml(solids, yaml_file)
 constructed_solids = []
 for i, s in enumerate(solids):
@@ -74,7 +74,7 @@ visApp.add_solid(dead_reck_vis_arrow, "initial_condition")
 dead_reck_vis_trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
 visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
 
-U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])
+U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])/2
 
 #measurements
 measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}

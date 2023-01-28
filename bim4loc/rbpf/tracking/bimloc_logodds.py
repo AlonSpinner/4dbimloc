@@ -62,6 +62,12 @@ class RBPF():
     def decay_reservoirs(self):
         self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
 
+    def resample(self):
+        self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
+                                                                    self.particle_poses, 
+                                                                    self.particle_beliefs, 
+                                                                    self._N)
+
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
@@ -130,7 +136,4 @@ class RBPF():
 
         #resample
         if self.N_eff() < self._N:
-            self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
-                                                                    self.particle_poses, 
-                                                                    self.particle_beliefs, 
-                                                                    self._N)
+            self.resample()

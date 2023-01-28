@@ -1,10 +1,11 @@
 import open3d.visualization as visualization
 import open3d.visualization.gui as gui
-from bim4loc.solids import o3dSolid, Label3D
+from bim4loc.solids import o3dSolid, Label3D, IfcSolid
 import threading
 import logging
 import numpy as np
 from functools import partial
+from typing import Union, Optional
 
 # gui.Application : http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Application.html#open3d.visualization.gui.Application
 # gui.Window :  http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Window.html?highlight=gui%20application%20instance%20create_window
@@ -232,9 +233,12 @@ class VisApp():
         window = self._get_window(scene_name)
         self._app.post_to_main_thread(window, partial(_add_text,scene_widget, label))
 
-    def add_solid(self, solid : o3dSolid, scene_name = "world", label = False) -> None:
-        def _add_solid(scene_widget, solid : o3dSolid) -> None:
-            scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
+    def add_solid(self, solid :  Optional[Union[o3dSolid, IfcSolid]], scene_name = "world", label = False) -> None:
+        def _add_solid(scene_widget, solid : Optional[Union[o3dSolid, IfcSolid]]) -> None:
+            if hasattr(solid, 'vis_name'):
+                scene_widget.scene.add_geometry(solid.vis_name, solid.geometry, solid.material)
+            else:
+                scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
             
         scene_widget = self._scenes[scene_name]
         window = self._get_window(scene_name)
@@ -248,15 +252,24 @@ class VisApp():
             location = solid.geometry.get_center() + np.random.rand(3) * 0.1
             self.add_text(Label3D(text, location), scene_name)
 
-    def update_solid(self, solid : o3dSolid, scene_name = "world") -> None:
+    def update_solid(self, solid : Optional[Union[o3dSolid, IfcSolid]], scene_name = "world") -> None:
         scene_widget = self._scenes[scene_name]
-        if not scene_widget.scene.has_geometry(solid.name):
-            logging.warning(f'geometry "{solid.name}" does not exist in scene {scene_name}')
-            return
+        if hasattr(solid, 'vis_name'):
+            if not scene_widget.scene.has_geometry(solid.vis_name):
+                logging.warning(f'geometry "{solid.vis_name}" does not exist in scene {scene_name}')
+                return
+        else:
+            if not scene_widget.scene.has_geometry(solid.name):
+                logging.warning(f'geometry "{solid.name}" does not exist in scene {scene_name}')
+                return
 
-        def _update_solid(scene_widget, solid: o3dSolid) -> None:
-            scene_widget.scene.remove_geometry(solid.name)
-            scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material)
+        def _update_solid(scene_widget, solid:  Optional[Union[o3dSolid, IfcSolid]]) -> None:
+            if hasattr(solid, 'vis_name'):
+                scene_widget.scene.remove_geometry(solid.vis_name)
+                scene_widget.scene.add_geometry(solid.vis_name, solid.geometry, solid.material)
+            else:
+                scene_widget.scene.remove_geometry(solid.name)
+                scene_widget.scene.add_geometry(solid.name, solid.geometry, solid.material) 
 
             #only works for points clouds:
             # scene_widget.scene.scene.update_geometry(solid.name, solid.geometry, solid.material)

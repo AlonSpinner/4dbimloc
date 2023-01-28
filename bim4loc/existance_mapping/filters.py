@@ -161,8 +161,8 @@ def exact_robust(pose : np.ndarray,
             #     plt.show()
             
             a = particle_weight #or 0.35
-            beliefs[i] = (new_element_belief * sum_element_weights * (1 - a) + \
-                        beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights * ( 1 - a) + a*particle_reservoir[i] + EPS)
+            beliefs[i] = (new_element_belief * sum_element_weights + \
+                        beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i] + EPS)
             particle_reservoir[i] += sum_element_weights
             
             # if beliefs[i] > 0.90:

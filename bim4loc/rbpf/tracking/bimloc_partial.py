@@ -76,7 +76,4 @@ class RBPF(RBPF_FULL):
 
         #resample
         if self.N_eff() < self._N:
-            self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
-                                                                    self.particle_poses, 
-                                                                    self.particle_beliefs, 
-                                                                    self._N)
+            self.resample()

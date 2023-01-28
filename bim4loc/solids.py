@@ -40,6 +40,7 @@ class IfcSolid(o3dSolid):
     ifc_color : np.ndarray = np.array([0, 0, 0])
     ifc_type : str = ''
     existence_dependence : list[str] = field(default_factory=list)  #cant have mutables...
+    vis_name : str = ''
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -70,7 +71,8 @@ class IfcSolid(o3dSolid):
             schedule = deepcopy(self.schedule),
             ifc_color = self.ifc_color.copy(),
             ifc_type = self.ifc_type, #str is immutable
-            existence_dependence = self.existence_dependence.copy()
+            existence_dependence = self.existence_dependence.copy(),
+            vis_name = self.vis_name
             )
 
 class Label3D():
@@ -381,6 +383,7 @@ def ifc_converter(ifc_path) -> list[IfcSolid]:
 
             solids.append(IfcSolid(
                                 name = element.GlobalId,
+                                vis_name = element.GlobalId,
                                 geometry = mesh,
                                 material = mat,
                                 schedule = description2schedule(element.Description),
@@ -416,15 +419,33 @@ def weights2rgb(weights):
     # weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
     # return CM_MAP(weights)[:,:3]
 
-def update_existence_dependence_from_yaml(solids : list[IfcSolid], yaml_filename : str) -> dict[str,str]:
+def update_existence_dependence_from_yaml(solids : list[IfcSolid], yaml_filename : str):
     with open(yaml_filename, "r") as stream:
         try:
-            existence_dependence = yaml.safe_load(stream)
+            data_dict = yaml.safe_load(stream)
+            existence_dependence = data_dict['existence_dependence']
         except yaml.YAMLError as exc:
             return (exc)
     solids_hash = {s.name: s for s in solids}
     for key, val in existence_dependence.items():
         solids_hash[key].existence_dependence.append(solids_hash[val].name)
+
+def add_variations_from_yaml(solids : list[IfcSolid], yaml_filename : str):
+    with open(yaml_filename, "r") as stream:
+        try:
+            data_dict = yaml.safe_load(stream)
+            variations = data_dict['variations']
+        except yaml.YAMLError as exc:
+            return (exc)
+    solids_hash = {s.name: s for s in solids}
+    for key, val in variations.items():
+        base_solid = solids_hash[key]
+        for i, t in enumerate(val):
+            new_solid = base_solid.clone()
+            verts = base_solid.get_vertices() + t
+            new_solid.set_vertices(verts)
+            new_solid.vis_name = base_solid.vis_name + '_' + str(i)
+            solids.append(new_solid)
 
 def remove_constructed_solids_that_cant_exist(constructed_solids : list[IfcSolid]):
     def can_exist(solid_name : str, solids_hash : dict[str,IfcSolid]):

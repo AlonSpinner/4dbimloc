@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, \
-                            update_existence_dependence_from_yaml, \
+                            update_existence_dependence_from_yaml, add_variations_from_yaml, \
                             compute_variation_dependence_for_rbpf, compute_existence_dependece_for_rbpf
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
@@ -10,55 +10,38 @@ import time
 import logging
 import pickle
 import os
-from copy import deepcopy
 from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_0
 from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_1
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_2
-import yaml
-
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-existence_dependence_yaml_file = os.path.join(dir_path, "25_existence_dependence.yaml")
+yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
 results = {0: {}, 1: {}, 2: {}}
-for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
+for rbpf_enum, RBPF in enumerate([RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
-    update_existence_dependence_from_yaml(simulation_solids, existence_dependence_yaml_file)
+    add_variations_from_yaml(simulation_solids, yaml_file)
+    update_existence_dependence_from_yaml(simulation_solids, yaml_file)
 
-    #add solids_varaition from yaml file
-    # electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
-    # duplicate_solids = []
-    # #create new solids and add the appropiate translations
-    # translations = [-1, 1]
-    # for s in electric_boards:
-    #     for t in translations:
-    #         s_new = s.clone()
-    #         verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
-    #         s_new.set_vertices(verts)
-    #         solids.append(s_new)
-    #         duplicate_solids.append(len(solids))
-    
     #compute existence and variation dependence structures for rbpf
     solids_varaition_dependence = compute_variation_dependence_for_rbpf(simulation_solids)
     solids_existence_dependence = compute_existence_dependece_for_rbpf(simulation_solids)
 
-    perfect_traj_solids = ifc_converter(data['IFC_PATH'])
     
     initial_beliefs = np.zeros(len(simulation_solids))
     for i, s in enumerate(simulation_solids):
         s_simulation_belief = s.schedule.cdf(data['current_time'])
         s.set_existance_belief_and_shader(s_simulation_belief)
-        
-        perfect_traj_solids[i] = s.clone()
-        
         initial_beliefs[i] = s_simulation_belief
+
+    perfect_traj_solids = [s.clone() for s in simulation_solids]
 
     simulation = RayCastingMap(simulation_solids)
     perfect_traj_simulation = RayCastingMap(perfect_traj_solids)
@@ -77,8 +60,8 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
                 simulated_sensor,
                 initial_particle_poses,
                 initial_beliefs,
-                data['solids_existence_dependence'],
-                data['solids_varaition_dependence'],
+                solids_existence_dependence,
+                solids_varaition_dependence,
                 data['U_COV'],
                 reservoir_decay_rate = 0.2)
 
@@ -86,8 +69,8 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
             simulated_sensor,
             np.array([pose0]),
             initial_beliefs,
-            data['solids_existence_dependence'],
-            data['solids_varaition_dependence'],
+            solids_existence_dependence,
+            solids_varaition_dependence,
             data['U_COV'] * 1e-25,
             reservoir_decay_rate = 0.2)
 
@@ -129,6 +112,8 @@ for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
         rbpf.step(u, z)
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
+        if t % 2 == 0:
+            rbpf.resample()
 
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
