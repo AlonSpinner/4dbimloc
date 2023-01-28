@@ -1,6 +1,8 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid
+from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, \
+                            update_existence_dependence_from_yaml, \
+                            compute_variation_dependence_for_rbpf, compute_existence_dependece_for_rbpf
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry import pose2z
@@ -12,46 +14,40 @@ from copy import deepcopy
 from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_0
 from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_1
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_2
+import yaml
+
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path, "25a_data.p")
-data = pickle.Unpickler(open(file, "rb")).load()
+existence_dependence_yaml_file = os.path.join(dir_path, "25_existence_dependence.yaml")
+data_file = os.path.join(dir_path, "25a_data.p")
+data = pickle.Unpickler(open(data_file, "rb")).load()
 
 results = {0: {}, 1: {}, 2: {}}
 for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
+    update_existence_dependence_from_yaml(simulation_solids, existence_dependence_yaml_file)
 
-    #--------------------------------------create solids_varaition_dependence----------------------------
-    electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
-    duplicate_solids = []
-    #create new solids and add the appropiate translations
-    translations = [-1, 1]
-    for s in electric_boards:
-        for t in translations:
-            s_new = s.clone()
-            verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
-            s_new.set_vertices(verts)
-            solids.append(s_new)
-            duplicate_solids.append(len(solids))
-    solids_varaition_dependence = compute_variation_dependence(solids)
-
-    #--------------------------------------create solids_existence_dependence----------------------------
-    #define existence dependence
-    ifc_existence_dependence = {'a' : 'b',
-                                'c' : 'd',
-                                'e' : 'f',
-                                'g' : 'h'}
-    solids_existence_dependence = {}
-    for i, s_i in enumerate(solids):
-        if s_i.existence_dependence is False: continue
-        for j, s_j in enumerate(solids):
-            if s_i.existence_dependence == s_j.name:
-                solids_existence_dependence[s_i] = s_j
+    #add solids_varaition from yaml file
+    # electric_boards = [s for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
+    # duplicate_solids = []
+    # #create new solids and add the appropiate translations
+    # translations = [-1, 1]
+    # for s in electric_boards:
+    #     for t in translations:
+    #         s_new = s.clone()
+    #         verts = s_new.get_vertices() + np.array([0.0,0.0,0.1]) * t
+    #         s_new.set_vertices(verts)
+    #         solids.append(s_new)
+    #         duplicate_solids.append(len(solids))
+    
+    #compute existence and variation dependence structures for rbpf
+    solids_varaition_dependence = compute_variation_dependence_for_rbpf(simulation_solids)
+    solids_existence_dependence = compute_existence_dependece_for_rbpf(simulation_solids)
 
     perfect_traj_solids = ifc_converter(data['IFC_PATH'])
     

@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_ARENA_PLUS_PATH as IFC_PATH
+from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter
 import logging

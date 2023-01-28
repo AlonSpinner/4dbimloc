@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
 from numpy.polynomial import polyutils
@@ -9,8 +9,10 @@ from bim4loc.geometry.pose2z import compose_s_array, T_from_s
 from importlib import import_module
 from copy import deepcopy
 from typing import Literal
+import yaml
 import matplotlib.colors as colors
 from matplotlib import cm
+
 
 @dataclass(frozen = False)
 class o3dSolid:
@@ -37,7 +39,7 @@ class IfcSolid(o3dSolid):
     completion_time : float = 0.0
     ifc_color : np.ndarray = np.array([0, 0, 0])
     ifc_type : str = ''
-    existence_dependence : list[str] = []
+    existence_dependence : list[str] = field(default_factory=list)  #cant have mutables...
     
     def set_random_completion_time(self) -> None:
         s = self.schedule.sample()
@@ -414,7 +416,35 @@ def weights2rgb(weights):
     # weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
     # return CM_MAP(weights)[:,:3]
 
-def compute_variation_dependence(solids : list[IfcSolid]) -> list[np.ndarray]:
+def update_existence_dependence_from_yaml(solids : list[IfcSolid], yaml_filename : str) -> dict[str,str]:
+    with open(yaml_filename, "r") as stream:
+        try:
+            existence_dependence = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            return (exc)
+    solids_hash = {s.name: s for s in solids}
+    for key, val in existence_dependence.items():
+        solids_hash[key].existence_dependence.append(solids_hash[val].name)
+
+def remove_constructed_solids_that_cant_exist(constructed_solids : list[IfcSolid]):
+    def can_exist(solid_name : str, solids_hash : dict[str,IfcSolid]):
+        if len(solids_hash[solid_name].existence_dependence) == 0:
+            return True
+        else: 
+            output = True
+            for dependence_solid_name in solids_hash[solid_name].existence_dependence:
+                if dependence_solid_name not in solids_hash.keys():
+                    return False
+                output = output and can_exist(dependence_solid_name, solids_hash)
+            return output
+    
+    solids_hash = {s.name: s for s in constructed_solids}
+    for s in constructed_solids:
+        if not (can_exist(s.name, solids_hash)):
+            solids_hash.pop(s.name)
+    return solids_hash.values()
+
+def compute_variation_dependence_for_rbpf(solids : list[IfcSolid]) -> list[np.ndarray]:
     solids_names = [s.name for s in solids]
     dupicate_names = {x for x in solids_names if solids_names.count(x) > 1}
     solids_varaition_dependence = []
@@ -426,11 +456,14 @@ def compute_variation_dependence(solids : list[IfcSolid]) -> list[np.ndarray]:
         solids_varaition_dependence.append(np.array(solid_variations))
     return solids_varaition_dependence
 
-def compute_existence_dependece(solids):
+def compute_existence_dependece_for_rbpf(solids : list[IfcSolid]) -> dict[int,int]:
     solids_existence_dependence = {}
     for i, s_i in enumerate(solids):
         if s_i.existence_dependence is False: continue
         for j, s_j in enumerate(solids):
-            if s_i.existence_dependence == s_j.name:
-                solids_existence_dependence[i] = s_j
+            if s_j.name in s_i.existence_dependence:
+                if i in solids_existence_dependence.keys():
+                    solids_existence_dependence[i] += [j]
+                else: 
+                    solids_existence_dependence[i] = [j]
     return solids_existence_dependence

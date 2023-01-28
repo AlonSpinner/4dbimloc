@@ -1,7 +1,8 @@
 import numpy as np
 from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, compute_variation_dependence
+from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, \
+                         update_existence_dependence_from_yaml, remove_constructed_solids_that_cant_exist
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
@@ -10,26 +11,24 @@ import time
 import logging
 import pickle
 import os
-import open3d as o3d
 
-np.random.seed(14)
+np.random.seed(10) #14
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 #BUILD WORLD
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
-
+dir_path = os.path.dirname(os.path.realpath(__file__))
+yaml_file = os.path.join(dir_path, "25_existence_dependence.yaml")
+update_existence_dependence_from_yaml(solids, yaml_file)
 constructed_solids = []
 for i, s in enumerate(solids):
     s.set_random_completion_time()
-    
     if s.completion_time < current_time:
-        if i in solids_existence_dependence.keys():
-            if solids[solids_existence_dependence[i]].completion_time < current_time: #assumes order...
-                constructed_solids.append(s.clone())        
-        else:
             constructed_solids.append(s.clone())
+constructed_solids = remove_constructed_solids_that_cant_exist(constructed_solids)
+
 
 initial_beliefs = np.zeros(len(solids))
 for i, s in enumerate(solids):
@@ -42,7 +41,7 @@ world = RayCastingMap(constructed_solids)
 solids_completion_times = np.array([s.completion_time for s in solids])
 
 #INITALIZE DRONE AND SENSOR
-drone = Drone(pose = np.array([3.0, 3.0, 1.5, 0.0]))
+drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
 sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 10.0
 drone.mount_sensor(sensor)
@@ -119,8 +118,6 @@ measurements['dead_reck'] = np.array(measurements['dead_reck'])
 
 data = {}
 data['current_time'] = current_time
-data['solids_existence_dependence'] = solids_existence_dependence
-data['solids_varaition_dependence'] = solids_varaition_dependence
 data['IFC_PATH'] = IFC_PATH
 data['sensor'] = sensor
 data['measurements'] = measurements
