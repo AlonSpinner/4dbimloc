@@ -1,7 +1,6 @@
 from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.geometry.scan_matcher.scan_matcher import scan_match
 from bim4loc.existance_mapping.filters import exact_simple as existence_filter
-from ..utils import low_variance_sampler
 import numpy as np
 from bim4loc.random.multi_dim import gauss_likelihood, sample_normal
 from .bimloc_robust import RBPF as RBPF_FULL

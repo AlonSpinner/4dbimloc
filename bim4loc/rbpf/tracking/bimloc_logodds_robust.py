@@ -1,10 +1,11 @@
 from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.geometry.scan_matcher.scan_matcher import scan_match
-from bim4loc.existance_mapping.filters import exact_robust as existence_filter
+from bim4loc.existance_mapping.filters import approx_logodds_robust as existence_filter
 from ..utils import low_variance_sampler
 import numpy as np
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.maps import RayCastingMap
+from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.random.multi_dim import gauss_likelihood, sample_normal, gauss_fit
 
 class RBPF():
@@ -103,20 +104,26 @@ class RBPF():
                 self.particle_poses[k] = compose_s(self.particle_poses[k], s_from_Rt(R,t))
                 particle_z_values, particle_z_ids, _, \
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
+
+            #calcualte importance weight -> find current posterior distribution
+            pz = np.zeros(len(z))
+            for j in range(len(z)):
+                _, pz[j] = inverse_lidar_model(z[j], 
+                                            particle_z_values[j],
+                                            particle_z_ids[j], 
+                                            self.particle_beliefs[k], 
+                                self._sensor.std, self._sensor.max_range, self._sensor.p0)
         
-            self.particle_beliefs[k], pz, self._particle_reservoirs[k] = existence_filter(self.particle_poses[k],
+            self.particle_beliefs[k] = existence_filter(self.particle_poses[k],
                                             self._simulation_solids,
                                             self.particle_beliefs[k].copy(), 
-                                            self.weights[k],
-                                            self._particle_reservoirs[k].copy(),
                                             z, 
                                             particle_z_values, 
                                             particle_z_ids, 
                                             particle_z_cos_incident,
                                             self._sensor.uv,
                                             self._sensor.std,
-                                            self._sensor.max_range,
-                                            self._sensor.p0)
+                                            self._sensor.max_range)
 
             for variation in self._solids_varaition_dependence:
                 for e_k in variation:

@@ -25,7 +25,7 @@ data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
 results = {0: {}, 1: {}, 2: {}, 3: {}}
-for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2, RBPF_3]):
+for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])

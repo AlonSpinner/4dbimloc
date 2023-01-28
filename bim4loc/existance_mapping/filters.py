@@ -1,4 +1,4 @@
-from bim4loc.random.utils import p2logodds, p2odds, negate
+from bim4loc.random.utils import p2logodds, p2odds, negate, logodds2p
 from bim4loc.geometry.raycaster import NO_HIT
 import bim4loc.random.one_dim as r_1d
 import numpy as np
@@ -158,6 +158,105 @@ def exact_robust(pose : np.ndarray,
 
     return beliefs, p_z, particle_reservoir
 
+def approx_logodds_robust(pose : np.ndarray,
+            simulation_solids,
+            beliefs : np.ndarray, 
+            world_z : np.ndarray, 
+            simulated_z : np.ndarray, 
+            simulated_z_ids : np.ndarray,
+            simulated_z_cos : np.ndarray,
+            sensor_uv_angles : np.ndarray,
+            sensor_std : float,
+            sensor_max_range : float,
+            ) -> np.ndarray:
+    '''
+    CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
+
+    inputs: 
+        beliefs : one dimensional np.ndarray sorted same as solids
+        world_z - range measurements from real-world-sensor 
+                    np.array of shape (n_rays)
+        simulated_z - range measurements from simulated sensor rays
+                    np.array of shape (n_rays, max_hits)
+                    if hit that was not detected, value is set to sensor_max_range
+        simulated_z_ids - ids of solids that were hit from simulated rays
+                    np.array of shape (n_rays, max_hits)
+                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+        sensor_std - standard deviation of sensor
+        sensor_max_range - max range of sensor
+    
+    outputs:
+        beliefs - updated beliefs
+        p_z - np.array of probability of measurements given existance beliefs
+    '''
+
+    N_elements = beliefs.shape[0]
+    N_rays = world_z.shape[0]
+    N_maxhits = simulated_z.shape[1]
+
+    new_beliefs = -np.ones((N_elements,N_rays))
+    intersection_weights = np.zeros((N_elements,N_rays))
+
+    T = 3 * sensor_std
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+
+        valid_hits = 0
+        for j in prange(N_maxhits):
+            if szid_i[j] == NO_HIT:
+                break
+            valid_hits += 1
+        pj_zi = np.zeros(valid_hits)
+            
+        for j in prange(N_maxhits):
+            sz_ij = sz_i[j]
+            szid_ij = szid_i[j]
+
+            if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+                break
+            if wz_i < sz_ij - T: #wz had hit something before bzid
+                break #same as adding 0.5
+            elif wz_i < sz_ij + T: #wz has hit bzid
+                pj_zi[j] = 0.5 + 0.2*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True)
+            else: #wz has hit something after bzid, making us think bzid does not exist
+                pj_zi[j] = 0.3
+
+        for j, p in enumerate(pj_zi):
+            szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
+            new_beliefs[szid_ij,i] = p
+            intersection_weights[szid_ij,i] =  simulated_z_cos[i,j]**2
+        
+    for i in prange(N_elements):
+        if beliefs[i] == 1.0 or beliefs[i] == 0.0: #won't be updated anyway
+            continue
+        element_new_beliefs = new_beliefs[i,:]
+        indicies = element_new_beliefs >= 0
+
+        if np.any(indicies) > 0:
+            element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
+            element_uv = angle(np.ascontiguousarray(pose), element_world_v.T).T
+            
+            nrm_intersection_uv = sensor_uv_angles[indicies]/np.array([np.pi, np.pi/2])
+            nrm_element_uv = element_uv/np.array([np.pi, np.pi/2])
+            
+            
+            element_intersection_beliefs = element_new_beliefs[indicies]
+            
+            dist_2_boundry = np.zeros(len(nrm_intersection_uv))
+            for j, bearing in enumerate(nrm_intersection_uv):
+                dist_2_boundry[j], _ = minimal_distance_from_projected_boundry(bearing, nrm_element_uv)
+            element_intersection_weights = intersection_weights[i, indicies] * dist_2_boundry
+            
+            sum_element_weights = np.sum(element_intersection_weights) + EPS
+            new_element_belief = np.sum(element_intersection_beliefs * element_intersection_weights/sum_element_weights)
+            
+            beliefs[i] = new_element_belief
+
+    return beliefs
+
 # @njit(parallel = True, cache = True)
 def approx_logodds(logodds_beliefs : np.ndarray, 
             world_z : np.ndarray, 
@@ -188,8 +287,6 @@ def approx_logodds(logodds_beliefs : np.ndarray,
     N_maxhits = simulated_z.shape[1]
 
     T = 3 * sensor_std
-    L09 = p2logodds(0.8)
-    L01 = p2logodds(0.2)
 
     for i in prange(N_rays):
         wz_i = world_z[i]
@@ -203,7 +300,7 @@ def approx_logodds(logodds_beliefs : np.ndarray,
             if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
             if wz_i < sz_ij - T: #wz had hit something before bzid
-                break
+                break #same as adding 0.5
             elif wz_i < sz_ij + T: #wz has hit bzid
                 logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.2*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
             else: #wz has hit something after bzid, making us think bzid does not exist
@@ -240,9 +337,6 @@ def approx_logodds_kaufman(logodds_beliefs : np.ndarray,
     N_rays = world_z.shape[0]
     N_maxhits = simulated_z.shape[1]
 
-    T = 3 * sensor_std
-    L09 = p2logodds(0.8)
-    L01 = p2logodds(0.2)
     a = 0.6/sensor_std/np.sqrt(2 *np.pi)
 
     for i in prange(N_rays):
