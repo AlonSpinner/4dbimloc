@@ -1,12 +1,8 @@
 import numpy as np
-from bim4loc.visualizer import VisApp
-from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid
-from bim4loc.maps import RayCastingMap
-import time
-import logging
 import pickle
 import os
 import matplotlib.pyplot as plt
+from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -58,6 +54,7 @@ ax.plot(rbpf_2_cross_entropy, label = 'method 3', color = 'r', lw = 2)
 ax.plot(rbpf_2_perfect_cross_entropy, label = 'method 3 - perfect trajectory', color = 'r', lw = 2, ls = '--')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Entropy')
+ax.set_ylim(0,15)
 ax.grid(True)
 ax.legend()
 plt.show()
@@ -88,6 +85,7 @@ ax.plot(rbpf_2_map_entropy, label = 'method 3', color = 'r', lw = 2)
 ax.plot(rbpf_2_perfect_map_entropy, label = 'method 3 - perfect trajectory', color = 'r', lw = 2, ls = '--')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Entropy')
+ax.set_ylim(0,15)
 ax.grid(True)
 ax.legend()
 plt.show()                             

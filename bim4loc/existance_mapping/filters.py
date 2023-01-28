@@ -26,7 +26,8 @@ def exact_simple(beliefs : np.ndarray,
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
             sensor_std : float,
-            sensor_max_range : float) -> np.ndarray:
+            sensor_max_range : float,
+            sensor_p0 : float) -> np.ndarray:
     '''
     CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
 
@@ -57,7 +58,7 @@ def exact_simple(beliefs : np.ndarray,
         szid_i =  simulated_z_ids[i]
 
         pj_zi, p_z_i = inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
-                                sensor_std, sensor_max_range)
+                                sensor_std, sensor_max_range, sensor_p0)
         for j, p in enumerate(pj_zi):
             szid_ij = szid_i[j] #simulated solid id of j'th hit in i'th ray
             beliefs[szid_ij] = p #binary_variable_update(beliefs[szid_ij], p)
@@ -76,11 +77,11 @@ def exact_robust(pose : np.ndarray,
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
             simulated_z_cos : np.ndarray,
-            simulated_z_d : np.ndarray,
             sensor_uv_angles : np.ndarray,
             sensor_std : float,
             sensor_max_range : float,
-            sensor_p0 : float) -> np.ndarray:
+            sensor_p0 : float,
+            semi_robust = False) -> np.ndarray:
     '''
     CAREFUL. THIS FUNCTION ALTERS THE INPUT beliefs
 
@@ -146,27 +147,14 @@ def exact_robust(pose : np.ndarray,
             
             sum_element_weights = np.sum(element_intersection_weights) + EPS
             new_element_belief = np.sum(element_intersection_beliefs * element_intersection_weights/sum_element_weights)
-
-            # if i == 0:
-            #     fig, ax = plt.subplots()
-            #     ax.plot(element_uv_hull[:,0],element_uv_hull[:,1])
-            #     sc = ax.scatter(hit_rays_uv[:,0],hit_rays_uv[:,1],
-            #                     c=hit_rays_beliefs, s = element_weights*10000, vmin = 0 , vmax= 1.0)
-            #     ax.set_title(f"element {i}, with old belief: {beliefs[i]}\n \
-            #                     and with new belief {new_element_belief}")
-            #     # ax.set_title(simulation_solids[i].name)
-            #     ax.invert_xaxis()
-            #     plt.colorbar(sc)
-            #     plt.draw()
-            #     plt.show()
             
-            a = particle_weight #or 0.35
-            beliefs[i] = (new_element_belief * sum_element_weights + \
-                        beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i] + EPS)
-            particle_reservoir[i] += sum_element_weights
-            
-            # if beliefs[i] > 0.90:
-            #     beliefs[i] = 1.0
+            if semi_robust:
+                beliefs[i] = new_element_belief
+            else:
+                a = particle_weight
+                beliefs[i] = (new_element_belief * sum_element_weights + \
+                            beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i] + EPS)
+                particle_reservoir[i] += sum_element_weights
 
     return beliefs, p_z, particle_reservoir
 
@@ -211,15 +199,67 @@ def approx_logodds(logodds_beliefs : np.ndarray,
         for j in prange(N_maxhits):
             sz_ij = sz_i[j]
             szid_ij = szid_i[j]
+
             if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
             if wz_i < sz_ij - T: #wz had hit something before bzid
                 break
             elif wz_i < sz_ij + T: #wz has hit bzid
-                logodds_beliefs[szid_ij] += L09
+                logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.2*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
             else: #wz has hit something after bzid, making us think bzid does not exist
-                # if not(logodds_beliefs[szid_ij] > 3.0): #<-----dont allow things to decrease from a certain range
-                logodds_beliefs[szid_ij] += L01
+                logodds_beliefs[szid_ij] += p2logodds(0.3)
+
+    return logodds_beliefs
+
+# @njit(parallel = True, cache = True)
+def approx_logodds_kaufman(logodds_beliefs : np.ndarray, 
+            world_z : np.ndarray, 
+            simulated_z : np.ndarray, 
+            simulated_z_ids : np.ndarray,
+            sensor_std : float,
+            sensor_max_range : float) -> np.ndarray:
+    '''
+    CAREFUL. THIS FUNCTION ALTERS THE INPUT logodds_beliefs
+
+    inputs: 
+        logodds_beliefs : one dimensional np.ndarray sorted same as solids
+        world_z - range measurements from real-world-sensor 
+                    np.array of shape (n_rays)
+        simulated_z - range measurements from simulated sensor rays
+                    np.array of shape (n_rays, max_hits)
+                    if hit that was not detected, value is set to sensor_max_range
+        simulated_z_ids - ids of solids that were hit from simulated rays
+                    np.array of shape (n_rays, max_hits)
+                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
+        sensor_std - standard deviation of sensor
+        sensor_max_range - max range of sensor
+    
+    outputs:
+        logodds_beliefs - updated logodds_beliefs
+    '''
+    N_rays = world_z.shape[0]
+    N_maxhits = simulated_z.shape[1]
+
+    T = 3 * sensor_std
+    L09 = p2logodds(0.8)
+    L01 = p2logodds(0.2)
+    a = 0.6/sensor_std/np.sqrt(2 *np.pi)
+
+    for i in prange(N_rays):
+        wz_i = world_z[i]
+        sz_i = simulated_z[i]
+        szid_i =  simulated_z_ids[i]
+        
+        for j in prange(N_maxhits):
+            sz_ij = sz_i[j]
+            szid_ij = szid_i[j]
+            if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
+                break
+            if wz_i <= sz_ij:
+                pm = 0.3 + (0.2 + a) * gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True)
+            else:
+                pm = 0.5 + a * gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True)
+            logodds_beliefs[szid_ij] += p2logodds(pm)
 
     return logodds_beliefs
 

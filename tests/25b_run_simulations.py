@@ -10,9 +10,11 @@ import time
 import logging
 import pickle
 import os
-from bim4loc.rbpf.tracking.bimloc import RBPF as RBPF_0
-from bim4loc.rbpf.tracking.bimloc_partial import RBPF as RBPF_1
-from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_2
+from bim4loc.rbpf.tracking.bimloc_robust import RBPF as RBPF_0
+from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as RBPF_1
+from bim4loc.rbpf.tracking.bimloc_simple import RBPF as RBPF_2
+from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_3
+from bim4loc.rbpf.tracking.bimloc_logodds_robust import RBPF as RBPF_4
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -22,8 +24,8 @@ yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
-results = {0: {}, 1: {}, 2: {}}
-for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2]):
+results = {0: {}, 1: {}, 2: {}, 3: {}}
+for rbpf_enum, RBPF in enumerate([RBPF_0, RBPF_1, RBPF_2, RBPF_3]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])

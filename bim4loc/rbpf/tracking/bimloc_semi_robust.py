@@ -113,17 +113,17 @@ class RBPF():
                                             particle_z_values, 
                                             particle_z_ids, 
                                             particle_z_cos_incident,
-                                            particle_z_d,
                                             self._sensor.uv,
                                             self._sensor.std,
                                             self._sensor.max_range,
-                                            self._sensor.p0)
+                                            self._sensor.p0,
+                                            semi_robust = True)
 
             for variation in self._solids_varaition_dependence:
                 for e_k in variation:
                     if self.particle_beliefs[k][e_k] > 0.9:
                         self.particle_beliefs[k][e_k] = 1.0
-                        self.particle_beliefs[k][variation[variation != e_k]] = 0.01
+                        self.particle_beliefs[k][variation[variation != e_k]] = 0.0
                         break
 
             for key in self._solids_existence_dependence:

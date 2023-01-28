@@ -43,7 +43,7 @@ solids_completion_times = np.array([s.completion_time for s in solids])
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
 sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
-sensor.std = 0.1; sensor.piercing = False; sensor.max_range = 10.0
+sensor.std = 0.05; sensor.piercing = False; sensor.max_range = 10.0
 drone.mount_sensor(sensor)
 
 #BUILDING ACTION SET
