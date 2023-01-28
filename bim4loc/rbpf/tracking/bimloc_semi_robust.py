@@ -4,6 +4,7 @@ from bim4loc.existance_mapping.filters import exact_robust as existence_filter
 import numpy as np
 from bim4loc.random.multi_dim import gauss_likelihood, sample_normal
 from .bimloc_robust import RBPF as RBPF_FULL
+import logging
 
 class RBPF(RBPF_FULL):
     def __init__(self,*args, **kwargs):
@@ -86,5 +87,7 @@ class RBPF(RBPF_FULL):
             self.weights /= sum_weights
 
         #resample
-        if self.N_eff() < self._N:
+        if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
+            logging.info('resampled')
             self.resample()
+        self._step_counter += 1

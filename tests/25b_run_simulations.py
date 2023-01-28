@@ -10,22 +10,22 @@ import time
 import logging
 import pickle
 import os
-from bim4loc.rbpf.tracking.bimloc_robust import RBPF as RBPF_0
-from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as RBPF_1
-from bim4loc.rbpf.tracking.bimloc_simple import RBPF as RBPF_2
-from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_3
-from bim4loc.rbpf.tracking.bimloc_logodds_robust import RBPF as RBPF_4
+from bim4loc.rbpf.tracking.bimloc_robust import RBPF as RBPF_1
+from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as RBPF_2
+from bim4loc.rbpf.tracking.bimloc_simple import RBPF as RBPF_3
+# from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as RBPF_4
+from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as RBPF_5
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
-logger = logging.getLogger().setLevel(logging.WARNING)
+logger = logging.getLogger().setLevel(logging.INFO)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
-results = {0: {}, 1: {}, 2: {}, 3: {}}
-for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
+results = {i : {} for i in range(1,5)}
+for (rbpf_enum, RBPF) in zip(results.keys(),[RBPF_1, RBPF_2, RBPF_3, RBPF_5]):
 
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
@@ -52,12 +52,10 @@ for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
     pose0 = data['ground_truth']['trajectory'][0]
     bounds_min, bounds_max, extent = simulation.bounds()
     N_particles = 10
-    initial_particle_poses = np.vstack((np.random.normal(pose0[0], 0.2, N_particles),
-                        np.random.normal(pose0[1], 0.2, N_particles),
-                        np.full(N_particles,pose0[2]),
-                        np.random.normal(pose0[3], np.radians(5.0), N_particles))).T
+    initial_particle_poses = np.random.multivariate_normal(pose0, np.diag([0.2,0.2,1e-25,np.radians(5.0)]), N_particles)
     simulated_sensor = data['sensor']
     simulated_sensor.piercing = True
+    simulated_sensor.std *= 2
     rbpf = RBPF(simulation, 
                 simulated_sensor,
                 initial_particle_poses,
@@ -65,7 +63,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
-                reservoir_decay_rate = 0.2)
+                max_steps_to_resample = 5)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
@@ -73,8 +71,7 @@ for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
             initial_beliefs,
             solids_existence_dependence,
             solids_varaition_dependence,
-            data['U_COV'] * 1e-25,
-            reservoir_decay_rate = 0.2)
+            data['U_COV'] * 1e-25)
 
     #DRAW
     #--------------INITIAL CONDITION AND PERFECT MAPPING------------
@@ -115,8 +112,6 @@ for rbpf_enum, RBPF in enumerate([RBPF_4, RBPF_1, RBPF_2, RBPF_3]):
         rbpf.step(u, z)
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
-        # if t % 3 == 0:
-        #     rbpf.resample()
 
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])

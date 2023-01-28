@@ -161,6 +161,8 @@ def exact_robust(pose : np.ndarray,
 def approx_logodds_robust(pose : np.ndarray,
             simulation_solids,
             beliefs : np.ndarray, 
+            particle_weight : np.ndarray,
+            particle_reservoir : np.ndarray,
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
@@ -209,9 +211,9 @@ def approx_logodds_robust(pose : np.ndarray,
             if szid_i[j] == NO_HIT:
                 break
             valid_hits += 1
-        pj_zi = np.zeros(valid_hits)
+        pj_zi = -np.ones(valid_hits)
             
-        for j in prange(N_maxhits):
+        for j in prange(valid_hits):
             sz_ij = sz_i[j]
             szid_ij = szid_i[j]
 
@@ -253,11 +255,16 @@ def approx_logodds_robust(pose : np.ndarray,
             sum_element_weights = np.sum(element_intersection_weights) + EPS
             new_element_belief = np.sum(element_intersection_beliefs * element_intersection_weights/sum_element_weights)
             
-            beliefs[i] = new_element_belief
+            beliefs[i] = binary_variable_update(beliefs[i],new_element_belief)
+            # a = particle_weight
+            # beliefs[i] = logodds2p((p2logodds(new_element_belief) * sum_element_weights + \
+            #             p2logodds(beliefs[i]) * a*particle_reservoir[i]) / \
+            #                 (sum_element_weights + a*particle_reservoir[i] + EPS))
+            # particle_reservoir[i] += sum_element_weights
 
     return beliefs
 
-# @njit(parallel = True, cache = True)
+@njit(parallel = True, cache = True)
 def approx_logodds(logodds_beliefs : np.ndarray, 
             world_z : np.ndarray, 
             simulated_z : np.ndarray, 
@@ -300,60 +307,11 @@ def approx_logodds(logodds_beliefs : np.ndarray,
             if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
             if wz_i < sz_ij - T: #wz had hit something before bzid
-                break #same as adding 0.5
+                break #same as adding p2logodds(0.5)
             elif wz_i < sz_ij + T: #wz has hit bzid
-                logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.2*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
+                logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.3*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
             else: #wz has hit something after bzid, making us think bzid does not exist
-                logodds_beliefs[szid_ij] += p2logodds(0.3)
-
-    return logodds_beliefs
-
-# @njit(parallel = True, cache = True)
-def approx_logodds_kaufman(logodds_beliefs : np.ndarray, 
-            world_z : np.ndarray, 
-            simulated_z : np.ndarray, 
-            simulated_z_ids : np.ndarray,
-            sensor_std : float,
-            sensor_max_range : float) -> np.ndarray:
-    '''
-    CAREFUL. THIS FUNCTION ALTERS THE INPUT logodds_beliefs
-
-    inputs: 
-        logodds_beliefs : one dimensional np.ndarray sorted same as solids
-        world_z - range measurements from real-world-sensor 
-                    np.array of shape (n_rays)
-        simulated_z - range measurements from simulated sensor rays
-                    np.array of shape (n_rays, max_hits)
-                    if hit that was not detected, value is set to sensor_max_range
-        simulated_z_ids - ids of solids that were hit from simulated rays
-                    np.array of shape (n_rays, max_hits)
-                    a no hit is represented by NOT_HIT constant imoprted from bim4loc.geometry.raytracer
-        sensor_std - standard deviation of sensor
-        sensor_max_range - max range of sensor
-    
-    outputs:
-        logodds_beliefs - updated logodds_beliefs
-    '''
-    N_rays = world_z.shape[0]
-    N_maxhits = simulated_z.shape[1]
-
-    a = 0.6/sensor_std/np.sqrt(2 *np.pi)
-
-    for i in prange(N_rays):
-        wz_i = world_z[i]
-        sz_i = simulated_z[i]
-        szid_i =  simulated_z_ids[i]
-        
-        for j in prange(N_maxhits):
-            sz_ij = sz_i[j]
-            szid_ij = szid_i[j]
-            if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
-                break
-            if wz_i <= sz_ij:
-                pm = 0.3 + (0.2 + a) * gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True)
-            else:
-                pm = 0.5 + a * gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True)
-            logodds_beliefs[szid_ij] += p2logodds(pm)
+                logodds_beliefs[szid_ij] += p2logodds(0.2)
 
     return logodds_beliefs
 

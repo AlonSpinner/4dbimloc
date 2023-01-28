@@ -12,7 +12,10 @@ import logging
 import pickle
 import os
 
-np.random.seed(14) #10 is rough
+np.random.seed(8)
+#8 is simple
+#10 is rough
+#14 is good
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
@@ -74,7 +77,7 @@ visApp.add_solid(dead_reck_vis_arrow, "initial_condition")
 dead_reck_vis_trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
 visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
 
-U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])/2
+U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])
 
 #measurements
 measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}

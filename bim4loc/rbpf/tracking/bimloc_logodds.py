@@ -1,72 +1,16 @@
 from bim4loc.geometry.pose2z import compose_s, s_from_Rt
 from bim4loc.geometry.scan_matcher.scan_matcher import scan_match
-from ..utils import low_variance_sampler
 import numpy as np
-from bim4loc.sensors.sensors import Lidar
-from bim4loc.maps import RayCastingMap
-from bim4loc.random.multi_dim import gauss_likelihood, sample_normal, gauss_fit
+from bim4loc.random.multi_dim import gauss_likelihood, sample_normal
 from bim4loc.random.utils import logodds2p, p2logodds
 from bim4loc.sensors.models import inverse_lidar_model
 from bim4loc.existance_mapping.filters import approx_logodds as existence_filter
+from .bimloc_robust import RBPF as RBPF_FULL
+import logging
 
-class RBPF():
-    def __init__(self,
-                simulation : RayCastingMap,
-                sensor : Lidar,
-                initial_particle_poses : np.ndarray,
-                initial_belief : np.ndarray,
-                solids_existence_dependence : dict[int,int],
-                solids_varaition_dependence : np.ndarray,
-                U_COV : np.ndarray,
-                reservoir_decay_rate : float = 0.3):
-        '''
-        PARAMTERS
-        sense_fcn - NUMBA JITED NO PYTHON FUNCTION 
-                        that takes in a particle pose and returns simulated measurements
-        sensor_std - standard deviation of sensor measurements
-        sensor_max_range - maximum range of sensor
-        map_bounds_min, map_bounds_max - arrays of shape (3)
-        resample_steps_thresholds - array of two elements.
-        '''
-        self._simulation_solids = simulation.solids
-        self._sensor = sensor
-        self._sense_fcn = lambda x: sensor.sense(x, simulation, n_hits = 5, noisy = False)
-        self._scan_to_points_fcn = sensor.get_scan_to_points()
-
-        map_bounds_min, map_bounds_max, extent = simulation.bounds()
-        self._map_bounds_min = map_bounds_min
-        self._map_bounds_max = map_bounds_max
-
-        self._U_COV = U_COV
-        self._reservoir_decay_rate = reservoir_decay_rate
-
-        self._N = initial_particle_poses.shape[0]
-        self.particle_poses = initial_particle_poses
-        self.particle_beliefs = np.tile(initial_belief, (self._N,1))
-        self._particle_reservoirs = np.zeros((self._N, len(self._simulation_solids)))
-        self.weights = np.ones(self._N) / self._N
-
-        self._solids_existence_dependence = solids_existence_dependence
-        self._solids_varaition_dependence = solids_varaition_dependence
-
-    def N_eff(self):
-        return 1.0 / np.sum(self.weights**2)
-
-    def get_expected_belief_map(self):
-        return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
-
-    def get_expect_pose(self):
-        mu, cov = gauss_fit(self.particle_poses.T, self.weights)
-        return mu, cov
-
-    def decay_reservoirs(self):
-        self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
-
-    def resample(self):
-        self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
-                                                                    self.particle_poses, 
-                                                                    self.particle_beliefs, 
-                                                                    self._N)
+class RBPF(RBPF_FULL):
+    def __init__(self,*args, **kwargs):
+        super(RBPF, self).__init__(*args, **kwargs)
 
     def step(self, u, z):
         '''
@@ -135,5 +79,7 @@ class RBPF():
             self.weights /= sum_weights
 
         #resample
-        if self.N_eff() < self._N:
+        if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
+            logging.info('resampled')
             self.resample()
+        self._step_counter += 1
