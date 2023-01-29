@@ -106,6 +106,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                     'expected_belief_map': [expected_belief_map],
                     'perfect_traj_belief_map': [expected_belief_map]}
 
+    np.random.seed(1)
+    
     #LOOP
     time.sleep(2)
     for t, (u,z) in enumerate(zip(data['measurements']['U'],data['measurements']['Z'])):

@@ -12,9 +12,9 @@ import logging
 import pickle
 import os
 
-np.random.seed(55)
+np.random.seed(8)
 #8 is simple
-#5, 10 are rough
+#5, 10, 55 are rough
 #14 is good
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
