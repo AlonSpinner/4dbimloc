@@ -11,6 +11,7 @@ import logging
 class RBPF(RBPF_FULL):
     def __init__(self,*args, **kwargs):
         super(RBPF, self).__init__(*args, **kwargs)
+        self._logodds_inital_belief = p2logodds(args[3].copy())
 
     def step(self, u, z):
         '''
@@ -65,7 +66,8 @@ class RBPF(RBPF_FULL):
                                         particle_z_values, 
                                         particle_z_ids, 
                                         self._sensor.std,
-                                        self._sensor.max_range)
+                                        self._sensor.max_range,
+                                        self._logodds_inital_belief)
             self.particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
             
             # weights[k] *= np.product(pz) #or multiply?
@@ -79,6 +81,6 @@ class RBPF(RBPF_FULL):
             self.weights /= sum_weights
 
         #resample
-        if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
+        if self.N_eff() < self._N/2 or self._step_counter % self._max_steps_to_resample == 0:
             self.resample()
         self._step_counter += 1

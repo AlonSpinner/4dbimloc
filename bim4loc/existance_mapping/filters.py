@@ -270,7 +270,8 @@ def approx_logodds(logodds_beliefs : np.ndarray,
             simulated_z : np.ndarray, 
             simulated_z_ids : np.ndarray,
             sensor_std : float,
-            sensor_max_range : float) -> np.ndarray:
+            sensor_max_range : float,
+            logodds_inital_belief : np.ndarray) -> np.ndarray:
     '''
     CAREFUL. THIS FUNCTION ALTERS THE INPUT logodds_beliefs
 
@@ -312,6 +313,7 @@ def approx_logodds(logodds_beliefs : np.ndarray,
                 logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.3*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
             else: #wz has hit something after bzid, making us think bzid does not exist
                 logodds_beliefs[szid_ij] += p2logodds(0.2)
+            # logodds_beliefs[szid_ij] -= logodds_inital_belief[szid_ij]
 
     return logodds_beliefs
 

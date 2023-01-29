@@ -53,7 +53,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     pose0 = data['ground_truth']['trajectory'][0]
     bounds_min, bounds_max, extent = simulation.bounds()
     N_particles = 10
-    initial_particle_poses = np.random.multivariate_normal(pose0, np.diag([0.2,0.2,1e-25,np.radians(5.0)]), N_particles)
+    initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
     simulated_sensor = data['sensor']
     simulated_sensor.piercing = True
     simulated_sensor.std *= 2

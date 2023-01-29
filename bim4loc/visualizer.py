@@ -249,7 +249,7 @@ class VisApp():
                 text = solid.name
             else:
                 text = label
-            location = solid.geometry.get_center() + np.random.rand(3) * 0.1
+            location = solid.geometry.get_center()# + np.random.rand(3) * 0.1
             self.add_text(Label3D(text, location), scene_name)
 
     def update_solid(self, solid : Optional[Union[o3dSolid, IfcSolid]], scene_name = "world") -> None:

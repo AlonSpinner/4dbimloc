@@ -58,8 +58,8 @@ def raycast(rays : np.ndarray, meshes_v : np.ndarray, meshes_t : np.ndarray, mes
                 triangle = m_v[m_t[i_t]]
                 
                 #DOES NOT ACCELERATE COMPUTATIONS?
-                # if not(ray_box_intersection(ray[:3], ray_dir, triangle_to_AABB(triangle))):
-                #     continue
+                if not(ray_box_intersection(ray[:3], ray_dir, triangle_to_AABB(triangle))):
+                    continue
 
                 if triangle.sum() == 0: #empty triangle
                     finished_mesh = True

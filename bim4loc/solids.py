@@ -463,7 +463,7 @@ def remove_constructed_solids_that_cant_exist(constructed_solids : list[IfcSolid
     for s in constructed_solids:
         if not (can_exist(s.name, solids_hash)):
             solids_hash.pop(s.name)
-    return solids_hash.values()
+    return list(solids_hash.values())
 
 def compute_variation_dependence_for_rbpf(solids : list[IfcSolid]) -> list[np.ndarray]:
     solids_names = [s.name for s in solids]

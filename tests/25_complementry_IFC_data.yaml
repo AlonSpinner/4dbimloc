@@ -1,10 +1,10 @@
 existence_dependence:
   '23iz_$XTT7Qh5EJtFtqs2X' : '0_LLnb76j0dvprA5TO6l_m'
-  '0UexuGkbH1jBE7iWw9bUj6' : '1UH7XjeubFPe8ud33kpdAD'
+  '1A2qVk78PCQRC$rtMC4SDY' : '1UH7XjeubFPe8ud33kpdAD'
   '3f0mhqOMzDdxWLQ6t25_Qw' : '2JXote8SH4wvyJ6o7XOlgR'
   '1s61g5XiL70eShhiNX3DwP' : '1I3q0zjCDDIA7XkWxylMx5'
 variations: 
-  '23iz_$XTT7Qh5EJtFtqs2X' : [[0.0,0.2,0.0],[[-0.0,-0.2,0.0]]]
-  '0UexuGkbH1jBE7iWw9bUj6' : [[0.0,0.2,0.0],[[-0.0,-0.2,0.0]]]
-  '3f0mhqOMzDdxWLQ6t25_Qw' : [[0.2,0.0,0.0],[[-0.2,-0.0,0.0]]]
-  '1s61g5XiL70eShhiNX3DwP' : [[0.2,0.0,0.0],[[-0.2,-0.0,0.0]]]
+  '23iz_$XTT7Qh5EJtFtqs2X' : [[0.0,0.1,0.0],[[-0.0,-0.1,0.0]]]
+  '1A2qVk78PCQRC$rtMC4SDY' : [[0.0,0.1,0.0],[[-0.0,-0.1,0.0]]]
+  '3f0mhqOMzDdxWLQ6t25_Qw' : [[0.1,0.0,0.0],[[-0.1,-0.0,0.0]]]
+  '1s61g5XiL70eShhiNX3DwP' : [[0.1,0.0,0.0],[[-0.1,-0.0,0.0]]]

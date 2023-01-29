@@ -32,7 +32,7 @@ class RBPF():
         '''
         self._simulation_solids = simulation.solids
         self._sensor = sensor
-        self._sense_fcn = lambda x: sensor.sense(x, simulation, n_hits = 5, noisy = False)
+        self._sense_fcn = lambda x: sensor.sense(x, simulation, n_hits = 10, noisy = False)
         self._scan_to_points_fcn = sensor.get_scan_to_points()
 
         map_bounds_min, map_bounds_max, extent = simulation.bounds()
@@ -55,10 +55,13 @@ class RBPF():
         self._step_counter = 0
 
     def N_eff(self):
-        return 2.0 / np.sum(self.weights**2)
+        return 1.0 / np.sum(self.weights**2)
 
     def get_expected_belief_map(self):
         return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
+
+    def get_best_belief_map(self):
+        return self.particle_beliefs[np.argmax(self.weights)]
 
     def get_expect_pose(self):
         mu, cov = gauss_fit(self.particle_poses.T, self.weights)
@@ -148,6 +151,6 @@ class RBPF():
             self.weights /= sum_weights
 
         #resample
-        if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
+        if self.N_eff() < self._N/2 or self._step_counter % self._max_steps_to_resample == 0:
             self.resample()
         self._step_counter += 1

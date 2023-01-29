@@ -87,6 +87,6 @@ class RBPF(RBPF_FULL):
             self.weights /= sum_weights
 
         #resample
-        if self.N_eff() < self._N or self._step_counter % self._max_steps_to_resample == 0:
+        if self.N_eff() < self._N/2 or self._step_counter % self._max_steps_to_resample == 0:
             self.resample()
         self._step_counter += 1

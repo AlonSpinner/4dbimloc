@@ -12,9 +12,9 @@ import logging
 import pickle
 import os
 
-np.random.seed(8)
+np.random.seed(5)
 #8 is simple
-#10 is rough
+#5, 10 are rough
 #14 is good
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
@@ -31,6 +31,7 @@ for i, s in enumerate(solids):
     if s.completion_time < current_time:
             constructed_solids.append(s.clone())
 constructed_solids = remove_constructed_solids_that_cant_exist(constructed_solids)
+# del constructed_solids[2]
 
 
 initial_beliefs = np.zeros(len(solids))
@@ -58,8 +59,9 @@ stay = np.zeros(4) * DT
 actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4 + [straight] * 4
 
 #DRAW
+#0UexuGkbH1jBE7iWw9bUj6
 visApp = VisApp()
-[visApp.add_solid(s,"world") for s in world.solids]
+[visApp.add_solid(s,"world") for s in world.solids]# if s.ifc_type != 'IfcElectricDistributionBoard']
 visApp.redraw("world")
 visApp.setup_default_camera("world")
 visApp.add_solid(drone.solid, "world")
@@ -77,7 +79,7 @@ visApp.add_solid(dead_reck_vis_arrow, "initial_condition")
 dead_reck_vis_trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
 visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
 
-U_COV = np.diag([0.1, 0.01, 1e-25, np.radians(1.0)])
+U_COV = np.diag([0.2, 0.1, 1e-25, np.radians(1)])**2
 
 #measurements
 measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}
@@ -93,7 +95,7 @@ for t, u in enumerate(actions):
     drone.move(u)
     
     #produce measurement
-    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 5, noisy = True)
+    z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 10, noisy = True)
 
     u_noisy = compose_s(u,np.random.multivariate_normal(np.zeros(4), U_COV))
 
@@ -117,6 +119,7 @@ for t, u in enumerate(actions):
     visApp.update_solid(dead_reck_vis_arrow, "initial_condition")
     visApp.update_solid(dead_reck_vis_trail_est, "initial_condition")
 
+    # time.sleep(0.1)
 measurements['dead_reck'] = np.array(measurements['dead_reck'])
 
 data = {}
