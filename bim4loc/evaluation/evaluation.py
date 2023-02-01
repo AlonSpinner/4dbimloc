@@ -95,3 +95,25 @@ def cross_entropy_error(ground_truth, estimated_beliefs, perfect_beliefs = None,
         ax.legend()
 
     return estimated, perfect
+
+def percentile_boxes_right(expected_belief_map, ground_truth_beliefs, 
+                            gt_electric_boxes_names, gt_electric_boxes_indicies,
+                            sim_electric_boxes_indicies, sim_electric_boxes_names):
+   #for each gt box, check that it checks out, and that all variations are false
+    N_boxes_got_right = 0.0
+    for i,gt_box_name in enumerate(gt_electric_boxes_names):
+        tick_box = True
+        for j,sim_box_name in enumerate(sim_electric_boxes_names):
+            if sim_box_name.startswith(gt_box_name):
+                sim_belief = expected_belief_map[-1][sim_electric_boxes_indicies[j]] > 0.9
+                if sim_box_name == gt_box_name: #is real box
+                    gt_belief = ground_truth_beliefs[gt_electric_boxes_indicies[i]]
+                    if sim_belief != bool(gt_belief):
+                        tick_box = False
+                else: #is a variant should be false
+                    if sim_belief == True:
+                        tick_box = False
+        if tick_box:
+            N_boxes_got_right += 1.0
+    percent_boxes_got_right = N_boxes_got_right/len(gt_electric_boxes_names)
+    return percent_boxes_got_right

@@ -2,20 +2,21 @@ import numpy as np
 import pickle
 import os
 import matplotlib.pyplot as plt
-from bim4loc.solids import ifc_converter
-from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error
+from bim4loc.solids import ifc_converter, add_variations_from_yaml
+from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error, percentile_boxes_right
 plt.rcParams['font.size'] = '24'
 
-out_folder = "out_mid_noise"
+out_folder = "out_large_noise"
 
 data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
-max_seed = 50
+max_seed = 100
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
+    # data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
     file = os.path.join(dir_path, out_folder , f"results_{seednumber}.p")
     results = pickle.Unpickler(open(file, "rb")).load()
@@ -25,6 +26,15 @@ for seednumber in range(max_seed):
     for i, s in enumerate(solids):
         if s.name in data['ground_truth']['constructed_solids_names']:
             ground_truth_beliefs[i] = 1.0
+
+    gt_electric_boxes_names = [s.vis_name for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
+    gt_electric_boxes_indicies = [i for i,s in enumerate(solids) if s.ifc_type == 'IfcElectricDistributionBoard']
+
+    yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
+    simulation_solids = ifc_converter(data['IFC_PATH'])
+    add_variations_from_yaml(simulation_solids, yaml_file)
+    sim_electric_boxes_indicies = [i for i,s in enumerate(simulation_solids) if s.ifc_type == 'IfcElectricDistributionBoard']
+    sim_electric_boxes_names = [s.vis_name for s in simulation_solids if s.ifc_type == 'IfcElectricDistributionBoard']
 
     analyzed = {}
     for i, res in enumerate(results.values()):
@@ -37,11 +47,16 @@ for seednumber in range(max_seed):
                                     res['expected_belief_map'],
                                     res['perfect_traj_belief_map'])
 
+        p_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
+                                            gt_electric_boxes_names, gt_electric_boxes_indicies,
+                                            sim_electric_boxes_indicies, sim_electric_boxes_names)
+
         analyzed[i+1] = {'traj_err': traj_err,
                     'cross_entropy': cross_entropy,
                     'cross_entropy_perfect_traj': cross_entropy_perfect_traj,
                     'self_entropy': self_entropy,
-                    'self_entropy_perfect_traj': self_entropy_perfect_traj}
+                    'self_entropy_perfect_traj': self_entropy_perfect_traj,
+                    'percentile_boxes' : p_boxes}
     analyzed_by_seed.append(analyzed)
     results_by_seed.append(results)
     data_by_seed.append(data)
@@ -165,5 +180,20 @@ ax.set_xticklabels([str(key) for key in std_traj_err.keys()])
 plt.show()
 
 #----------------------------------- Electric Boxes ------------------------------------
+boxes_right = {}
+for method_i in analyzed_by_method.keys():
+    p_seeds = []
+    for seed in sucesses[method_i]:
+        p_seeds.append(analyzed_by_method[method_i][seed]['percentile_boxes'])
+    boxes_right[method_i] = np.mean(p_seeds)
+
+fig = plt.figure(figsize = (16,8))
+ax = fig.add_subplot(111)
+ax.bar(np.array(list(boxes_right.keys())),
+       boxes_right.values(),
+       edgecolor = 'black',
+       align='center', alpha=1.0,
+       color = colors)
+plt.show()
 
 
