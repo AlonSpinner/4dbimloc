@@ -15,10 +15,10 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
-def run_simulation(seed_number, vis_on = False):
+def run_simulation(seed_number, out_folder, vis_on = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
-    data_file = os.path.join(dir_path, "out" , f"data_{seed_number}.p")
+    data_file = os.path.join(dir_path, out_folder , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
 
     rbpf_methods = [robust, semi_robust, simple, logodds]
@@ -159,6 +159,6 @@ def run_simulation(seed_number, vis_on = False):
         if vis_on:
             visApp.quit()
 
-    file = os.path.join(dir_path, "out", f"results_{seed_number}.p")
+    file = os.path.join(dir_path, out_folder, f"results_{seed_number}.p")
     pickle.dump(results, open(file, "wb"))
     print('pickle dumped')

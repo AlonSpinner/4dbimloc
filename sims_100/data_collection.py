@@ -11,7 +11,7 @@ import time
 import pickle
 import os
 
-def create_data(seed_number, U_COV ,vis_on = False,):
+def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
     np.random.seed(seed_number)
 
     #BUILD WORLD
@@ -124,6 +124,6 @@ def create_data(seed_number, U_COV ,vis_on = False,):
                             'trajectory': np.array(gt_traj)}
     data['U_COV'] = U_COV
 
-    file = os.path.join(dir_path,"out", f"data_{seed_number}.p")
+    file = os.path.join(dir_path, out_folder, f"data_{seed_number}.p")
     pickle.dump(data, open(file, "wb"))
     print('pickle dumped')

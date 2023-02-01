@@ -5,16 +5,18 @@ import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error
 
+out_folder = "out_large_noise"
+
 data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
-max_seed = 58
+max_seed = 20
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = os.path.join(dir_path, "out" ,f"data_{seednumber}.p")
+    file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
 
-    file = os.path.join(dir_path, "out" , f"results_{seednumber}.p")
+    file = os.path.join(dir_path, out_folder , f"results_{seednumber}.p")
     results = pickle.Unpickler(open(file, "rb")).load()
 
     solids = ifc_converter(data['IFC_PATH'])
@@ -79,7 +81,7 @@ N_traj_failures = {}
 cross_entropy_failures = {}
 N_cross_entropy_failures = {}
 failures = {}
-N_faliures = {}
+N_failures = {}
 for method_i in analyzed_by_method.keys():
     traj_failures[method_i] = failure_by_traj_error(analyzed_by_method[method_i])
     N_traj_failures[method_i] = len(traj_failures[method_i])
@@ -87,7 +89,7 @@ for method_i in analyzed_by_method.keys():
     N_cross_entropy_failures[method_i] = len(cross_entropy_failures[method_i])
 
     failures[method_i] = list(set(traj_failures[method_i] + cross_entropy_failures[method_i]))
-    N_faliures[method_i] = len(failures[method_i])
+    N_failures[method_i] = len(failures[method_i])
 
 sucesses = {}
 N_sucesses = {}
@@ -98,49 +100,66 @@ for method_i in analyzed_by_method.keys():
     N_sucesses[method_i] = len(sucesses[method_i])
     
     mu_seeds = []
+    std_seeds = []
     for seed in sucesses[method_i]:
-        mu_seed, _ = average_traj_err(analyzed_by_method[method_i][seed])
+        mu_seed, std_seed = average_traj_err(analyzed_by_method[method_i][seed])
         mu_seeds.append(mu_seed)
-    mean_traj_err[method_i] = np.sum(mu_seeds)/(N_sucesses[method_i]+1e-25)
-    std_traj_err[method_i] = np.std(mu_seeds)
+        std_seeds.append(std_seed)
+    mean_traj_err[method_i] = (np.mean(mu_seeds),np.std(mu_seeds))
+    std_traj_err[method_i] = (np.mean(std_seeds),np.std(std_seeds))
 
 colors = ['b', 'g', 'r', 'k']
-#-----------------------------------Sucesses --------------------------------------------
+#-----------------------------------Failures --------------------------------------------
 fig, ax = plt.subplots()
 ax.set_xlabel('Method ')
-ax.set_ylabel('Error [m]')
-ax_cef = ax.bar(N_cross_entropy_failures.keys(),
+ax.set_ylabel('Failures')
+width = 0.25
+ax_cef = ax.bar(np.array(list(N_cross_entropy_failures.keys())) - width,
        N_cross_entropy_failures.values(),
-       align='center', alpha=0.5,
-       color = colors,
        edgecolor = 'black',
-       linewidth = 5,
-       tick_label = [str(key) for key in mean_traj_err.keys()])
-ax_tf = ax.bar(N_traj_failures.keys(),
-       N_traj_failures.values(),
-       bottom=np.array(list(N_faliures.values())) - \
-                        np.array(list(N_traj_failures.values())),
        align='center', alpha=0.5,
        color = colors,
-       edgecolor = 'magenta',
-       linewidth = 5,
+       width = width,
        tick_label = [str(key) for key in mean_traj_err.keys()])
-
+ax_f = ax.bar(np.array(list(N_traj_failures.keys())) + width,
+       N_failures.values(),
+       edgecolor = 'black',
+       align='center', alpha=1.0,
+       color = colors,
+       width = width,
+       tick_label = [str(key) for key in mean_traj_err.keys()])
+ax_tf = ax.bar(np.array(list(N_traj_failures.keys())),
+       N_traj_failures.values(),
+       edgecolor = 'black',
+       align='center', alpha=0.7,
+       color = colors,
+       width = width,
+       tick_label = [str(key) for key in mean_traj_err.keys()])
 plt.show()
 
-#-----------------------------------Trajectory Error ------------------------------------
+#----------------------------------- Mean Trajectory Error ------------------------------------
 fig, ax = plt.subplots()
 ax.set_xlabel('Method ')
 ax.set_ylabel('Error [m]')
 ax.grid(False)
-ax.bar(mean_traj_err.keys(),
-       mean_traj_err.values(),
-       yerr=std_traj_err.values(),
+width = 0.25
+ax_mean = ax.bar(np.array(list(mean_traj_err.keys())) - width/2,
+       [max(0.0,m[0]) for m in mean_traj_err.values()],
+       yerr=[max(0.0,m[1]) for m in mean_traj_err.values()],
        align='center', alpha=0.5,
        ecolor='black', capsize=10,
+       width = width,
        color = colors,
        tick_label = [str(key) for key in mean_traj_err.keys()])
 
+ax_std = ax.bar(np.array(list(std_traj_err.keys())) + width/2,
+       [max(0.0,s[0]) for s in std_traj_err.values()],
+       yerr=[max(0.0,s[1]) for s in std_traj_err.values()],
+       align='center', alpha=0.5,
+       ecolor='black', capsize=10,
+       width = width,
+       color = colors,
+       tick_label = [str(key) for key in std_traj_err.keys()])
 plt.show()
 
 
