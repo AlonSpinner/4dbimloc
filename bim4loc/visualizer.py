@@ -6,6 +6,9 @@ import logging
 import numpy as np
 from functools import partial
 from typing import Union, Optional
+import os
+import open3d as o3d
+import matplotlib.pyplot as plt
 
 # gui.Application : http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Application.html#open3d.visualization.gui.Application
 # gui.Window :  http://www.open3d.org/docs/release/python_api/open3d.visualization.gui.Window.html?highlight=gui%20application%20instance%20create_window
@@ -317,10 +320,11 @@ class VisApp():
             window = self._windows[window_name]
             return window
 
-    def get_images(self):
+    def get_images(self, dir_path = None, prefix = '', sufix = '',
+                     transform = None, save_scenes = None):
         def _render_scene_image(window, scene_widget, image_container):
             def _on_image(image):
-                image_container[0] = np.asarray(image)
+                image_container[0] = image
                 image_container[1] = True
             scene_widget.scene.scene.render_to_image(_on_image)
         
@@ -332,7 +336,16 @@ class VisApp():
             image_container = [0,False]
             self._app.post_to_main_thread(window, partial(_render_scene_image,window ,scene_widget,image_container))
             while image_container[1] is False: pass #wait until image is rendered
-            images_dict["scene_name"] = image_container[0]
+
+            image_container[0] = np.asarray(image_container[0])
+            if transform is not None:
+                image_container[0] = transform(np.asarray(image_container[0]))
+            if dir_path is not None:
+                if save_scenes is None or scene_name in save_scenes:
+                    image_path = os.path.join(dir_path,prefix + scene_name + sufix + ".png")
+                    plt.imsave(image_path, image_container[0])
+
+            images_dict[scene_name] = image_container[0]
         
         return images_dict
 #-----------------------------------------------------------------------------------------------------------------------

@@ -13,8 +13,11 @@ results = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k', 'm']
 
+plt.rcParams['font.size'] = '24'
+
 #------------------------------------TRAJECTRY PLOTS--------------------------
-fig, ax = plt.subplots()
+fig = plt.figure(figsize = (16,8))
+ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Error [m]')
 ax.grid(True)
@@ -22,7 +25,7 @@ for i, res in enumerate(results.values()):
     traj_err, _ = localiztion_error(data['ground_truth']['trajectory'], \
                 res['pose_mu'])
     ax.plot(traj_err, label = f'method {i}', color = colors[i], lw = 2)
-ax.legend()
+# ax.legend()
 plt.show()
 
 #------------------------------------CROSS ENTROPY PLOTS--------------------------
@@ -32,7 +35,8 @@ for i, s in enumerate(solids):
     if s.name in data['ground_truth']['constructed_solids_names']:
         ground_truth_beliefs[i] = 1.0
 
-fig, ax = plt.subplots()
+fig = plt.figure(figsize = (16,8))
+ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Entropy')
 ax.set_ylim(0,15)
@@ -43,7 +47,7 @@ for i, res in enumerate(results.values()):
                                            res['perfect_traj_belief_map'])
     ax.plot(cross_entropy, label = f'method {i}', color = colors[i], lw = 2)
     ax.plot(cross_entropy_perfect_traj, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')
-ax.legend()
+# ax.legend()
 plt.show()
 
 #------------------------------------SELF ENTROPY PLOTS--------------------------
@@ -53,7 +57,8 @@ for i, s in enumerate(solids):
     if s.name in data['ground_truth']['constructed_solids_names']:
         ground_truth_beliefs[i] = 1.0
 
-fig, ax = plt.subplots()
+fig = plt.figure(figsize = (16,8))
+ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Entropy')
 ax.set_ylim(0,15)
@@ -64,5 +69,5 @@ for i, res in enumerate(results.values()):
                                     res['perfect_traj_belief_map'])
     ax.plot(self_entropy, label = f'method {i}', color = colors[i], lw = 2)
     ax.plot(self_entropy_perfect_traj, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')
-ax.legend()
+# ax.legend()
 plt.show()

@@ -106,7 +106,12 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                     'expected_belief_map': [expected_belief_map],
                     'perfect_traj_belief_map': [expected_belief_map]}
 
-    np.random.seed(1)
+    def crop_image(image, crop_ratio_w, crop_ratio_h):
+        h,w = image.shape[:2]
+        crop_h = int(h * crop_ratio_h/2)
+        crop_w = int(w * crop_ratio_w/2)
+        return image[crop_h:-crop_h, crop_w:-crop_w,:]
+    images_output_path = os.path.join(dir_path, "25_images")
     
     #LOOP
     time.sleep(2)
@@ -149,6 +154,10 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         [visApp.update_solid(s,"simulation") for s in simulation.solids]
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
+
+        if t % 3 == 0:
+            images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",
+                            transform = lambda x: crop_image(x,0.3,0.55), save_world = False)
 
     #--------------------SAVE RESULTS--------------------
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])

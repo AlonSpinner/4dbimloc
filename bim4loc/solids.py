@@ -168,11 +168,11 @@ class LinesSolid(o3dSolid):
         self.geometry.colors = o3d.utility.Vector3dVector(c)
 
 class TrailSolid(LinesSolid):
-    def __init__(self, name, p0):
+    def __init__(self, name, p0, color = np.array([0.0, 0.0, 0.0])):
         super().__init__(name = name, pts = np.vstack((p0,p0+0.0001)), #points have to be different
                          indicies = np.array([[0,1]]), 
                          line_width = 5.0, 
-                         color = np.array([0.0, 0.0, 0.0]))
+                         color = color)
     def update(self, pts) -> None:
         '''
         input:

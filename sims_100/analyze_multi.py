@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error
 
-out_folder = "out_large_noise"
+out_folder = "out_mid_noise"
 
 data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
-max_seed = 20
+max_seed = 29
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")

@@ -11,8 +11,8 @@ import time
 import logging
 import pickle
 import os
-
-np.random.seed(8)
+dead_reck_show = True
+np.random.seed(55)
 #8 is simple
 #5, 10, 55 are rough
 #14 is good
@@ -32,7 +32,6 @@ for i, s in enumerate(solids):
             constructed_solids.append(s.clone())
 constructed_solids = remove_constructed_solids_that_cant_exist(constructed_solids)
 # del constructed_solids[2]
-
 
 initial_beliefs = np.zeros(len(solids))
 for i, s in enumerate(solids):
@@ -74,10 +73,14 @@ visApp.add_scene("initial_condition","world")
 [visApp.add_solid(s,"initial_condition") for s in simulation.solids]
 visApp.redraw("initial_condition")
 visApp.setup_default_camera("initial_condition")
-dead_reck_vis_arrow = ArrowSolid("dead_reck_arrow", 1.0, drone.pose)
-visApp.add_solid(dead_reck_vis_arrow, "initial_condition")
-dead_reck_vis_trail_est = TrailSolid("trail_est", drone.pose[:3].reshape(1,3))
-visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
+
+if dead_reck_show == True:
+    dead_reck_vis_arrow = ArrowSolid("dead_reck_arrow", 1.0, drone.pose)
+    visApp.add_solid(dead_reck_vis_arrow, "world")
+    dead_reck_vis_trail_est = TrailSolid("trail_est", 
+                                         drone.pose[:3].reshape(1,3),
+                                         color = [0.0,0.0,1.0])
+    visApp.add_solid(dead_reck_vis_trail_est, "world")
 
 U_COV = np.diag([0.2, 0.1, 1e-25, np.radians(1)])**2
 
@@ -86,6 +89,13 @@ measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}
 
 #ground truth
 gt_traj = [drone.pose]
+
+def crop_image(image, crop_ratio_w, crop_ratio_h):
+    h,w = image.shape[:2]
+    crop_h = int(h * crop_ratio_h/2)
+    crop_w = int(w * crop_ratio_w/2)
+    return image[crop_h:-crop_h, crop_w:-crop_w,:]
+images_output_path = os.path.join(dir_path, "25_images")
 
 #LOOP
 time.sleep(2)
@@ -114,11 +124,17 @@ for t, u in enumerate(actions):
     visApp.update_solid(trail_ground_truth, "world")
     visApp.redraw_all_scenes()
 
-    dead_reck_vis_arrow.update_geometry(measurements['dead_reck'][-1] - np.array([0,0,0.3,0.0])) #wierd offset required
-    dead_reck_vis_trail_est.update(measurements['dead_reck'][-1][:3].reshape(1,-1))
-    visApp.update_solid(dead_reck_vis_arrow, "initial_condition")
-    visApp.update_solid(dead_reck_vis_trail_est, "initial_condition")
+    if dead_reck_show == True:
+        dead_reck_vis_arrow.update_geometry(measurements['dead_reck'][-1] - np.array([0,0,0.3,0.0])) #wierd offset required
+        dead_reck_vis_trail_est.update(measurements['dead_reck'][-1][:3].reshape(1,-1))
+        visApp.update_solid(dead_reck_vis_arrow, "world")
+        visApp.update_solid(dead_reck_vis_trail_est, "world")
 
+    if t % 3 == 0:
+        images = visApp.get_images(images_output_path,prefix = f"t{t}_",
+                            transform = lambda x: crop_image(x,0.3,0.55),
+                            save_scenes = "world")
+    
     # time.sleep(0.1)
 measurements['dead_reck'] = np.array(measurements['dead_reck'])
 
