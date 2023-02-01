@@ -4,13 +4,14 @@ import os
 import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error
+plt.rcParams['font.size'] = '24'
 
 out_folder = "out_mid_noise"
 
 data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
-max_seed = 29
+max_seed = 50
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
@@ -110,7 +111,8 @@ for method_i in analyzed_by_method.keys():
 
 colors = ['b', 'g', 'r', 'k']
 #-----------------------------------Failures --------------------------------------------
-fig, ax = plt.subplots()
+fig = plt.figure(figsize = (10,8))
+ax = fig.add_subplot(111)
 ax.set_xlabel('Method ')
 ax.set_ylabel('Failures')
 width = 0.25
@@ -119,48 +121,49 @@ ax_cef = ax.bar(np.array(list(N_cross_entropy_failures.keys())) - width,
        edgecolor = 'black',
        align='center', alpha=0.5,
        color = colors,
-       width = width,
-       tick_label = [str(key) for key in mean_traj_err.keys()])
-ax_f = ax.bar(np.array(list(N_traj_failures.keys())) + width,
-       N_failures.values(),
-       edgecolor = 'black',
-       align='center', alpha=1.0,
-       color = colors,
-       width = width,
-       tick_label = [str(key) for key in mean_traj_err.keys()])
+       width = width)
 ax_tf = ax.bar(np.array(list(N_traj_failures.keys())),
        N_traj_failures.values(),
        edgecolor = 'black',
        align='center', alpha=0.7,
        color = colors,
-       width = width,
-       tick_label = [str(key) for key in mean_traj_err.keys()])
+       width = width)
+ax_f = ax.bar(np.array(list(N_traj_failures.keys())) + width,
+       N_failures.values(),
+       edgecolor = 'black',
+       align='center', alpha=1.0,
+       color = colors,
+       width = width)
+ax.set_xticks(np.array(list(N_failures.keys())))
+ax.set_xticklabels([str(key) for key in N_failures.keys()])
 plt.show()
 
 #----------------------------------- Mean Trajectory Error ------------------------------------
-fig, ax = plt.subplots()
+fig = plt.figure(figsize = (10,8))
+ax = fig.add_subplot(111)
 ax.set_xlabel('Method ')
 ax.set_ylabel('Error [m]')
 ax.grid(False)
 width = 0.25
 ax_mean = ax.bar(np.array(list(mean_traj_err.keys())) - width/2,
-       [max(0.0,m[0]) for m in mean_traj_err.values()],
+       [m[0] for m in mean_traj_err.values()],
        yerr=[max(0.0,m[1]) for m in mean_traj_err.values()],
        align='center', alpha=0.5,
        ecolor='black', capsize=10,
        width = width,
-       color = colors,
-       tick_label = [str(key) for key in mean_traj_err.keys()])
+       color = colors)
 
 ax_std = ax.bar(np.array(list(std_traj_err.keys())) + width/2,
-       [max(0.0,s[0]) for s in std_traj_err.values()],
+       [s[0] for s in std_traj_err.values()],
        yerr=[max(0.0,s[1]) for s in std_traj_err.values()],
        align='center', alpha=0.5,
        ecolor='black', capsize=10,
        width = width,
-       color = colors,
-       tick_label = [str(key) for key in std_traj_err.keys()])
+       color = colors)
+ax.set_xticks(np.array(list(std_traj_err.keys())))
+ax.set_xticklabels([str(key) for key in std_traj_err.keys()])
 plt.show()
 
+#----------------------------------- Electric Boxes ------------------------------------
 
 
