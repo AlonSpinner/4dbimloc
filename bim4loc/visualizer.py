@@ -316,6 +316,25 @@ class VisApp():
             window_name = self._scene2window[scene_name]
             window = self._windows[window_name]
             return window
+
+    def get_images(self):
+        def _render_scene_image(window, scene_widget, image_container):
+            def _on_image(image):
+                image_container[0] = np.asarray(image)
+                image_container[1] = True
+            scene_widget.scene.scene.render_to_image(_on_image)
+        
+        images_dict = {}
+        for scene_name in self._scenes.keys():
+            scene_widget = self._scenes[scene_name]
+            
+            window = self._get_window(scene_name)
+            image_container = [0,False]
+            self._app.post_to_main_thread(window, partial(_render_scene_image,window ,scene_widget,image_container))
+            while image_container[1] is False: pass #wait until image is rendered
+            images_dict["scene_name"] = image_container[0]
+        
+        return images_dict
 #-----------------------------------------------------------------------------------------------------------------------
 #------------------------------------ O3DVisualizer SPECIFIC--------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------

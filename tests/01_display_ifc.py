@@ -18,5 +18,10 @@ visApp.redraw() #must be called after adding all solids
 visApp.setup_default_camera()
 visApp.show_axes()
 
+images = visApp.get_images()
+from matplotlib import pyplot as plt
+plt.imshow(images['scene_name'])
+plt.show()
+
 
 
