@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from math import erf
 from typing import Tuple
 from numba import njit
+from scipy import stats
 
 class Distribution1D:
     def sample(n : int) -> np.ndarray:
@@ -31,6 +32,18 @@ class Gaussian(Distribution1D):
         zeta = (x-self.mu)/(self.sigma)
         return npPhi(zeta)
 
+    def Anderson_Darling(self, v):
+        #https://en.wikipedia.org/wiki/Anderson%E2%80%93Darling_test
+        v = np.sort(v)
+        n = len(v)
+        v = (v - self.mu) /self.sigma
+        s = 0
+        for i in range(n):
+            s += (2*i -1)*np.log(npPhi(v[i])) + (2*(n-i) + 1)*np.log(1-npPhi(v[i]))
+        A2 = -n - s/n
+        A2_star = A2*(1 + 0.75/n + 2.25/n**2)
+        return A2_star
+
     def plot(self, dt = 0.1) -> Tuple[plt.Figure, plt.Axes]:
         tmin = self.mu - 3 * self.sigma
         tmax = self.mu + 3 * self.sigma
@@ -53,6 +66,12 @@ class Gaussian(Distribution1D):
             return num
         den = np.sqrt(2*np.pi)*sigma
         return num / den
+
+    @staticmethod
+    def Shapiro_Wilk(v):
+        #https://en.wikipedia.org/wiki/Shapiro%E2%80%93Wilk_test
+        stat, p_value = stats.shapiro(v)
+        return p_value
 
 class GaussianT(Distribution1D):
 #https://en.wikipedia.org/wiki/Truncated_normal_distribution
