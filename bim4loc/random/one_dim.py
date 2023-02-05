@@ -51,9 +51,8 @@ class Gaussian(Distribution1D):
         num = np.exp(-(x-mu)**2/(2*sigma**2))
         if pseudo:
             return num
-        else:
-            den = 1/(np.sqrt(2*np.pi)*sigma)
-            return num/den
+        den = np.sqrt(2*np.pi)*sigma
+        return num / den
 
 class GaussianT(Distribution1D):
 #https://en.wikipedia.org/wiki/Truncated_normal_distribution

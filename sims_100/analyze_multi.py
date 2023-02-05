@@ -3,10 +3,11 @@ import pickle
 import os
 import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter, add_variations_from_yaml
-from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, cross_entropy_error, percentile_boxes_right
+from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
+    cross_entropy_error, percentile_boxes_right, belief_map_accuracy
 plt.rcParams['font.size'] = '24'
 
-out_folder = "out_large_noise"
+out_folder = "out_mid_noise"
 
 data_by_seed = []
 results_by_seed = []
@@ -47,6 +48,10 @@ for seednumber in range(max_seed):
                                     res['expected_belief_map'],
                                     res['perfect_traj_belief_map'])
 
+        accuracy, accuracy_perfect_traj = belief_map_accuracy(ground_truth_beliefs,
+                                    res['expected_belief_map'],
+                                    res['perfect_traj_belief_map'])
+
         p_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
                                             gt_electric_boxes_names, gt_electric_boxes_indicies,
                                             sim_electric_boxes_indicies, sim_electric_boxes_names)
@@ -56,7 +61,10 @@ for seednumber in range(max_seed):
                     'cross_entropy_perfect_traj': cross_entropy_perfect_traj,
                     'self_entropy': self_entropy,
                     'self_entropy_perfect_traj': self_entropy_perfect_traj,
-                    'percentile_boxes' : p_boxes}
+                    'percentile_boxes' : p_boxes,
+                    'accuracy': accuracy,
+                    'accuracy_perfect_traj': accuracy_perfect_traj}
+
     analyzed_by_seed.append(analyzed)
     results_by_seed.append(results)
     data_by_seed.append(data)
@@ -89,6 +97,18 @@ def average_traj_err(analyzed_method):
     mu = np.mean(analyzed_method['traj_err'])
     std = np.std(analyzed_method['traj_err'])
     return mu, std 
+
+def average_cross_entropy(analyzed_method):
+    #return mean and std
+    mu = np.mean(analyzed_method['cross_entropy'])
+    std = np.std(analyzed_method['cross_entropy'])
+    return mu, std
+
+def average_accuracy(analyzed_method):
+    #return mean and std
+    mu = np.mean(analyzed_method['accuracy'])
+    std = np.std(analyzed_method['accuracy'])
+    return mu, std
     
 analyzed_by_method = by_seed_to_by_method(analyzed_by_seed)
 
@@ -107,78 +127,86 @@ for method_i in analyzed_by_method.keys():
     failures[method_i] = list(set(traj_failures[method_i] + cross_entropy_failures[method_i]))
     N_failures[method_i] = len(failures[method_i])
 
-sucesses = {}
-N_sucesses = {}
-mean_traj_err = {}
-std_traj_err = {}
+sucesses = {} ; N_sucesses = {}
+mean_traj_err = {} ; std_traj_err = {}
+mean_ce_err = {} ; std_ce_err = {}
+mean_acc = {} ; std_acc = {}
 for method_i in analyzed_by_method.keys():
     sucesses[method_i] = list(set(range(max_seed)) - set(failures[method_i]))
     N_sucesses[method_i] = len(sucesses[method_i])
     
-    mu_seeds = []
-    std_seeds = []
+    traj_mu_seeds = []
+    traj_std_seeds = []
+    ce_mu_seeds = []
+    ce_std_seeds = []
+    acc_mu_seeds = []
+    acc_std_seeds = []
     for seed in sucesses[method_i]:
-        mu_seed, std_seed = average_traj_err(analyzed_by_method[method_i][seed])
-        mu_seeds.append(mu_seed)
-        std_seeds.append(std_seed)
-    mean_traj_err[method_i] = (np.mean(mu_seeds),np.std(mu_seeds))
-    std_traj_err[method_i] = (np.mean(std_seeds),np.std(std_seeds))
+        ce_mu_seed, ce_std_seed = average_cross_entropy(analyzed_by_method[method_i][seed])
+        ce_mu_seeds.append(ce_mu_seed)
+        ce_std_seeds.append(ce_std_seed)
+
+        traj_mu_seed, traj_std_seed = average_traj_err(analyzed_by_method[method_i][seed])
+        traj_mu_seeds.append(traj_mu_seed)
+        traj_std_seeds.append(traj_std_seed)
+
+        acc_mu_seed, acc_std_seed = average_accuracy(analyzed_by_method[method_i][seed])
+        acc_mu_seeds.append(acc_mu_seed)
+        acc_std_seeds.append(acc_std_seed)
+
+    mean_ce_err[method_i] = (np.mean(ce_mu_seeds),np.std(ce_mu_seeds))
+    std_ce_err[method_i] = (np.mean(ce_std_seeds),np.std(ce_std_seeds))
+    mean_traj_err[method_i] = (np.mean(traj_mu_seeds),np.std(traj_mu_seeds))
+    std_traj_err[method_i] = (np.mean(traj_std_seeds),np.std(traj_std_seeds))
+    mean_acc[method_i] = (np.mean(acc_mu_seeds),np.std(acc_mu_seeds))
+    std_acc[method_i] = (np.mean(acc_std_seeds),np.std(acc_std_seeds))
 
 colors = ['b', 'g', 'r', 'k']
 #-----------------------------------Failures --------------------------------------------
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-ax.set_xlabel('Method ')
-ax.set_ylabel('Failures')
-width = 0.25
-ax_cef = ax.bar(np.array(list(N_cross_entropy_failures.keys())) - width,
-       N_cross_entropy_failures.values(),
-       edgecolor = 'black',
-       align='center', alpha=0.5,
-       color = colors,
-       width = width)
-ax_tf = ax.bar(np.array(list(N_traj_failures.keys())),
-       N_traj_failures.values(),
-       edgecolor = 'black',
-       align='center', alpha=0.7,
-       color = colors,
-       width = width)
-ax_f = ax.bar(np.array(list(N_traj_failures.keys())) + width,
+ax_f = ax.bar(np.array(list(N_traj_failures.keys())),
        N_failures.values(),
        edgecolor = 'black',
        align='center', alpha=1.0,
-       color = colors,
-       width = width)
+       color = colors)
 ax.set_xticks(np.array(list(N_failures.keys())))
-ax.set_xticklabels([str(key) for key in N_failures.keys()])
+ax.set_ylabel('Failures')
+ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 plt.show()
 
 #----------------------------------- Mean Trajectory Error ------------------------------------
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-ax.set_xlabel('Method ')
-ax.set_ylabel('Error [m]')
-ax.grid(False)
-width = 0.25
-ax_mean = ax.bar(np.array(list(mean_traj_err.keys())) - width/2,
-       [m[0] for m in mean_traj_err.values()],
-       yerr=[max(0.0,m[1]) for m in mean_traj_err.values()],
-       align='center', alpha=0.5,
-       ecolor='black', capsize=10,
-       width = width,
-       color = colors)
 
-ax_std = ax.bar(np.array(list(std_traj_err.keys())) + width/2,
-       [s[0] for s in std_traj_err.values()],
-       yerr=[max(0.0,s[1]) for s in std_traj_err.values()],
-       align='center', alpha=0.5,
-       ecolor='black', capsize=10,
-       width = width,
-       color = colors)
-ax.set_xticks(np.array(list(std_traj_err.keys())))
-ax.set_xticklabels([str(key) for key in std_traj_err.keys()])
+from bim4loc.random.one_dim import Gaussian
+def plot_gaussian(ax : plt.Axes, gauss : Gaussian, color = 'b', alpha = 0.7, lims = None):
+    if lims == None:
+        tmin = gauss.mu - 3 * gauss.sigma
+        tmax = gauss.mu + 3 * gauss.sigma
+        t = np.linspace(tmin,tmax,1000)
+    else:
+        t = np.linspace(lims[0],lims[1],1000)
+    y = gauss.pdf(t)
+    ax.plot(t,y, color = color, alpha = alpha)
+
+for i, m in enumerate(mean_traj_err.values()):
+    g = Gaussian(m[0],m[1])
+    plot_gaussian(ax, g, color = colors[i], alpha = 1.0, lims = [0.0, 0.25])
+ax.set_xlabel('Mean Trajectory Error, m')
+ax.set_ylabel('Probability Density')
+ax.grid(True)
 plt.show()
-
+#----------------------------------- Mean Cross Entropy Error ------------------------------------
+fig = plt.figure(figsize = (10,8))
+ax = fig.add_subplot(111)
+for i, m in enumerate(mean_ce_err.values()):
+    g = Gaussian(m[0],m[1])
+    plot_gaussian(ax, g, color = colors[i], alpha = 1.0, lims = [0.0,9.0])
+ax.set_xlabel('Mean Final Cross Entropy Error')
+ax.set_ylabel('Probability Density')
+ax.grid(True)
+plt.show()
 #----------------------------------- Electric Boxes ------------------------------------
 boxes_right = {}
 for method_i in analyzed_by_method.keys():
@@ -187,13 +215,30 @@ for method_i in analyzed_by_method.keys():
         p_seeds.append(analyzed_by_method[method_i][seed]['percentile_boxes'])
     boxes_right[method_i] = np.mean(p_seeds)
 
-fig = plt.figure(figsize = (16,8))
+fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
 ax.bar(np.array(list(boxes_right.keys())),
        boxes_right.values(),
        edgecolor = 'black',
        align='center', alpha=1.0,
        color = colors)
+ax.set_xticks(np.array(list(boxes_right.keys())))
+ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
+ax.set_ylabel('Correct Wall-Hung Box Detection, %')
 plt.show()
+
+#----------------------------------- Accuracy ------------------------------------
+fig = plt.figure(figsize = (10,8))
+ax = fig.add_subplot(111)
+ax_f = ax.bar(np.array(list(mean_acc.keys())),
+       [v[0] for v in mean_acc.values()],
+       edgecolor = 'black',
+       align='center', alpha=1.0,
+       color = colors)
+ax.set_xticks(np.array(list(mean_acc.keys())))
+ax.set_ylabel('Accuracy, %')
+ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
+plt.show()
+
 
 

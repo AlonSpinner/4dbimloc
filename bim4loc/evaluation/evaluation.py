@@ -96,6 +96,44 @@ def cross_entropy_error(ground_truth, estimated_beliefs, perfect_beliefs = None,
 
     return estimated, perfect
 
+def belief_map_accuracy(ground_truth, estimated_beliefs, perfect_beliefs = None, plot = False):
+    '''
+    perfect_beliefs - np.array of shape (n, n_elements), assuming perfect trajectory
+    estimated_beliefs - np.array of shape (n, n_elements)
+    ground_truth - np.array of shape (n_elements)
+    '''
+    Ngt = len(ground_truth)
+    binary_estimated_beleifs = estimated_beliefs > 0.9
+    True_Positives = np.zeros(estimated_beliefs.shape[0])
+    True_Negatives = np.zeros(estimated_beliefs.shape[0])
+    for i in range(estimated_beliefs.shape[0]):
+        True_Positives[i] = np.sum(binary_estimated_beleifs[i][:Ngt] * ground_truth)
+        True_Negatives[i] = np.sum((1-binary_estimated_beleifs[i][:Ngt]) * (1-ground_truth))
+    estimated = (True_Positives + True_Negatives)/ len(ground_truth)
+
+    perfect = np.zeros_like(estimated)
+    if perfect_beliefs is not None:
+        binary_perfect_beliefs = perfect_beliefs > 0.9
+        True_Positives = np.zeros(perfect_beliefs.shape[0])
+        True_Negatives = np.zeros(perfect_beliefs.shape[0])
+        for i in range(binary_perfect_beliefs.shape[0]):
+            True_Positives[i] = np.sum(binary_perfect_beliefs[i][:Ngt] * ground_truth)
+            True_Negatives[i] = np.sum((1-binary_perfect_beliefs[i][:Ngt]) * (1-ground_truth))
+        perfect = (True_Positives + True_Negatives)/ len(ground_truth)
+    
+    if plot is True:
+        fig, ax = plt.subplots()
+        ax.plot(estimated, label='rbpf')
+        if perfect_beliefs is not None:
+                ax.plot(perfect, label='mapping with known poses')
+        ax.set_title('Cross Entropy Error')
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Entropy')
+        ax.grid(True)
+        ax.legend()
+
+    return estimated, perfect
+
 def percentile_boxes_right(expected_belief_map, ground_truth_beliefs, 
                             gt_electric_boxes_names, gt_electric_boxes_indicies,
                             sim_electric_boxes_indicies, sim_electric_boxes_names):
