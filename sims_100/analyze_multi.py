@@ -100,8 +100,8 @@ def average_traj_err(analyzed_method):
 
 def average_cross_entropy(analyzed_method):
     #return mean and std
-    mu = np.mean(analyzed_method['cross_entropy'])
-    std = np.std(analyzed_method['cross_entropy'])
+    mu = np.mean(analyzed_method['cross_entropy'][-1])
+    std = np.std(analyzed_method['cross_entropy'][-1])
     return mu, std
 
 def average_accuracy(analyzed_method):

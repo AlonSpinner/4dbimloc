@@ -111,7 +111,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         crop_h = int(h * crop_ratio_h/2)
         crop_w = int(w * crop_ratio_w/2)
         return image[crop_h:-crop_h, crop_w:-crop_w,:]
-    images_output_path = os.path.join(dir_path, "25_images")
+    images_output_path = None#os.path.join(dir_path, "25_images")
     
     #LOOP
     time.sleep(2)
@@ -157,7 +157,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
         if t % 3 == 0:
             images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",
-                            transform = lambda x: crop_image(x,0.3,0.55), save_world = False)
+                            transform = lambda x: crop_image(x,0.3,0.55), save_scenes = ["simulation"])
 
     #--------------------SAVE RESULTS--------------------
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])

@@ -20,7 +20,7 @@ plt.rcParams['font.size'] = '24'
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Error [m]')
+ax.set_ylabel('Trajectory Error [m]')
 ax.grid(True)
 for i, res in enumerate(results.values()):
     traj_err, _ = localiztion_error(data['ground_truth']['trajectory'], \
@@ -39,7 +39,7 @@ for i, s in enumerate(solids):
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Entropy')
+ax.set_ylabel('Belief Map Cross Entropy')
 ax.set_ylim(0,15)
 ax.grid(True)
 for i, res in enumerate(results.values()):
@@ -61,7 +61,7 @@ for i, s in enumerate(solids):
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Entropy')
+ax.set_ylabel('Belief Map Self Entropy')
 ax.set_ylim(0,15)
 ax.grid(True)
 for i, res in enumerate(results.values()):
@@ -77,7 +77,7 @@ plt.show()
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Accuracy')
+ax.set_ylabel('Belief Map Accuracy')
 ax.set_ylim(0,1)
 ax.grid(True)
 for i, res in enumerate(results.values()):

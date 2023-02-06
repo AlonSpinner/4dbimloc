@@ -44,13 +44,11 @@ def compute_cross_entropy(p : np.ndarray, q : np.ndarray) -> np.ndarray:
     if p.ndim == 1:
         cross_entropy = 0.0
         for i in prange(p.shape[0]):
-            if p[i] != 0.0:
-                cross_entropy = cross_entropy - p[i] * np.log(q[i])
+            cross_entropy = cross_entropy - p[i] * np.log(q[i] + EPS)
         return np.array([cross_entropy])
     elif p.ndim == 2:
         cross_entropy = np.zeros(p.shape[0])
         for i in prange(p.shape[0]):
             for j in prange(p.shape[1]):
-                if q[i,j] != 0.0:
-                    cross_entropy[i] = cross_entropy[i] - p[i,j] * np.log(q[i,j])
+                cross_entropy[i] = cross_entropy[i] - p[i,j] * np.log(q[i,j] + EPS)
     return cross_entropy
