@@ -16,6 +16,8 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
+np.random.seed(5)
+
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
 
@@ -23,6 +25,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
+data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
 results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
@@ -111,7 +114,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         crop_h = int(h * crop_ratio_h/2)
         crop_w = int(w * crop_ratio_w/2)
         return image[crop_h:-crop_h, crop_w:-crop_w,:]
-    images_output_path = None#os.path.join(dir_path, "25_images")
+    images_output_path = os.path.join(dir_path, "25_images")
     
     #LOOP
     time.sleep(2)

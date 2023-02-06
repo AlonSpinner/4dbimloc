@@ -21,7 +21,7 @@ data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Trajectory Error [m]')
+ax.set_ylabel('Trajectory Error, m')
 ax.grid(True)
 for i, res in enumerate(results.values()):
     traj_err, _ = localiztion_error(data['ground_truth']['trajectory'], \
@@ -40,8 +40,8 @@ for i, s in enumerate(solids):
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Belief Map Cross Entropy')
-# ax.set_ylim(0,15)
+ax.set_ylabel('Belief Map Cross Entropy Error, bits')
+ax.set_ylim(0,70)
 ax.grid(True)
 for i, res in enumerate(results.values()):
     cross_entropy, cross_entropy_perfect_traj = cross_entropy_error(ground_truth_beliefs,
@@ -62,8 +62,8 @@ for i, s in enumerate(solids):
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
-ax.set_ylabel('Belief Map Self Entropy')
-# ax.set_ylim(0,15)
+ax.set_ylabel('Belief Map Self Entropy Error, bits')
+# ax.set_ylim(0,70)
 ax.grid(True)
 for i, res in enumerate(results.values()):
     self_entropy, self_entropy_perfect_traj = map_entropy(
@@ -75,18 +75,18 @@ for i, res in enumerate(results.values()):
 plt.show()
 
 #------------------------------------Accuracy PLOTS--------------------------
-fig = plt.figure(figsize = (16,8))
-ax = fig.add_subplot(111)
-ax.set_xlabel('Time [s]')
-ax.set_ylabel('Belief Map Accuracy')
-ax.set_ylim(0,1)
-ax.grid(True)
-for i, res in enumerate(results.values()):
-    accuracy, perfect_accuracy = belief_map_accuracy(
-                                    ground_truth_beliefs,
-                                    res['expected_belief_map'],
-                                    res['perfect_traj_belief_map'])
-    ax.plot(accuracy, label = f'method {i}', color = colors[i], lw = 2)
-    ax.plot(perfect_accuracy, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')
-# ax.legend()
-plt.show()
+# fig = plt.figure(figsize = (16,8))
+# ax = fig.add_subplot(111)
+# ax.set_xlabel('Time [s]')
+# ax.set_ylabel('Belief Map Accuracy')
+# ax.set_ylim(0,1)
+# ax.grid(True)
+# for i, res in enumerate(results.values()):
+#     accuracy, perfect_accuracy = belief_map_accuracy(
+#                                     ground_truth_beliefs,
+#                                     res['expected_belief_map'],
+#                                     res['perfect_traj_belief_map'])
+#     ax.plot(accuracy, label = f'method {i}', color = colors[i], lw = 2)
+#     ax.plot(perfect_accuracy, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')
+# # ax.legend()
+# plt.show()

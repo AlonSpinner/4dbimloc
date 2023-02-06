@@ -12,7 +12,7 @@ import logging
 import pickle
 import os
 dead_reck_show = True
-np.random.seed(55)
+np.random.seed(55) #map seed
 #8 is simple
 #5, 10, 55 are rough
 #14 is good
@@ -98,7 +98,7 @@ def crop_image(image, crop_ratio_w, crop_ratio_h):
 images_output_path = os.path.join(dir_path, "25_images")
 
 #LOOP
-time.sleep(2)
+np.random.seed(3) #noise seed
 for t, u in enumerate(actions):
 
     #move drone
