@@ -5,9 +5,20 @@ import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter, add_variations_from_yaml
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
     cross_entropy_error, percentile_boxes_right, belief_map_accuracy
-plt.rcParams['font.size'] = '24'
+from bim4loc.random.one_dim import Gaussian
 
+plt.rcParams['font.size'] = '24'
 out_folder = "out_mid_noise"
+
+def plot_gaussian(ax : plt.Axes, gauss : Gaussian, color = 'b', alpha = 0.7, lims = None):
+    if lims == None:
+        tmin = gauss.mu - 3 * gauss.sigma
+        tmax = gauss.mu + 3 * gauss.sigma
+        t = np.linspace(tmin,tmax,1000)
+    else:
+        t = np.linspace(lims[0],lims[1],1000)
+    y = gauss.pdf(t)
+    ax.plot(t,y, color = color, alpha = alpha)
 
 data_by_seed = []
 results_by_seed = []
@@ -104,11 +115,8 @@ def average_cross_entropy(analyzed_method):
     std = np.std(analyzed_method['cross_entropy'][-1])
     return mu, std
 
-def average_accuracy(analyzed_method):
-    #return mean and std
-    mu = np.mean(analyzed_method['accuracy'])
-    std = np.std(analyzed_method['accuracy'])
-    return mu, std
+def final_accuracy(analyzed_method):
+    return analyzed_method['accuracy'][-1]
     
 analyzed_by_method = by_seed_to_by_method(analyzed_by_seed)
 
@@ -128,38 +136,28 @@ for method_i in analyzed_by_method.keys():
     N_failures[method_i] = len(failures[method_i])
 
 sucesses = {} ; N_sucesses = {}
-mean_traj_err = {} ; std_traj_err = {}
-mean_ce_err = {} ; std_ce_err = {}
-mean_acc = {} ; std_acc = {}
+mean_traj_err = {}
+final_mean_ce_err = {}
+final_acc = {}
 for method_i in analyzed_by_method.keys():
     sucesses[method_i] = list(set(range(max_seed)) - set(failures[method_i]))
     N_sucesses[method_i] = len(sucesses[method_i])
     
     traj_mu_seeds = []
-    traj_std_seeds = []
-    ce_mu_seeds = []
-    ce_std_seeds = []
-    acc_mu_seeds = []
-    acc_std_seeds = []
+    final_ce_mu_seeds = []
+    final_acc_seeds = []
     for seed in sucesses[method_i]:
-        ce_mu_seed, ce_std_seed = average_cross_entropy(analyzed_by_method[method_i][seed])
-        ce_mu_seeds.append(ce_mu_seed)
-        ce_std_seeds.append(ce_std_seed)
+        final_ce_mu_seed, _ = average_cross_entropy(analyzed_by_method[method_i][seed])
+        final_ce_mu_seeds.append(final_ce_mu_seed)
 
-        traj_mu_seed, traj_std_seed = average_traj_err(analyzed_by_method[method_i][seed])
+        traj_mu_seed, _ = average_traj_err(analyzed_by_method[method_i][seed])
         traj_mu_seeds.append(traj_mu_seed)
-        traj_std_seeds.append(traj_std_seed)
 
-        acc_mu_seed, acc_std_seed = average_accuracy(analyzed_by_method[method_i][seed])
-        acc_mu_seeds.append(acc_mu_seed)
-        acc_std_seeds.append(acc_std_seed)
+        final_acc_seeds.append(final_accuracy(analyzed_by_method[method_i][seed]))
 
-    mean_ce_err[method_i] = (np.mean(ce_mu_seeds),np.std(ce_mu_seeds))
-    std_ce_err[method_i] = (np.mean(ce_std_seeds),np.std(ce_std_seeds))
-    mean_traj_err[method_i] = (np.mean(traj_mu_seeds),np.std(traj_mu_seeds))
-    std_traj_err[method_i] = (np.mean(traj_std_seeds),np.std(traj_std_seeds))
-    mean_acc[method_i] = (np.mean(acc_mu_seeds),np.std(acc_mu_seeds))
-    std_acc[method_i] = (np.mean(acc_std_seeds),np.std(acc_std_seeds))
+    final_mean_ce_err[method_i] = final_ce_mu_seeds
+    mean_traj_err[method_i] = traj_mu_seeds
+    final_acc[method_i] = final_acc_seeds
 
 colors = ['b', 'g', 'r', 'k']
 #-----------------------------------Failures --------------------------------------------
@@ -179,19 +177,8 @@ plt.show()
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
 
-from bim4loc.random.one_dim import Gaussian
-def plot_gaussian(ax : plt.Axes, gauss : Gaussian, color = 'b', alpha = 0.7, lims = None):
-    if lims == None:
-        tmin = gauss.mu - 3 * gauss.sigma
-        tmax = gauss.mu + 3 * gauss.sigma
-        t = np.linspace(tmin,tmax,1000)
-    else:
-        t = np.linspace(lims[0],lims[1],1000)
-    y = gauss.pdf(t)
-    ax.plot(t,y, color = color, alpha = alpha)
-
 for i, m in enumerate(mean_traj_err.values()):
-    g = Gaussian(m[0],m[1])
+    g = Gaussian(np.mean(m),np.std(m))
     plot_gaussian(ax, g, color = colors[i], alpha = 1.0, lims = [0.0, 0.25])
 ax.set_xlabel('Mean Trajectory Error, m')
 ax.set_ylabel('Probability Density')
@@ -200,8 +187,8 @@ plt.show()
 #----------------------------------- Mean Cross Entropy Error ------------------------------------
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-for i, m in enumerate(mean_ce_err.values()):
-    g = Gaussian(m[0],m[1])
+for i, m in enumerate(final_mean_ce_err.values()):
+    g = Gaussian(np.mean(m),np.mean(m))
     plot_gaussian(ax, g, color = colors[i], alpha = 1.0, lims = [0.0,9.0])
 ax.set_xlabel('Mean Final Cross Entropy Error')
 ax.set_ylabel('Probability Density')
@@ -230,12 +217,12 @@ plt.show()
 #----------------------------------- Accuracy ------------------------------------
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-ax_f = ax.bar(np.array(list(mean_acc.keys())),
-       [v[0] for v in mean_acc.values()],
+ax_f = ax.bar(np.array(list(final_acc.keys())),
+       [np.mean(v) for v in final_acc.values()],
        edgecolor = 'black',
        align='center', alpha=1.0,
        color = colors)
-ax.set_xticks(np.array(list(mean_acc.keys())))
+ax.set_xticks(np.array(list(final_acc.keys())))
 ax.set_ylabel('Accuracy, %')
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 plt.show()
