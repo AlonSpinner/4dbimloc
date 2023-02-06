@@ -15,6 +15,7 @@ results = pickle.Unpickler(open(file, "rb")).load()
 colors = ['b', 'g', 'r', 'k', 'm']
 
 plt.rcParams['font.size'] = '24'
+# data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #------------------------------------TRAJECTRY PLOTS--------------------------
 fig = plt.figure(figsize = (16,8))
