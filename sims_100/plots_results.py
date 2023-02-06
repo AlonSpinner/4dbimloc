@@ -16,7 +16,7 @@ ax = fig.add_subplot(111)
 ax_f = ax.bar(np.array(list(d['N_traj_failures'].keys())),
        d['N_failures'].values(),
        edgecolor = 'black',
-       align='center', alpha=1.0,
+       align='center', alpha=0.5,
        color = colors)
 ax.set_xticks(np.array(list(d['N_failures'].keys())))
 ax.set_ylabel('Failures')
@@ -49,7 +49,7 @@ for i, m in enumerate(d['final_mean_ce_err'].values()):
      meanline = True, showmeans = True, meanprops=dict(linewidth=2.0, color='firebrick', linestyle = '--'),
      patch_artist = True, boxprops = dict(facecolor = colors[i], alpha = 0.5, linewidth = 2.0),
      flierprops = dict(markerfacecolor = colors[i], marker = 'o', markersize = 7.0, markeredgecolor = 'k', alpha = 0.5))
-ax.set_ylabel('Mean Cross Entropy Error At Terminal')
+ax.set_ylabel('Mean Cross Entropy Error At Terminal, bits')
 ax.set_xticks(np.array(list(d['final_mean_ce_err'].keys())))
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 ax.grid(True)
@@ -58,7 +58,7 @@ plt.show()
 method_p_boxes = {}
 for method_i in d['analyzed_by_method'].keys():
     p_seeds = []
-    for seed in range(100):#d['sucesses'][method_i]:
+    for seed in range(len(d['analyzed_by_method'][method_i])):#d['sucesses'][method_i]:
         p_seeds.append(d['analyzed_by_method'][method_i][seed]['percentile_boxes'])
     method_p_boxes[method_i] = np.array(p_seeds)
 
