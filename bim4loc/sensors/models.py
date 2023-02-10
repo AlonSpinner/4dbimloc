@@ -64,6 +64,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     p_random = exponentialT_pdf(sensor_p0, sensor_max_range, wz_i) #<<<--- super important to relax exact
     inv_eta += p_random
 
+    inv_eta_normalizer = 1.0
     #solids
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
@@ -72,13 +73,15 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
         Pjplus = Pjbar * belief_ij
         Pjbar = Pjbar * negate(belief_ij)
         
-        a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = True)
+        a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = False)
         pj_z_i_wave[j] = belief_ij * inv_eta + a_temp
         inv_eta = inv_eta + a_temp
+
+        inv_eta_normalizer += Pjplus
     
     #max range hit
-    inv_eta += Pjbar * forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = True)
+    inv_eta += Pjbar * forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = False)
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    p_z_i = inv_eta #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
+    p_z_i = inv_eta/inv_eta_normalizer #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
     return pj_z_i, p_z_i

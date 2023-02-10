@@ -60,6 +60,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     simulated_sensor = data['sensor']
     simulated_sensor.piercing = True
     simulated_sensor.std *= 2
+    simulated_sensor.p0 = 0.4
     rbpf = RBPF(simulation, 
                 simulated_sensor,
                 initial_particle_poses,
@@ -68,7 +69,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_varaition_dependence,
                 data['U_COV'],
                 max_steps_to_resample = 5,
-                reservoir_decay_rate = 0.3)
+                reservoir_decay_rate = 0.2)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,

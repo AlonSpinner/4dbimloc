@@ -91,8 +91,9 @@ g_pz_2, = ax2.plot(bias + xhit, history_pz_ij[:,1], color = 'red');
 plot_solid_on_xz(ax, world.solids[1], color = 'red')
 g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green'); 
 plot_solid_on_xz(ax, world.solids[2], color = 'green')
-normalizer = np.sum(history_pz_ij[:,3])*(bias[1]-bias[0])
-g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black')
+db = bias[1] - bias[0]
+normalizer = np.sum(history_pz_ij[:,3])*db
+g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3], color = 'black')
 ax.set_xlabel('range, m', fontsize = 28)
 ax.set_ylabel('probability density', fontsize = 28)
 ax.set_ybound(0,0.8)
