@@ -15,7 +15,7 @@ import logging
 import keyboard
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
-
+from matplotlib.ticker import FormatStrFormatter
 import open3d as o3d
 
 np.set_printoptions(precision=3)
@@ -64,13 +64,13 @@ beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 
-# for _ in range(1):
-#     print('in')
-#     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
-#     pj_z_i, pz = inverse_lidar_model(4.8, simulated_z[0], simulated_z_ids[0], \
-#                         beliefs, 
-#                         simulated_sensor.std, simulated_sensor.max_range, simulated_sensor.p0)
-#     beliefs = pj_z_i
+for _ in range(1):
+    print('in')
+    simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
+    pj_z_i, pz = inverse_lidar_model(4.8, simulated_z[0], simulated_z_ids[0], \
+                        beliefs, 
+                        simulated_sensor.std, simulated_sensor.max_range, simulated_sensor.p0)
+    beliefs = pj_z_i
 
 for i, b in enumerate(bias):
     drone.sensor.bias = b
@@ -94,7 +94,8 @@ def plot_solid_on_xz(ax, solid : IfcSolid, color):
             ax.add_patch(Polygon(tri, closed = True, 
                     color = color,
                     alpha = 0.2,#solid.material.base_color[3],
-                    edgecolor = None))
+                    edgecolor = None,
+                    lw = 0.0))
 
     # ax.text(np.mean(v[:,0]), np.mean(v[:,1]), f" belief = {solid.material.base_color[3]}", 
     #                     fontsize = 10,
@@ -103,6 +104,7 @@ def plot_solid_on_xz(ax, solid : IfcSolid, color):
 plt.rcParams['font.size'] = '24'
 fig = plt.figure(figsize = (9,8))
 ax = fig.add_subplot(111)
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 ax2 = ax.twinx()
 xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0])
 g_pz_1, = ax2.plot(bias + xhit, history_pz_ij[:,0], color = 'blue', lw = 2); 
@@ -115,7 +117,7 @@ normalizer = np.sum(history_pz_ij[:,3])*(bias[1]-bias[0])
 g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black', lw = 2)
 ax.set_xlabel('range, m')
 ax.set_ylabel('probability density')
-ax.set_ylim(0,0.8)
+ax.set_ylim(0,3.0)
 ax2.set_ylim(0,1.1)
 ax2.set_ylabel('probability')
 ax.set_xlim(4.5,5.3)

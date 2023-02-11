@@ -46,10 +46,10 @@ drone.sensor.bias = 0.0
 drone.sensor.std = 0.00000000001
 simulated_sensor.std = 0.2
 
-N = 1000
+N = 10000
 history_pz_ij = np.zeros((N,4))
 bias = np.linspace(-2.8, sensor.max_range-2.8, N)
-beliefs = np.array([0.5, 0.5, 0.5])
+beliefs = np.array([1.0, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):
@@ -93,10 +93,11 @@ g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green');
 plot_solid_on_xz(ax, world.solids[2], color = 'green')
 db = bias[1] - bias[0]
 normalizer = np.sum(history_pz_ij[:,3])*db
+print(normalizer)
 g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3], color = 'black')
 ax.set_xlabel('range, m', fontsize = 28)
 ax.set_ylabel('probability density', fontsize = 28)
-ax.set_ybound(0,0.8)
+ax.set_ybound(0,1.1)
 ax2.set_ybound(0,1.1)
 ax2.set_ylabel('probability', fontsize = 28)
 

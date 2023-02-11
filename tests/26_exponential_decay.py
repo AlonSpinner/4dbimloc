@@ -2,13 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 x = 1
-rate = 0.3
+rate = 0.2
 
-t = np.arange(4)
+t = np.arange(5)
 history = np.zeros_like(t,dtype = float)
 history[0] = x
 for i in range(1,len(t)):
     x = x * np.exp(-rate)
     history[i] = x
-plt.scatter(t, history)
+plt.plot(t, history)
 plt.show()
