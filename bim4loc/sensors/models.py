@@ -36,7 +36,7 @@ def delta(x,xend,d):
     else:
         return 0
 
-# @njit(cache = True)
+@njit(cache = True)
 def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
                         sensor_std, sensor_max_range, sensor_p0 = 0.4):
     '''
@@ -84,7 +84,6 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
             inv_eta_normalizer += Pjplus 
             Pjbar = Pjbar * negate(1.0)
 
-
         belief_ij = beliefs[szid_i[j]]
 
         Pjplus = Pjbar * belief_ij
@@ -99,9 +98,75 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     #max range hit
     #multiply by two because we are using a half-plain gaussian model
     if max_range_computed == False:
-        inv_eta += Pjplus * delta(wz_i,sensor_max_range,EPS)#forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = False)
+        inv_eta += Pjplus * delta(wz_i,sensor_max_range,EPS)
         inv_eta_normalizer += Pjplus
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
-    p_z_i = inv_eta/inv_eta_normalizer #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
+    p_z_i = inv_eta/inv_eta_normalizer
+    return pj_z_i, p_z_i
+
+# @njit(cache = True)
+def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs, 
+                        sensor_std, sensor_max_range, sensor_p0 = 0.4):
+    '''
+    based on the awesome papers "Autonomous Exploration with Exact Inverse Sensor Models"
+    and "Bayesian Occpuancy Grid Mapping via an Exact Inverse Sensor Model"
+    by Evan Kaufman et al.
+    
+    input:
+    wz_i - world z value of i'th ray (np. array of floats)
+    sz_i - simulated z value of i'th ray (np.array of floats)
+    beliefs - probability of existance of each solid (np.array of floats [0,1])
+    sensor_std - standard deviation of sensor (float)
+    sensor_max_range - maximum range of sensor (float)
+    sensor_p0 - probablity density at range = 0
+
+    output:
+    pj_z_i - updated existance beliefs given measurement (probabilty of solid j, given z_i)
+    p_z_i - probability of measurement given existance beliefs
+    '''
+    N_maxhits = sz_i.size
+    valid_hits = 0
+    for j in prange(N_maxhits):
+        if szid_i[j] == NO_HIT:
+            break
+        valid_hits += 1
+
+    #insert max range element, thank god creates new np arrays
+    max_range_index = np.searchsorted(sz_i, sensor_max_range)
+    sz_i = np.insert(sz_i, max_range_index, sensor_max_range)
+    szid_i = np.insert(szid_i, max_range_index, len(beliefs))
+    beliefs = np.insert(beliefs, len(beliefs), 1.0)
+    valid_hits +=1
+
+    Pjbar = 1.0
+    inv_eta = 0.0
+    pj_z_i_wave = np.zeros(valid_hits)
+
+    #random hit
+    p_random = exponentialT_pdf(sensor_p0, sensor_max_range, wz_i) #<<<--- super important to relax exact
+    inv_eta += p_random
+    inv_eta_normalizer = 1.0
+    #solids
+    for j in prange(valid_hits):
+        sz_ij = sz_i[j]
+
+        belief_ij = beliefs[szid_i[j]]
+
+        Pjplus = Pjbar * belief_ij
+        Pjbar = Pjbar * negate(belief_ij)
+        
+        if szid_i[j] == len(beliefs)-1:
+            a_temp = Pjplus * delta(wz_i, sensor_max_range, EPS)
+        else:
+            a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = False)
+        pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)
+        inv_eta = inv_eta + a_temp
+
+        inv_eta_normalizer += Pjplus
+    
+    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
+    p_z_i = inv_eta/inv_eta_normalizer
+
+    pj_z_i = np.delete(pj_z_i, max_range_index)
     return pj_z_i, p_z_i
