@@ -31,6 +31,7 @@ class Lidar(Sensor):
         self.std = std
         self.bias = bias
         self.piercing = True
+        self.max_range_cutoff = True
 
         self._angles_u = angles_u
         self._angles_v = angles_v
@@ -62,7 +63,8 @@ class Lidar(Sensor):
         if noisy:
             z_values = np.random.normal(z_values + self.bias, self.std)
 
-        z_values[z_values > self.max_range] = self.max_range
+        if self.max_range_cutoff:
+            z_values[z_values > self.max_range] = self.max_range
 
         return z_values, z_ids, z_normals, z_cos_incident, z_n_hits
     

@@ -30,6 +30,13 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 @njit(cache = True)
+def delta(x,xend,d):
+    if x >= xend-d and x <= (xend):
+        return 1/d
+    else:
+        return 0
+
+# @njit(cache = True)
 def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs, 
                         sensor_std, sensor_max_range, sensor_p0 = 0.4):
     '''
@@ -65,8 +72,19 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     inv_eta += p_random
     inv_eta_normalizer = 1.0
     #solids
+    max_range_computed = False
+    Pjplus = 1.0
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
+
+        if sz_ij >= sensor_max_range and max_range_computed == False:
+            max_range_computed = True
+            inv_eta +=  Pjplus * delta(wz_i,sensor_max_range,EPS)
+            Pjplus = Pjbar * 1.0
+            inv_eta_normalizer += Pjplus 
+            Pjbar = Pjbar * negate(1.0)
+
+
         belief_ij = beliefs[szid_i[j]]
 
         Pjplus = Pjbar * belief_ij
@@ -80,8 +98,9 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     
     #max range hit
     #multiply by two because we are using a half-plain gaussian model
-    inv_eta += Pjbar * 1 * forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = False)
-    inv_eta_normalizer += Pjbar *0.5
+    if max_range_computed == False:
+        inv_eta += Pjplus * delta(wz_i,sensor_max_range,EPS)#forward_lidar_model(wz_i, sensor_max_range, sensor_std, pseudo = False)
+        inv_eta_normalizer += Pjplus
     
     pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
     p_z_i = inv_eta/inv_eta_normalizer #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
