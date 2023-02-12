@@ -79,7 +79,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
 
         if sz_ij >= sensor_max_range and max_range_computed == False:
             max_range_computed = True
-            inv_eta +=  Pjplus * delta(wz_i,sensor_max_range,EPS)
+            inv_eta +=  Pjplus * delta(wz_i,sensor_max_range,1e-5)
             Pjplus = Pjbar * 1.0
             inv_eta_normalizer += Pjplus 
             Pjbar = Pjbar * negate(1.0)
@@ -101,7 +101,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
         inv_eta += Pjplus * delta(wz_i,sensor_max_range,EPS)
         inv_eta_normalizer += Pjplus
     
-    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
+    pj_z_i = pj_z_i_wave / inv_eta
     p_z_i = inv_eta/inv_eta_normalizer
     return pj_z_i, p_z_i
 
@@ -156,8 +156,8 @@ def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs,
         Pjplus = Pjbar * belief_ij
         Pjbar = Pjbar * negate(belief_ij)
         
-        if szid_i[j] == len(beliefs)-1:
-            a_temp = Pjplus * delta(wz_i, sensor_max_range, EPS)
+        if szid_i[j] == len(beliefs)-1: #max range hit
+            a_temp = Pjplus * delta(sz_ij, sensor_max_range, EPS)
         else:
             a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = False)
         pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)
@@ -165,7 +165,7 @@ def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs,
 
         inv_eta_normalizer += Pjplus
     
-    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
+    pj_z_i = pj_z_i_wave/inv_eta
     p_z_i = inv_eta/inv_eta_normalizer
 
     pj_z_i = np.delete(pj_z_i, max_range_index)
