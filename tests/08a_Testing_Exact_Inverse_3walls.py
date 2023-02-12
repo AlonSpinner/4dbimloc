@@ -24,12 +24,13 @@ world = RayCastingMap(solids)
 drone = Drone(pose = np.array([0.0, 3.0, 0.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.05; 
 sensor.piercing = False
-sensor.max_range = 10.0
+sensor.max_range = 4.0
 sensor.p0 = 0.4
 drone.mount_sensor(sensor)
 
 simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
+simulated_sensor.max_range_cutoff = False
 
 simulated_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulated_solids)
@@ -46,10 +47,16 @@ drone.sensor.bias = 0.0
 drone.sensor.std = 0.00000000001
 simulated_sensor.std = 0.2
 
-N = 10000
+# simulated_sensor.max_range = 4
+
+N = 1000
 history_pz_ij = np.zeros((N,4))
-bias = np.linspace(-2.8, sensor.max_range-2.8, N)
-beliefs = np.array([1.0, 0.5, 0.5])
+
+min_x = np.min([min(s.get_vertices()[:,0]) for s in world.solids])
+max_x = np.max([max(s.get_vertices()[:,0]) for s in world.solids])
+
+bias = np.linspace(-min_x, max(sensor.max_range,max_x)-min_x+0.1, N)
+beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 for i, b in enumerate(bias):

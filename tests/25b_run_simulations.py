@@ -60,7 +60,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     simulated_sensor = data['sensor']
     simulated_sensor.piercing = True
     simulated_sensor.std *= 2
-    simulated_sensor.p0 = 0.4
+    simulated_sensor.p0 = 0.2
+    simulated_sensor.max_range_cutoff = False
     rbpf = RBPF(simulation, 
                 simulated_sensor,
                 initial_particle_poses,
