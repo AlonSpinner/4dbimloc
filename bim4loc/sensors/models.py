@@ -157,7 +157,7 @@ def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs,
         Pjbar = Pjbar * negate(belief_ij)
         
         if szid_i[j] == len(beliefs)-1: #max range hit
-            a_temp = Pjplus * delta(sz_ij, sensor_max_range, EPS)
+            a_temp = Pjplus * delta(wz_i, sensor_max_range, EPS)
         else:
             a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = False)
         pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)

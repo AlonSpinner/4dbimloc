@@ -308,18 +308,18 @@ def approx_logodds(logodds_beliefs : np.ndarray,
             if szid_ij == NO_HIT or sz_ij >= sensor_max_range: # hits are sorted from close->far->NO_HIT. so nothing to do anymore
                 break
 
-            # if wz_i < sz_ij - T: #wz had hit something before bzid
-            #     break #same as adding p2logodds(0.5)
-            # elif wz_i < sz_ij + T: #wz has hit bzid
-            #     logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.3*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
-            # else: #wz has hit something after bzid, making us think bzid does not exist
-            #     logodds_beliefs[szid_ij] += p2logodds(0.2)
-            # # logodds_beliefs[szid_ij] -= logodds_inital_belief[szid_ij]
-
-            if wz_i <= sz_ij:
+            if wz_i < sz_ij - T: #wz had hit something before bzid
+                break #same as adding p2logodds(0.5)
+            elif wz_i < sz_ij + T: #wz has hit bzid
                 logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.3*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
-            else:
-                logodds_beliefs[szid_ij] += p2logodds(0.3 + 0.5*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
+            else: #wz has hit something after bzid, making us think bzid does not exist
+                logodds_beliefs[szid_ij] += p2logodds(0.2)
+            # logodds_beliefs[szid_ij] -= logodds_inital_belief[szid_ij]
+
+            # if wz_i <= sz_ij:
+            #     logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.3*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
+            # else:
+            #     logodds_beliefs[szid_ij] += p2logodds(0.3 + 0.5*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
 
     return logodds_beliefs
 
