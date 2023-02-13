@@ -30,8 +30,8 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
     return gaussian_pdf(mu = sz, sigma = std, x =  wz, pseudo = pseudo)
 
 @njit(cache = True)
-def delta(x,xend,d):
-    if x >= xend-d and x <= (xend):
+def delta(x,xmid,d):
+    if xmid - d/2 <= x <= xmid + d/2:
         return 1/d
     else:
         return 0
@@ -63,6 +63,14 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
             break
         valid_hits += 1
 
+    #insert max range element, thank god creates new np arrays
+    max_range_index = np.searchsorted(sz_i, sensor_max_range)
+    sz_i = np.hstack((sz_i[:max_range_index], np.array([sensor_max_range]), sz_i[max_range_index:]))
+    szid_i = np.hstack((szid_i[:max_range_index], np.array([len(beliefs)]), szid_i[max_range_index:]))
+    # sz_i = np.insert(sz_i, max_range_index, sensor_max_range)
+    # szid_i = np.insert(szid_i, max_range_index, len(beliefs))
+    valid_hits +=1
+
     Pjbar = 1.0
     inv_eta = 0.0
     pj_z_i_wave = np.zeros(valid_hits)
@@ -72,17 +80,16 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     inv_eta += p_random
     inv_eta_normalizer = 1.0
     #solids
-    max_range_computed = False
     Pjplus = 1.0
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
 
-        if sz_ij >= sensor_max_range and max_range_computed == False:
-            max_range_computed = True
-            inv_eta +=  Pjplus * delta(wz_i,sensor_max_range,1e-5)
+        if szid_i[j] == len(beliefs):
+            inv_eta +=  Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std/100, pseudo = False)
             Pjplus = Pjbar * 1.0
-            inv_eta_normalizer += Pjplus 
+            inv_eta_normalizer += Pjplus
             Pjbar = Pjbar * negate(1.0)
+            continue
 
         belief_ij = beliefs[szid_i[j]]
 
@@ -95,13 +102,9 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
 
         inv_eta_normalizer += Pjplus
     
-    #max range hit
-    #multiply by two because we are using a half-plain gaussian model
-    if max_range_computed == False:
-        inv_eta += Pjplus * delta(wz_i,sensor_max_range,EPS)
-        inv_eta_normalizer += Pjplus
-    
-    pj_z_i = pj_z_i_wave / inv_eta
+    pj_z_i_wave = np.hstack((pj_z_i_wave[:max_range_index],pj_z_i_wave[max_range_index+1:]))
+
+    pj_z_i = pj_z_i_wave /max(inv_eta, EPS)
     p_z_i = inv_eta/inv_eta_normalizer
     return pj_z_i, p_z_i
 
@@ -157,7 +160,8 @@ def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs,
         Pjbar = Pjbar * negate(belief_ij)
         
         if szid_i[j] == len(beliefs)-1: #max range hit
-            a_temp = Pjplus * delta(wz_i, sensor_max_range, EPS)
+            # a_temp = Pjplus * delta(wz_i, sensor_max_range, 0.1)
+            a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std, pseudo = False)
         else:
             a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, pseudo = False)
         pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)

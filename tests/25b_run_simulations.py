@@ -27,6 +27,16 @@ data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
+#SOME CONSTANTS
+pose0 = data['ground_truth']['trajectory'][0]
+N_particles = 10
+initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV']/5, N_particles)
+simulated_sensor = data['sensor']
+simulated_sensor.piercing = True
+simulated_sensor.std *= 2
+simulated_sensor.p0 = 0.2
+simulated_sensor.max_range_cutoff = False
+
 rbpf_methods = [robust, semi_robust, simple, logodds]
 results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
 for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
@@ -51,17 +61,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     simulation = RayCastingMap(simulation_solids)
     perfect_traj_simulation = RayCastingMap(perfect_traj_solids)
-
-    #ESTIMATION INITALIZATION
-    pose0 = data['ground_truth']['trajectory'][0]
     bounds_min, bounds_max, extent = simulation.bounds()
-    N_particles = 10
-    initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
-    simulated_sensor = data['sensor']
-    simulated_sensor.piercing = True
-    simulated_sensor.std *= 2
-    simulated_sensor.p0 = 0.2
-    simulated_sensor.max_range_cutoff = False
+
     rbpf = RBPF(simulation, 
                 simulated_sensor,
                 initial_particle_poses,
@@ -70,7 +71,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_varaition_dependence,
                 data['U_COV'],
                 max_steps_to_resample = 5,
-                reservoir_decay_rate = 0.2)
+                reservoir_decay_rate = 0.01)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
@@ -160,6 +161,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
 
+        if t == 51:
+            rbpf.resample()
         if t % 3 == 0:
             images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",
                             transform = lambda x: crop_image(x,0.3,0.55), save_scenes = ["simulation"])

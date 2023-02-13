@@ -140,8 +140,8 @@ class RBPF():
                 value = self._solids_existence_dependence[key]
                 self.particle_beliefs[k][value] = max(self.particle_beliefs[k][key],self.particle_beliefs[k][value])
             
-            self.weights[k] *= 1.0 + np.sum(pz)
-            # self.weights[k] *= 1.0 + np.sum(np.power(pz,3))
+            self.weights[k] *= 1.0 + np.sum(pz[z != self._sensor.max_range])
+            # self.weights[k] *= np.product(pz[z != self._sensor.max_range])
             sum_weights += self.weights[k]
 
         #normalize weights

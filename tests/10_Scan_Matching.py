@@ -41,6 +41,7 @@ simulated_sensor = Lidar(angles_u = np.linspace(-np.pi/2, +np.pi/2, 100),
 simulated_sensor.max_range = 100.0
 # simulated_sensor = deepcopy(sensor)
 simulated_sensor.piercing = True
+simulated_sensor.max_range_cutoff = False
 simulated_drone.mount_sensor(simulated_sensor)
 simulation_solids = [s.clone() for s in solids]
 simulation = RayCastingMap(simulation_solids)
