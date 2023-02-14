@@ -15,8 +15,9 @@ from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
 from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
+from copy import deepcopy
 
-np.random.seed(5)
+np.random.seed(4)
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
@@ -30,7 +31,7 @@ data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]
 N_particles = 10
-initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV']/5, N_particles)
+initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
 simulated_sensor.std *= 2
@@ -39,8 +40,8 @@ simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
 results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
-for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
+for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
     add_variations_from_yaml(simulation_solids, yaml_file)
@@ -70,8 +71,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
-                max_steps_to_resample = 5,
-                reservoir_decay_rate = 0.01)
+                max_steps_to_resample = 10,
+                reservoir_decay_rate = 0.2)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
@@ -110,6 +111,9 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     expected_belief_map = rbpf.get_expected_belief_map()
     results_rbpf = {'pose_mu': [pose_mu],'pose_cov': [pose_cov],
                     'expected_belief_map': [expected_belief_map],
+                    'particle_poses': [initial_particle_poses],
+                    'particle_weights': [np.ones(N_particles)/N_particles],
+                    'particle_beliefs': [initial_beliefs],
                     'perfect_traj_belief_map': [expected_belief_map]}
 
     def crop_image(image, crop_ratio_w, crop_ratio_h):
@@ -136,6 +140,9 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         results_rbpf['pose_mu'].append(pose_mu)
         results_rbpf['pose_cov'].append(pose_cov)
         results_rbpf['expected_belief_map'].append(expected_belief_map)
+        results_rbpf['particle_poses'].append(rbpf.particle_poses.copy())
+        results_rbpf['particle_weights'].append(rbpf.weights.copy())
+        results_rbpf['particle_beliefs'].append(rbpf.particle_beliefs.copy())
         results_rbpf['perfect_traj_belief_map'].append(rbpf_perfect.particle_beliefs[0].copy())
 
         #-----------------------------------draw-----------------------------------
