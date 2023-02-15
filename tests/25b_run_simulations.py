@@ -23,6 +23,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
 data_file = os.path.join(dir_path, "25a_data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
+data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
 results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
@@ -64,7 +65,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
-                max_steps_to_resample = 5,
+                max_steps_to_resample = 10,
                 reservoir_decay_rate = 0.3)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
