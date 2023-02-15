@@ -66,8 +66,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     rbpf = RBPF(simulation, 
                 simulated_sensor,
-                initial_particle_poses,
-                initial_beliefs,
+                initial_particle_poses.copy(),
+                initial_beliefs.copy(),
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
@@ -132,6 +132,9 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
 
+
+        if t == 51 or t == 0:
+            rbpf.resample()
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
         rbpf_perfect.step(np.zeros(4), z)
@@ -168,8 +171,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
 
-        if t == 51 or t == 0:
-            rbpf.resample()
         if t % 3 == 0:
             images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",
                             transform = lambda x: crop_image(x,0.3,0.55), save_scenes = ["simulation"])
