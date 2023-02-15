@@ -165,8 +165,8 @@ def inverse_lidar_model_PAPER_VERSION(wz_i, sz_i, szid_i, beliefs,
         Pjbar = Pjbar * negate(belief_ij)
         
         if szid_i[j] == len(beliefs)-1: #max range hit
-            a_temp = Pjplus * delta(wz_i, sensor_max_range)
-            # a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std, pseudo = False)
+            # a_temp = Pjplus * delta(wz_i, sensor_max_range)
+            a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std/100, pseudo = False)
         else:
             a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std, sensor_max_range)
         pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)
@@ -214,30 +214,23 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
     #random hit
     p_random = exponentialT_pdf(sensor_p0, sensor_max_range, wz_i) #<<<--- super important to relax exact
     inv_eta += p_random
-    inv_eta_normalizer = 1.0
+
     #solids
-    Pjplus = 1.0
     for j in prange(valid_hits):
         sz_ij = sz_i[j]
         sz_ij = min(sz_ij, sensor_max_range)
-
         belief_ij = beliefs[szid_i[j]]
 
         Pjplus = Pjbar * belief_ij
         Pjbar = Pjbar * negate(belief_ij)
         
-        a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std, sensor_max_range)
-        pj_z_i_wave[j] = (belief_ij * inv_eta + a_temp)
+        a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij, sensor_std, sensor_max_range)
+        pj_z_i_wave[j] = belief_ij * inv_eta + a_temp
         inv_eta = inv_eta + a_temp
-
-        inv_eta_normalizer += Pjplus
-
-    #max hit
-    Pjplus = Pjbar * 1.0
-    a_temp = Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std, sensor_max_range)
-    inv_eta = inv_eta + a_temp
-    inv_eta_normalizer += Pjplus
-
-    pj_z_i = pj_z_i_wave /max(inv_eta, EPS)
-    p_z_i = inv_eta/inv_eta_normalizer
+    
+    #max range hit
+    inv_eta += Pjbar * forward_lidar_model(wz_i, sensor_max_range, sensor_std,sensor_max_range)
+    
+    pj_z_i = pj_z_i_wave / max(inv_eta, EPS)
+    p_z_i = inv_eta #/ (1.0 + p_random) #normalize so maximal value is 1. Dont want to do this.
     return pj_z_i, p_z_i
