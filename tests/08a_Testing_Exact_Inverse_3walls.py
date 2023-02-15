@@ -18,7 +18,7 @@ world = RayCastingMap(solids)
 drone = Drone(pose = np.array([0.0, 3.0, 0.5, 0.0]))
 sensor = Lidar(angles_u = np.array([0]), angles_v = np.array([0])); sensor.std = 0.05; 
 sensor.piercing = False
-sensor.max_range = 2.0
+sensor.max_range = 10.0
 sensor.p0 = 0.4
 drone.mount_sensor(sensor)
 

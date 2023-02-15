@@ -197,7 +197,7 @@ class ExponentialT(Distribution1D):
 
     def cdf(self,x : float): #cumulative distibution function
         #returns integral from [-inf,x]
-        return 1.0 - np.exp(-self.lamBda*x)
+        return (1.0-np.exp(-self.lamBda*x)) / (1.0-np.exp(-self.lamBda*self.maxX))
 
     def plot(self, dt = 0.1) -> Tuple[plt.Figure, plt.Axes]:
         tmin = 0
@@ -216,8 +216,7 @@ class ExponentialT(Distribution1D):
     @staticmethod
     @njit(cache = True)
     def _pdf(lamBda : float, maxX : float, x : np.ndarray) -> np.ndarray:
-        eta = 1.0/(1.0 - np.exp(-lamBda*maxX))
-        return eta * lamBda * np.exp(-lamBda*x) * (x < maxX)
+        return (lamBda * np.exp(-lamBda*x))/(1-np.exp(-lamBda*maxX))  * (x <= maxX)
 
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------- ASSISTING FUNCTIONS -----------------------------------------------------

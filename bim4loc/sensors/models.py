@@ -34,7 +34,7 @@ def forward_lidar_model(wz : np.ndarray, #wrapper for Gaussian_pdf
 @njit(cache = True)
 def delta(x,xmid):
     if x==xmid:
-        return 10
+        return xmid
     else:
         return 0
 
@@ -87,7 +87,7 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
 
         if szid_i[j] == len(beliefs):
             # inv_eta +=  Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std/2, sensor_max_range)
-            inv_eta +=  Pjplus * delta(wz_i, sensor_max_range) + EPS
+            inv_eta +=  Pjplus * delta(wz_i, sensor_max_range)# + EPS
             Pjplus = Pjbar * 1.0
             # inv_eta_normalizer += Pjplus #<---- ONLY IF WE TAKE FULL PDF TO ACCOUNT
             Pjbar = Pjbar * negate(1.0)

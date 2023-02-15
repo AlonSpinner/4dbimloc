@@ -34,8 +34,8 @@ N_particles = 10
 initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
-simulated_sensor.std *= 2
-simulated_sensor.p0 = 0.2
+simulated_sensor.std *= 1
+simulated_sensor.p0 = 0.4
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
@@ -168,7 +168,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
 
-        if t == 51:
+        if t == 51 or t == 0:
             rbpf.resample()
         if t % 3 == 0:
             images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",

@@ -316,9 +316,9 @@ def approx_logodds(logodds_beliefs : np.ndarray,
             #     logodds_beliefs[szid_ij] += p2logodds(0.2)
 
             if wz_i <= sz_ij:
-                logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.4*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
+                logodds_beliefs[szid_ij] += p2logodds(0.5 + 0.4*gaussian_pdf(sz_ij, 2*sensor_std, wz_i, pseudo = True))
             else:
-                logodds_beliefs[szid_ij] += p2logodds(0.4 + 0.5*gaussian_pdf(sz_ij, sensor_std, wz_i, pseudo = True))
+                logodds_beliefs[szid_ij] += p2logodds(0.4 + 0.5*gaussian_pdf(sz_ij, 2*sensor_std, wz_i, pseudo = True))
 
     return logodds_beliefs
 
