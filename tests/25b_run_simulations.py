@@ -76,7 +76,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
-            np.array([pose0]),
+            np.array([pose0.copy()]),
             initial_beliefs,
             solids_existence_dependence,
             solids_varaition_dependence,
@@ -131,7 +131,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         rbpf.step(u, z)
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
-
 
         if t == 51 or t == 0:
             rbpf.resample()

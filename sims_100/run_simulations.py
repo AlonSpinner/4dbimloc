@@ -21,6 +21,17 @@ def run_simulation(seed_number, out_folder, vis_on = False):
     data_file = os.path.join(dir_path, out_folder , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
 
+    #SOME CONSTANTS
+    pose0 = data['ground_truth']['trajectory'][0]
+    bounds_min, bounds_max, extent = simulation.bounds()
+    N_particles = 10
+    initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
+    simulated_sensor = data['sensor']
+    simulated_sensor.piercing = True
+    simulated_sensor.std *= 1
+    simulated_sensor.p0 = 0.4
+    simulated_sensor.max_range_cutoff = False
+
     rbpf_methods = [robust, semi_robust, simple, logodds]
     results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
     for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
@@ -46,27 +57,20 @@ def run_simulation(seed_number, out_folder, vis_on = False):
         simulation = RayCastingMap(simulation_solids)
         perfect_traj_simulation = RayCastingMap(perfect_traj_solids)
 
-        #ESTIMATION INITALIZATION
-        pose0 = data['ground_truth']['trajectory'][0]
-        bounds_min, bounds_max, extent = simulation.bounds()
-        N_particles = 10
-        initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
-        simulated_sensor = data['sensor']
-        simulated_sensor.piercing = True
-        simulated_sensor.std *= 2
+        #ESTIMATION INITALIZATION        
         rbpf = RBPF(simulation, 
                     simulated_sensor,
-                    initial_particle_poses,
-                    initial_beliefs,
+                    initial_particle_poses.copy(),
+                    initial_beliefs.copy(),
                     solids_existence_dependence,
                     solids_varaition_dependence,
                     data['U_COV'],
-                    max_steps_to_resample = 5,
-                    reservoir_decay_rate = 0.3)
+                    max_steps_to_resample = 10,
+                    reservoir_decay_rate = 0.2)
 
         rbpf_perfect = RBPF(perfect_traj_simulation, 
                 simulated_sensor,
-                np.array([pose0]),
+                np.array([pose0.copy()]),
                 initial_beliefs,
                 solids_existence_dependence,
                 solids_varaition_dependence,
@@ -114,6 +118,9 @@ def run_simulation(seed_number, out_folder, vis_on = False):
             rbpf.step(u, z)
             pose_mu, pose_cov = rbpf.get_expect_pose()
             expected_belief_map = rbpf.get_expected_belief_map()
+
+            if t == 51 or t == 0:
+                rbpf.resample()
 
             #-----------------------------perfect trajectory---------------------------
             rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
