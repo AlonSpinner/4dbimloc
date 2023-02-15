@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import erf
 from typing import Tuple
-from numba import njit
+from numba import njit, prange
 from scipy import stats
 
 class Distribution1D:
@@ -116,6 +116,16 @@ class GaussianT(Distribution1D):
         phi = 1/np.sqrt(2*np.pi) * np.exp(-0.5*zeta**2) * ((self.a < x) & (x < self.b))
         return phi/(self.sigma*self.Z)
 
+    @staticmethod
+    @njit(cache = True)
+    def _pdf(mu : np.ndarray ,sigma : float, x : np.ndarray, a,b) -> np.ndarray:
+        alpha = (a-mu)/sigma
+        beta = (b-mu)/sigma
+        Z = npPhi(beta) - npPhi(alpha)
+        zeta = (x-mu)/sigma
+        phi = 1/np.sqrt(2*np.pi) * np.exp(-0.5*zeta**2) * ((a < x) & (x < b))
+        return phi/(sigma*Z)
+
     def cdf(self,x : np.ndarray) -> np.ndarray:
         zeta = (x-self.mu)/self.sigma
         return (npPhi(zeta)-npPhi(self.alpha))/self.Z * ((self.a < x) & (x < self.b)) + 1.0 * (self.b <= x)
@@ -212,13 +222,37 @@ class ExponentialT(Distribution1D):
 #----------------------------------------------------------------------------------------------------------------------
 #-------------------------------------------- ASSISTING FUNCTIONS -----------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------
+@njit(cache = True)
+def erf_approx(x):
+    #from https://stackoverflow.com/questions/457408/is-there-an-easily-available-implementation-of-erf-for-python
+    #error < 1e-7
+    # save the sign of x
+    sign = np.sign(x)
+    x = np.abs(x)
 
+    # constants
+    a1 =  0.254829592
+    a2 = -0.284496736
+    a3 =  1.421413741
+    a4 = -1.453152027
+    a5 =  1.061405429
+    p  =  0.3275911
+
+    # A&S formula 7.1.26
+    t = 1.0/(1.0 + p*x)
+    y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*np.exp(-x*x)
+    return sign*y # erf(-x) = -erf(x)
+
+@njit(cache = True)
 def nperf(x : np.ndarray) -> np.ndarray:
-    if np.isscalar(x):
-        return erf(x)
-    else:
-        return np.array([erf(val) for val in x])
+    # if np.isscalar(x):
+    return erf_approx(x)
+    # else:
+    #     for i in prange(x.size):
+    #         x[i] = erf_approx(x[i])
+    #     return x
 
+@njit(cache = True)
 def npPhi(x : np.ndarray) -> np.ndarray:
     return 0.5*(1 + nperf(x/np.sqrt(2)))
 
