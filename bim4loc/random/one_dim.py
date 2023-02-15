@@ -245,12 +245,13 @@ def erf_approx(x):
 
 @njit(cache = True)
 def nperf(x : np.ndarray) -> np.ndarray:
-    # if np.isscalar(x):
     return erf_approx(x)
-    # else:
-    #     for i in prange(x.size):
-    #         x[i] = erf_approx(x[i])
-    #     return x
+    if np.isscalar(x):
+        return erf(x)
+    else:
+        for i in prange(x.size):
+            x[i] = erf(x[i])
+        return x
 
 @njit(cache = True)
 def npPhi(x : np.ndarray) -> np.ndarray:

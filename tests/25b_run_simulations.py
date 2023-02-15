@@ -182,6 +182,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     results[rbpf_enum] = results_rbpf
     visApp.quit()
+    print(f"finished rbpf {rbpf_enum}")
 
 file = os.path.join(dir_path, f"25b_results.p")
 pickle.dump(results, open(file, "wb"))
