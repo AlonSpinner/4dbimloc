@@ -64,7 +64,7 @@ beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 
-for _ in range(1):
+for _ in range(0):
     print('in')
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
     pj_z_i, pz = inverse_lidar_model(4.8, simulated_z[0], simulated_z_ids[0], \
@@ -107,14 +107,14 @@ ax = fig.add_subplot(111)
 ax.yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 ax2 = ax.twinx()
 xhit = np.min(np.asarray(world.solids[0].geometry.vertices)[:,0])
-g_pz_1, = ax2.plot(bias + xhit, history_pz_ij[:,0], color = 'blue', lw = 2); 
+g_pz_1, = ax2.plot(bias + xhit, history_pz_ij[:,0], color = 'blue', lw = 3); 
 plot_solid_on_xz(ax, world.solids[0], color = 'blue')
-g_pz_2, = ax2.plot(bias + xhit, history_pz_ij[:,1], color = 'red', lw = 2); 
+g_pz_2, = ax2.plot(bias + xhit, history_pz_ij[:,1], color = 'red', lw = 3); 
 plot_solid_on_xz(ax, world.solids[1], color = 'red')
-g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green', lw = 2); 
+g_pz_3, = ax2.plot(bias + xhit, history_pz_ij[:,2], color = 'green', lw = 3); 
 plot_solid_on_xz(ax, world.solids[2], color = 'green')
 normalizer = np.sum(history_pz_ij[:,3])*(bias[1]-bias[0])
-g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black', lw = 2)
+g_pz, = ax.plot(bias + xhit, history_pz_ij[:,3]/normalizer, color = 'black', lw = 3)
 ax.set_xlabel('range, m')
 ax.set_ylabel('probability density')
 ax.set_ylim(0,3.0)
