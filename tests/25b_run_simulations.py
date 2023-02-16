@@ -17,7 +17,7 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 from copy import deepcopy
 
-np.random.seed(4)
+np.random.seed(5)
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
