@@ -23,7 +23,6 @@ def run_simulation(seed_number, out_folder, vis_on = False):
 
     #SOME CONSTANTS
     pose0 = data['ground_truth']['trajectory'][0]
-    bounds_min, bounds_max, extent = simulation.bounds()
     N_particles = 10
     initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
     simulated_sensor = data['sensor']
@@ -108,7 +107,7 @@ def run_simulation(seed_number, out_folder, vis_on = False):
                         'expected_belief_map': [expected_belief_map],
                         'perfect_traj_belief_map': [expected_belief_map]}
 
-        np.random.seed(1)
+        np.random.seed(seed_number)
         
         #LOOP
         time.sleep(2)

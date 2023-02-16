@@ -62,7 +62,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     simulation = RayCastingMap(simulation_solids)
     perfect_traj_simulation = RayCastingMap(perfect_traj_solids)
-    bounds_min, bounds_max, extent = simulation.bounds()
 
     rbpf = RBPF(simulation, 
                 simulated_sensor,
