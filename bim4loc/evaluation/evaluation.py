@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from bim4loc.random.utils import compute_entropy, compute_cross_entropy
+from bim4loc.random.utils import compute_entropy, compute_cross_entropy, hamming_distance, jaccard_distance
 
 def localiztion_error(gt_trajectory,
                       estimated_trajectory,
@@ -136,37 +136,68 @@ def belief_map_accuracy(ground_truth, estimated_beliefs, perfect_beliefs = None,
 
 def percentile_boxes_right(expected_belief_map, ground_truth_beliefs, 
                             gt_electric_boxes_names, gt_electric_boxes_indicies,
-                            sim_electric_boxes_indicies, sim_electric_boxes_names):
-   #for each gt box, check that it checks out, and that all variations are false
-    N_boxes_got_right = 0.0
-    seen_boxes = 0 
-    for i,gt_box_name in enumerate(gt_electric_boxes_names):
-        #collect indicies of all boxes that start with gt_box_name
+                            sim_electric_boxes_indicies, sim_electric_boxes_names,
+                            gt_electric_boxes_seen_counter):
+    #seen ground truth boxes
+    seen_boxes_names = []
+    seen_boxes_indicies = []
+    for (box_name, seen_counter) in gt_electric_boxes_seen_counter.items():
+        if seen_counter > 20:
+            seen_boxes_names.append(box_name)
+            seen_boxes_indicies.append(gt_electric_boxes_indicies[gt_electric_boxes_names.index(box_name)])
+
+    if len(seen_boxes_names) == 0:
+        return np.nan
+
+    N_boxes_got_right = 0
+    for seen_box_name, seen_box_index in zip(seen_boxes_names, seen_boxes_indicies):
+        #collect indicies of all boxes that start with box_name
         relevant_boxes_indicies = []
         for j,sim_box_name in enumerate(sim_electric_boxes_names):
-            if sim_box_name.startswith(gt_box_name):
+            if sim_box_name.startswith(seen_box_name):
                 relevant_boxes_indicies.append(sim_electric_boxes_indicies[j])
-        gt_box_index = gt_electric_boxes_indicies[i]
-        gt_box_value =  ground_truth_beliefs[gt_box_index]
         
-        if gt_box_value == 1.0: #we can talk about variations
-            best_box_index_local = np.argmax(expected_belief_map[-1][relevant_boxes_indicies])
-            best_box_index = relevant_boxes_indicies[best_box_index_local]
+        best_box_index = relevant_boxes_indicies[np.argmax(expected_belief_map[-1][relevant_boxes_indicies])]
+        if best_box_index != seen_box_index:
+            continue #not worth nitty picking. we chose wrong box
+        is_accurate = True
+        for index in relevant_boxes_indicies:
+            if index != best_box_index: #index points to false variation, should be low belief
+                if expected_belief_map[-1][index] > 0.7:
+                    is_accurate = False
+            else: #index points to high best variation, should be high belief
+                if expected_belief_map[-1][index] < 0.9:
+                    is_accurate = False
+        if is_accurate:
+            N_boxes_got_right += 1
 
-            is_accurate = True
-            for index in relevant_boxes_indicies:
-                if index != best_box_index: #index points to false variation, should be low belief
-                    if expected_belief_map[-1][index] > 0.8:
-                        is_accurate = False
-                else: #index points to high best variation, should be high belief
-                    if expected_belief_map[-1][index] < 0.2:
-                        is_accurate = False
-            if is_accurate:
-                N_boxes_got_right += 1
-
-            else: #gt_box_value == 0.0
-                if np.all(expected_belief_map[-1][relevant_boxes_indicies]) < 0.2:
-                    N_boxes_got_right += 1
-
-    percent_boxes_got_right = N_boxes_got_right/len(gt_electric_boxes_names)
+    percent_boxes_got_right = N_boxes_got_right/len(seen_boxes_names)
     return percent_boxes_got_right
+
+def maps_average_distance(v : np.ndarray, distance_metric = 'hamming'):
+    '''
+    v - binary matrix of size mxn, with m maps 
+    '''
+    total_distance = 0
+    m = v.shape[0]
+    min_distances = np.zeros(m)
+    for i in range(m):
+        di_min = np.inf
+        for j in range(m):
+            if distance_metric == 'hamming':
+                dij = hamming_distance(v[i],v[j])
+            elif distance_metric == 'jaccard':
+                dij = jaccard_distance(v[i],v[j])
+            else:
+                raise Exception("wrong method name")            
+            if i != j and dij < di_min:
+                di_min = dij        
+
+            if j > i:
+                total_distance  += dij
+        min_distances[i] = di_min
+    
+    average_distance = total_distance / (m * (m-1)/2)
+
+    return average_distance, min_distances
+

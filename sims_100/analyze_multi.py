@@ -3,14 +3,15 @@ import pickle
 import os
 from bim4loc.solids import ifc_converter, add_variations_from_yaml
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
-    cross_entropy_error, percentile_boxes_right, belief_map_accuracy
+    cross_entropy_error, percentile_boxes_right, belief_map_accuracy, maps_average_distance
 
 out_folder = "out_mid_noise"
 
 data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
-max_seed = 100
+ground_truth_maps = []
+max_seed = 19
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
@@ -25,6 +26,7 @@ for seednumber in range(max_seed):
     for i, s in enumerate(solids):
         if s.name in data['ground_truth']['constructed_solids_names']:
             ground_truth_beliefs[i] = 1.0
+    ground_truth_maps.append(ground_truth_beliefs)
 
     gt_electric_boxes_names = [s.vis_name for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
     gt_electric_boxes_indicies = [i for i,s in enumerate(solids) if s.ifc_type == 'IfcElectricDistributionBoard']
@@ -52,7 +54,8 @@ for seednumber in range(max_seed):
 
         p_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
                                             gt_electric_boxes_names, gt_electric_boxes_indicies,
-                                            sim_electric_boxes_indicies, sim_electric_boxes_names)
+                                            sim_electric_boxes_indicies, sim_electric_boxes_names,
+                                            data["measurements"]["electric_boxes_seen_counter"])
 
         analyzed[i+1] = {'traj_err': traj_err,
                     'cross_entropy': cross_entropy,
@@ -133,7 +136,7 @@ for method_i in analyzed_by_method.keys():
     traj_mu_seeds = []
     final_ce_mu_seeds = []
     final_acc_seeds = []
-    for seed in range(100):
+    for seed in range(max_seed):
         final_ce_mu_seed, _ = average_cross_entropy(analyzed_by_method[method_i][seed])
         final_ce_mu_seeds.append(final_ce_mu_seed)
 
@@ -147,6 +150,14 @@ for method_i in analyzed_by_method.keys():
     final_acc[method_i] = final_acc_seeds
 
 
+ground_truth_maps = np.array(ground_truth_maps)
+hamming_map_avg_dist, hamming_min_dist_by_map = maps_average_distance(ground_truth_maps, "hamming")
+map_length = ground_truth_maps.shape[1]
+normalized_hamming_map_avg_dist = hamming_map_avg_dist/map_length
+normalized_hamming_min_dist_by_map = hamming_min_dist_by_map/map_length
+
+jaccard_map_avg_dist, jaccard_min_dist_by_map = maps_average_distance(ground_truth_maps, "jaccard")
+
 analyzed_data = {'analyzed_by_method': analyzed_by_method,
                 'traj_failures': traj_failures,
                 'N_traj_failures': N_traj_failures,
@@ -158,7 +169,11 @@ analyzed_data = {'analyzed_by_method': analyzed_by_method,
                 'N_sucesses': N_sucesses,
                 'mean_traj_err': mean_traj_err,
                 'final_mean_ce_err': final_mean_ce_err,
-                'final_acc': final_acc
+                'final_acc': final_acc,
+                'gt_maps_hamming': {'norm_avg_dist': normalized_hamming_map_avg_dist,
+                                    'norm_min_dist_by_map': normalized_hamming_min_dist_by_map},
+                'gt_maps_jaccard': {'avg_dist': jaccard_map_avg_dist,
+                                    'min_dist_by_map': jaccard_min_dist_by_map}
                 }
 
 file = os.path.join(dir_path, "analyzed_data.p")

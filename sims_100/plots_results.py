@@ -91,3 +91,10 @@ ax.set_xticks(np.array(list(d['final_acc'].keys())))
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 ax.grid(True)
 plt.show()
+
+#----------------------------------- Ground Truth MAPS difference -------------------------------
+print(f"hamming average map dist {d['gt_maps_hamming']['norm_avg_dist']}")
+print(f"hamming min dist by map {d['gt_maps_hamming']['norm_min_dist_by_map']}")
+
+print(f"jaccard average map dist {d['gt_maps_jaccard']['avg_dist']}")
+print(f"jaccard min dist by map {d['gt_maps_jaccard']['min_dist_by_map']}")

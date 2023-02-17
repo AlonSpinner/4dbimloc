@@ -68,3 +68,14 @@ def compute_cross_entropy(p : np.ndarray, q : np.ndarray) -> np.ndarray:
                 if p[i,j] != 1.0:
                     cross_entropy[i] = cross_entropy[i] - (1.0 - p[i,j]) * np.log2(1.0 - q[i,j]+EPS)
     return cross_entropy
+
+def hamming_distance(v1 : np.ndarray,v2 : np.ndarray):
+    '''
+    v1 and v2 are binary vectors
+    '''
+    return np.sum(np.abs(v1 - v2))
+
+def jaccard_distance(x, y):
+    x_set = set([i for i in range(len(x)) if x[i]])
+    y_set = set([i for i in range(len(y)) if y[i]])
+    return 1 - (len(x_set.intersection(y_set)) / len(x_set.union(y_set)))
