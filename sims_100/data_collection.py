@@ -3,6 +3,7 @@ from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, \
                          update_existence_dependence_from_yaml, remove_constructed_solids_that_cant_exist
+from bim4loc.geometry.raycaster import NO_HIT
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
@@ -79,6 +80,9 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
     #ground truth
     gt_traj = [drone.pose]
 
+    electric_boxes_names = [s.name for s in simulation.solids if s.ifc_type == 'IfcElectricDistributionBoard']
+    electric_boxes_seen_counter = {name:0 for name in electric_boxes_names}
+    world_solid_names = [s.name for s in world.solids]
     #LOOP
     time.sleep(2)
     for t, u in enumerate(actions):
@@ -87,7 +91,10 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
         drone.move(u)
         
         #produce measurement
-        z, _, _, z_p = drone.scan(world, project_scan = True, n_hits = 10, noisy = True)
+        z, z_ids, _, z_p = drone.scan(world, project_scan = True, n_hits = 10, noisy = True)
+        for id in z_ids:
+            if id != NO_HIT and world_solid_names[id] in electric_boxes_names:
+                electric_boxes_seen_counter[world_solid_names[id]] += 1
 
         u_noisy = compose_s(u,np.random.multivariate_normal(np.zeros(4), U_COV))
 
@@ -114,6 +121,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
 
         # time.sleep(0.1)
     measurements['dead_reck'] = np.array(measurements['dead_reck'])
+    measurements['electric_boxes_seen_counter'] = electric_boxes_seen_counter
 
     data = {}
     data['current_time'] = current_time

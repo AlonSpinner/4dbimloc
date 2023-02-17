@@ -139,19 +139,34 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
                             sim_electric_boxes_indicies, sim_electric_boxes_names):
    #for each gt box, check that it checks out, and that all variations are false
     N_boxes_got_right = 0.0
+    seen_boxes = 0 
     for i,gt_box_name in enumerate(gt_electric_boxes_names):
-        tick_box = True
+        #collect indicies of all boxes that start with gt_box_name
+        relevant_boxes_indicies = []
         for j,sim_box_name in enumerate(sim_electric_boxes_names):
             if sim_box_name.startswith(gt_box_name):
-                sim_belief = expected_belief_map[-1][sim_electric_boxes_indicies[j]] > 0.9
-                if sim_box_name == gt_box_name: #is real box
-                    gt_belief = ground_truth_beliefs[gt_electric_boxes_indicies[i]]
-                    if sim_belief != bool(gt_belief):
-                        tick_box = False
-                else: #is a variant should be false
-                    if sim_belief == True:
-                        tick_box = False
-        if tick_box:
-            N_boxes_got_right += 1.0
+                relevant_boxes_indicies.append(sim_electric_boxes_indicies[j])
+        gt_box_index = gt_electric_boxes_indicies[i]
+        gt_box_value =  ground_truth_beliefs[gt_box_index]
+        
+        if gt_box_value == 1.0: #we can talk about variations
+            best_box_index_local = np.argmax(expected_belief_map[-1][relevant_boxes_indicies])
+            best_box_index = relevant_boxes_indicies[best_box_index_local]
+
+            is_accurate = True
+            for index in relevant_boxes_indicies:
+                if index != best_box_index: #index points to false variation, should be low belief
+                    if expected_belief_map[-1][index] > 0.8:
+                        is_accurate = False
+                else: #index points to high best variation, should be high belief
+                    if expected_belief_map[-1][index] < 0.2:
+                        is_accurate = False
+            if is_accurate:
+                N_boxes_got_right += 1
+
+            else: #gt_box_value == 0.0
+                if np.all(expected_belief_map[-1][relevant_boxes_indicies]) < 0.2:
+                    N_boxes_got_right += 1
+
     percent_boxes_got_right = N_boxes_got_right/len(gt_electric_boxes_names)
     return percent_boxes_got_right

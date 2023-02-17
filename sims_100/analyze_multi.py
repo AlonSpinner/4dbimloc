@@ -133,7 +133,7 @@ for method_i in analyzed_by_method.keys():
     traj_mu_seeds = []
     final_ce_mu_seeds = []
     final_acc_seeds = []
-    for seed in sucesses[method_i]:
+    for seed in range(100):
         final_ce_mu_seed, _ = average_cross_entropy(analyzed_by_method[method_i][seed])
         final_ce_mu_seeds.append(final_ce_mu_seed)
 

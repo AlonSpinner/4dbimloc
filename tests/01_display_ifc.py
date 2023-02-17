@@ -20,7 +20,7 @@ visApp.show_axes()
 
 images = visApp.get_images()
 from matplotlib import pyplot as plt
-plt.imshow(images['scene_name'])
+plt.imshow(images['world'])
 plt.show()
 
 
