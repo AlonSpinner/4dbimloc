@@ -11,7 +11,7 @@ data_by_seed = []
 results_by_seed = []
 analyzed_by_seed = []
 ground_truth_maps = []
-max_seed = 19
+max_seed = 100
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
