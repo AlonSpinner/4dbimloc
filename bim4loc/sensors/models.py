@@ -86,12 +86,12 @@ def inverse_lidar_model(wz_i, sz_i, szid_i, beliefs,
         # sz_ij = min(sz_ij, sensor_max_range)
 
         if szid_i[j] == len(beliefs):
-            # inv_eta +=  Pjplus * forward_lidar_model(wz_i, sz_ij,sensor_std/2, sensor_max_range)
+            belief_ij = (wz_i >= sensor_max_range)
+            Pjplus = Pjbar * belief_ij
+            Pjbar = Pjbar * negate(1.0)
             inv_eta +=  Pjplus * forward_lidar_model(sensor_max_range, sensor_max_range,sensor_std,sensor_max_range) * \
                 (wz_i >= sensor_max_range)
-            Pjplus = Pjbar * 1.0
-            inv_eta_normalizer += Pjplus * (wz_i >= sensor_max_range)
-            Pjbar = Pjbar * negate(1.0)
+            inv_eta_normalizer += Pjplus
             continue
 
         belief_ij = beliefs[szid_i[j]]

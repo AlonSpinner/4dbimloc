@@ -77,7 +77,7 @@ class RBPF(RBPF_FULL):
             
             # self.weights[k] *= 1.0 + np.sum(pz[z != self._sensor.max_range])
             # self.weights[k] *= np.product(pz[z != self._sensor.max_range])
-            self.weights[k] *= 1.0 + np.sum(pz)
+            self.weights[k] *= np.sum(np.power(pz,3))
             sum_weights += self.weights[k]
 
         #normalize weights
