@@ -147,7 +147,7 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
             seen_boxes_indicies.append(gt_electric_boxes_indicies[gt_electric_boxes_names.index(box_name)])
 
     if len(seen_boxes_names) == 0:
-        return np.nan
+        return 0, 0
 
     N_boxes_got_right = 0
     for seen_box_name, seen_box_index in zip(seen_boxes_names, seen_boxes_indicies):
@@ -171,8 +171,8 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
         if is_accurate:
             N_boxes_got_right += 1
 
-    percent_boxes_got_right = N_boxes_got_right/len(seen_boxes_names)
-    return percent_boxes_got_right
+    N_seen_boxes = len(seen_boxes_names)
+    return N_boxes_got_right, N_seen_boxes
 
 def maps_average_distance(v : np.ndarray, distance_metric = 'hamming'):
     '''

@@ -52,7 +52,7 @@ for seednumber in range(max_seed):
                                     res['expected_belief_map'],
                                     res['perfect_traj_belief_map'])
 
-        p_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
+        N_boxes_right, N_seen_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
                                             gt_electric_boxes_names, gt_electric_boxes_indicies,
                                             sim_electric_boxes_indicies, sim_electric_boxes_names,
                                             data["measurements"]["electric_boxes_seen_counter"])
@@ -62,7 +62,7 @@ for seednumber in range(max_seed):
                     'cross_entropy_perfect_traj': cross_entropy_perfect_traj,
                     'self_entropy': self_entropy,
                     'self_entropy_perfect_traj': self_entropy_perfect_traj,
-                    'percentile_boxes' : p_boxes,
+                    'boxes' : [N_boxes_right, N_seen_boxes],
                     'accuracy': accuracy,
                     'accuracy_perfect_traj': accuracy_perfect_traj}
 

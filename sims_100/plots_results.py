@@ -53,27 +53,26 @@ ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 ax.grid(True)
 plt.show()
 #----------------------------------- Electric Boxes ------------------------------------
-method_p_boxes = {}
+method_boxes = {}
 for method_i in d['analyzed_by_method'].keys():
-    p_seeds = []
+    seen_boxes = 0
+    accurately_detected_boxes = 0
     for seed in range(len(d['analyzed_by_method'][method_i])):#d['sucesses'][method_i]:
-        p_boxes = d['analyzed_by_method'][method_i][seed]['percentile_boxes']
-        if not(np.isnan(p_boxes)):
-            p_seeds.append(p_boxes)
-    method_p_boxes[method_i] = np.array(p_seeds)
+        boxes = d['analyzed_by_method'][method_i][seed]['boxes']
+        accurately_detected_boxes += boxes[0]
+        seen_boxes += boxes[1]
+    method_boxes[method_i] = accurately_detected_boxes/seen_boxes
 
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-for i, m in enumerate(method_p_boxes.values()):
-    ax.boxplot(100 * m, positions = [i+1],
-     showfliers = True, 
-     medianprops=dict(linewidth=3.0, color='k'),
-     patch_artist = True, boxprops = dict(facecolor = colors[i], alpha = 0.5, linewidth = 2.0),
-     flierprops = dict(markerfacecolor = colors[i], marker = 'o', markersize = 7.0, markeredgecolor = 'k', alpha = 0.5))
-ax.set_ylabel('Wall-Hung Electrical Boxes Accuracy at Terminal, %', fontdict={'fontsize': 20})
-ax.set_xticks(np.array(list(method_p_boxes.keys())))
+ax_f = ax.bar(np.array(list(method_boxes.keys())),
+       method_boxes.values(),
+       edgecolor = 'black',
+       align='center', alpha=0.5,
+       color = colors)
+ax.set_xticks(np.array(list(d['N_failures'].keys())))
+ax.set_ylabel('Wall-Hung Electrical Boxes Variation Detection Accuracy at Terminal, %', fontdict={'fontsize': 20})
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
-ax.grid(True)
 plt.show()
 
 #----------------------------------- Accuracy ------------------------------------
@@ -94,7 +93,7 @@ plt.show()
 
 #----------------------------------- Ground Truth MAPS difference -------------------------------
 print(f"hamming average map dist {d['gt_maps_hamming']['norm_avg_dist']}")
-print(f"hamming min dist by map {d['gt_maps_hamming']['norm_min_dist_by_map']}")
+# print(f"hamming min dist by map {d['gt_maps_hamming']['norm_min_dist_by_map']}")
 
 print(f"jaccard average map dist {d['gt_maps_jaccard']['avg_dist']}")
-print(f"jaccard min dist by map {d['gt_maps_jaccard']['min_dist_by_map']}")
+# print(f"jaccard min dist by map {d['gt_maps_jaccard']['min_dist_by_map']}")
