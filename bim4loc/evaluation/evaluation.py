@@ -163,9 +163,9 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
         is_accurate = True
         for index in relevant_boxes_indicies:
             if index != best_box_index: #index points to false variation, should be low belief
-                if expected_belief_map[-1][index] > 0.7:
+                if expected_belief_map[-1][index] > 0.1:
                     is_accurate = False
-            else: #index points to high best variation, should be high belief
+            if index == best_box_index: #index points to high best variation, should be high belief
                 if expected_belief_map[-1][index] < 0.9:
                     is_accurate = False
         if is_accurate:

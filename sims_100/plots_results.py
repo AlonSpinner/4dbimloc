@@ -71,7 +71,7 @@ ax_f = ax.bar(np.array(list(method_boxes.keys())),
        align='center', alpha=0.5,
        color = colors)
 ax.set_xticks(np.array(list(d['N_failures'].keys())))
-ax.set_ylabel('Wall-Hung Electrical Boxes Variation Detection Accuracy at Terminal, %', fontdict={'fontsize': 20})
+ax.set_ylabel('Electrical Boxes Variation Detection Accuracy at Terminal, %', fontdict={'fontsize': 18})
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 plt.show()
 
