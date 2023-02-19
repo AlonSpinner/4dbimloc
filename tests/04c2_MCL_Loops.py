@@ -53,21 +53,36 @@ particles[:,2] = drone.pose[2] -1.0
 
 
 #INITALIZE WEIGHTS
-weights = np.ones(N_particles) / N_particles
+weights1 = np.ones(N_particles) / N_particles
+weights2 = weights1.copy()
 
 visApp = VisApp()
 for s in solids:
     visApp.add_solid(s)
 visApp.redraw()
-visApp.show_axes()
+visApp.show_axes(False)
 visApp.setup_default_camera()
 visApp.add_solid(drone.solid)
-vis_particles = ParticlesSolid(poses = particles)
-visApp.add_solid(vis_particles.lines)
-visApp.add_solid(vis_particles.tails)
+vis_particles1 = ParticlesSolid(poses = particles)
+visApp.add_solid(vis_particles1.lines)
+visApp.add_solid(vis_particles1.tails)
 vis_scan = ScanSolid("scan")
 visApp.add_solid(vis_scan)
 visApp.redraw()
+
+visApp.add_scene("world2", "world")
+for s in solids:
+    visApp.add_solid(s, "world2")
+visApp.redraw("world2")
+visApp.show_axes(False, "world2")
+visApp.setup_default_camera("world2")
+visApp.add_solid(drone.solid, "world2")
+vis_particles2 = ParticlesSolid(poses = particles)
+visApp.add_solid(vis_particles2.lines, "world2")
+visApp.add_solid(vis_particles2.tails, "world2")
+vis_scan = ScanSolid("scan", "world2")
+visApp.add_solid(vis_scan, "world2")
+visApp.redraw("world2")
 
 U_COV = np.diag([0.05, 0.05, 0.0, np.radians(1.0)])
 #LOOP
@@ -82,16 +97,13 @@ for t, u in enumerate(actions):
 
     #---------------------------FILTER-------------------------------------
     #compute weights and normalize
-    sum_weights = 0.0
+    sum_weights1 = 0.0
+    sum_weights2 = 0.0
     noisy_u = np.random.multivariate_normal(u, U_COV, N_particles)
     for i in range(N_particles):
         particles[i] = compose_s(particles[i], u)
         # particles[i] = compose_s(particles[i], noisy_u[i])
 
-        if np.any(particles[i][:3] < bounds_min[:3]) \
-             or np.any(particles[i][:3] > bounds_max[:3]):
-            weights[i] = 0.0
-            continue
 
         particle_z_values, particle_z_ids, _, particle_z_cos_incident,_ \
             = simulated_sensor.sense(particles[i], 
@@ -110,28 +122,44 @@ for t, u in enumerate(actions):
                                         beliefs, 
                              simulated_sensor.std,simulated_sensor.max_range)
 
-        weights[i] = 1.0 + np.sum(pz)
-        # weights[i] = 1.0 + np.product(pz)
+        weights1[i] = 1.0 + np.product(pz)
+        weights2[i] = 1.0 + np.sum(np.power(pz,3))
         
-        sum_weights += weights[i]
-    
-    if sum_weights == 0.0:
-        weights = np.ones(N_particles) / N_particles
+        sum_weights1 += weights1[i]
+        sum_weights2 += weights2[i]
 
-    else:
-        #normalize
-        weights = weights / sum_weights
+    #normalize
+    weights1 = weights1 / sum_weights1
+    weights2 = weights2 / sum_weights2
 
-    vis_particles.update(particles, weights)
-    visApp.update_solid(vis_particles.lines)
-    visApp.update_solid(vis_particles.tails)
+    vis_particles1.update(particles, weights1)
+    visApp.update_solid(vis_particles1.lines)
+    visApp.update_solid(vis_particles1.tails)
     vis_scan.update(drone.pose[:3], z_p.T)
     visApp.update_solid(drone.solid)
     visApp.update_solid(vis_scan)
     visApp.redraw()
 
-    # time.sleep(0.01)
+    vis_particles2.update(particles, weights2)
+    visApp.update_solid(vis_particles2.lines, "world2")
+    visApp.update_solid(vis_particles2.tails, "world2")
+    vis_scan.update(drone.pose[:3], z_p.T)
+    visApp.update_solid(drone.solid, "world2")
+    visApp.update_solid(vis_scan, "world2")
+    visApp.redraw("world2")
+
+    time.sleep(1)
     keyboard.wait('space')
+
+    import os
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    def crop_image(image, crop_ratio_w, crop_ratio_h):
+        h,w = image.shape[:2]
+        crop_h = int(h * crop_ratio_h/2)
+        crop_w = int(w * crop_ratio_w/2)
+        return image[crop_h:-crop_h, crop_w:-crop_w,:]
+    images_output_path = os.path.join(dir_path, "04c2_images")
+    images = visApp.get_images(images_output_path,prefix = f"{t}_")
     
 
 print('finished')

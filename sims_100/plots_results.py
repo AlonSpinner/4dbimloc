@@ -65,7 +65,7 @@ for method_i in d['analyzed_by_method'].keys():
 
 fig = plt.figure(figsize = (10,8))
 ax = fig.add_subplot(111)
-ax_f = ax.bar(np.array(list(method_boxes.keys())),
+ax.bar(np.array(list(method_boxes.keys())),
        method_boxes.values(),
        edgecolor = 'black',
        align='center', alpha=0.5,
@@ -88,7 +88,7 @@ for i, m in enumerate(d['final_acc'].values()):
 ax.set_ylabel('Belief Map Accuracy at Terminal, %')
 ax.set_xticks(np.array(list(d['final_acc'].keys())))
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
-ax.grid(True)
+# ax.grid(True)
 plt.show()
 
 #----------------------------------- Ground Truth MAPS difference -------------------------------

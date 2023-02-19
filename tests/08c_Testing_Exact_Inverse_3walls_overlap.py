@@ -64,7 +64,7 @@ beliefs = np.array([0.5, 0.5, 0.5])
 world.update_solids_beliefs(beliefs)
 visApp.redraw("world")
 
-for _ in range(0):
+for _ in range(1):
     print('in')
     simulated_z, simulated_z_ids, _, _, _ = simulated_sensor.sense(drone.pose, simulation, 10, noisy = False)
     pj_z_i, pz = inverse_lidar_model(4.8, simulated_z[0], simulated_z_ids[0], \
