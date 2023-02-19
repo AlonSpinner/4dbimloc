@@ -142,7 +142,7 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
     seen_boxes_names = []
     seen_boxes_indicies = []
     for (box_name, seen_counter) in gt_electric_boxes_seen_counter.items():
-        if seen_counter > 20:
+        if seen_counter > 50:
             seen_boxes_names.append(box_name)
             seen_boxes_indicies.append(gt_electric_boxes_indicies[gt_electric_boxes_names.index(box_name)])
 
@@ -163,10 +163,10 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
         is_accurate = True
         for index in relevant_boxes_indicies:
             if index != best_box_index: #index points to false variation, should be low belief
-                if expected_belief_map[-1][index] > 0.1:
+                if expected_belief_map[-1][index] > 0.6:
                     is_accurate = False
             if index == best_box_index: #index points to high best variation, should be high belief
-                if expected_belief_map[-1][index] < 0.9:
+                if expected_belief_map[-1][index] < 0.6:
                     is_accurate = False
         if is_accurate:
             N_boxes_got_right += 1

@@ -71,7 +71,7 @@ ax.bar(np.array(list(method_boxes.keys())),
        align='center', alpha=0.5,
        color = colors)
 ax.set_xticks(np.array(list(d['N_failures'].keys())))
-ax.set_ylabel('Electrical Boxes Variation Detection Accuracy at Terminal, %', fontdict={'fontsize': 18})
+ax.set_ylabel('Correct Electrical Boxes Detection Accuracy at Terminal, %', fontdict={'fontsize': 18})
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 plt.show()
 
@@ -88,7 +88,7 @@ for i, m in enumerate(d['final_acc'].values()):
 ax.set_ylabel('Belief Map Accuracy at Terminal, %')
 ax.set_xticks(np.array(list(d['final_acc'].keys())))
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
-# ax.grid(True)
+ax.grid(True)
 plt.show()
 
 #----------------------------------- Ground Truth MAPS difference -------------------------------
