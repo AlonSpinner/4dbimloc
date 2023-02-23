@@ -52,21 +52,21 @@ def compute_cross_entropy(p : np.ndarray, q : np.ndarray) -> np.ndarray:
     if p.ndim == 1:
         cross_entropy = 0.0
         for i in prange(p.shape[0]):
-            q[i] = np.clip(q[i], 0.0, 1.0)
+            q[i] = np.clip(q[i], 0.01, 0.99)
             if p[i] != 0.0:
-                cross_entropy = cross_entropy - p[i] * np.log2(q[i] + EPS)
+                cross_entropy = cross_entropy - p[i] * np.log2(q[i])
             if p[i] != 1.0:
-                cross_entropy = cross_entropy - (1.0 - p[i]) * np.log2(1.0 - q[i] + EPS)
+                cross_entropy = cross_entropy - (1.0 - p[i]) * np.log2(1.0 - q[i])
         return np.array([cross_entropy])
     elif p.ndim == 2:
         cross_entropy = np.zeros(p.shape[0])
         for i in prange(p.shape[0]):
             for j in prange(p.shape[1]):
-                q[i,j] = np.clip(q[i,j], 0.0, 1.0)
+                q[i,j] = np.clip(q[i,j], 0.01, 0.99)
                 if p[i,j] != 0.0:
-                    cross_entropy[i] = cross_entropy[i] - p[i,j] * np.log2(q[i,j]+EPS)
+                    cross_entropy[i] = cross_entropy[i] - p[i,j] * np.log2(q[i,j])
                 if p[i,j] != 1.0:
-                    cross_entropy[i] = cross_entropy[i] - (1.0 - p[i,j]) * np.log2(1.0 - q[i,j]+EPS)
+                    cross_entropy[i] = cross_entropy[i] - (1.0 - p[i,j]) * np.log2(1.0 - q[i,j])
     return cross_entropy
 
 def hamming_distance(v1 : np.ndarray,v2 : np.ndarray):
