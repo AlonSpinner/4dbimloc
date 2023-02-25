@@ -15,7 +15,6 @@ from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
 from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
-from copy import deepcopy
 
 np.random.seed(2) #5 too good?
 
@@ -30,12 +29,12 @@ data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]
-N_particles = 10
+N_particles = 5
 initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
 simulated_sensor.std *= 1
-simulated_sensor.p0 = 0.4
+simulated_sensor.p0 = 0.1
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
@@ -71,7 +70,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_varaition_dependence,
                 data['U_COV'],
                 max_steps_to_resample = 10,
-                reservoir_decay_rate = 0.2)
+                reservoir_decay_rate = 0.3)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,

@@ -50,23 +50,19 @@ element_world_v = np.asarray(solids[0].geometry.vertices)
 element_uv = pose2z.angle(drone.pose, element_world_v.T).T
 weight_dist_2_boundry = np.zeros(hit_ray_uv.shape[0])
 
-nrm_hit_ray_uv = hit_ray_uv/np.array([np.pi, np.pi/2])
-nrm_element_uv = element_uv/np.array([np.pi, np.pi/2])
-
-for i, ray in enumerate(nrm_hit_ray_uv):
-    weight_dist_2_boundry[i], _ = minimal_distance_from_projected_boundry(ray, nrm_element_uv)
+for i, ray in enumerate(hit_ray_uv):
+    weight_dist_2_boundry[i], _ = minimal_distance_from_projected_boundry(ray, element_uv)
         
-
-nrm_element_uv_hull = convex_hull(nrm_element_uv)
-nrm_element_uv_hull_plus = np.vstack((nrm_element_uv_hull,nrm_element_uv_hull[0]))
+element_uv_hull = convex_hull(element_uv)
+element_uv_hull_plus = np.vstack((element_uv_hull,element_uv_hull[0]))
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
 ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("distance from boundry component")
-ax.plot(nrm_element_uv_hull_plus[:,0], nrm_element_uv_hull_plus[:,1], c = "k", lw = 3)
-sc = ax.scatter(nrm_hit_ray_uv[:,0], nrm_hit_ray_uv[:,1],
+ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
+sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
                 c=weight_dist_2_boundry, s = 50)
 cbar = fig.colorbar(sc)
 ax.grid(True)
@@ -75,39 +71,34 @@ ax.set_aspect(1.0)
 plt.show()
 
 #-----------------------cosine componenet-----------------------
-weight_cos_incident = np.abs(z_cos_incident[z_ids != NO_HIT])
+weight_cos_incident = (z_cos_incident[z_ids != NO_HIT])**2
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
 ax.axis('equal')
 ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
-ax.set_title("cos incident component")
-ax.plot(nrm_element_uv_hull_plus[:,0], nrm_element_uv_hull_plus[:,1], c = "k", lw = 3)
-sc = ax.scatter(nrm_hit_ray_uv[:,0], nrm_hit_ray_uv[:,1],
+# ax.set_title("cos incident component")
+ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
+sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
                 c=weight_cos_incident, s = 50)
 fig.colorbar(sc)
 ax.grid(True)
-ax.set_xlim(-0.33,0.33)
+# ax.set_xlim(-0.33,0.33)
 ax.set_aspect(1.0)
 plt.show()
 
-#-----------------------combined-----------------------
+# #-----------------------combined-----------------------
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
 ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("full weight")
-ax.plot(nrm_element_uv_hull_plus[:,0], nrm_element_uv_hull_plus[:,1], c = "k", lw = 3)
-sc = ax.scatter(nrm_hit_ray_uv[:,0], nrm_hit_ray_uv[:,1],
+ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
+sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
                 c=weight_cos_incident * weight_dist_2_boundry, s = 50)
 cbar = fig.colorbar(sc)
 ax.grid(True)
 ax.set_xlim(-0.33,0.33)
 ax.set_aspect(1.0)
 plt.show()
-
-
-
-
-

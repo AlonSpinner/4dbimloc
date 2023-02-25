@@ -2,11 +2,12 @@ from numba import njit, prange
 import numpy as np
 from typing import Tuple
 
-@njit(cache = True)
+# @njit(cache = True)
 def low_variance_sampler(weights : np.ndarray, 
                          particle_poses : np.ndarray,
                          particle_beliefs : np.ndarray, 
-                         N_resample : int) -> Tuple[np.ndarray, np.ndarray]:
+                         N_resample : int,
+                         particle_reservoirs : np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
     '''
     input:
         weights - array of shape (N_particles)
@@ -22,6 +23,10 @@ def low_variance_sampler(weights : np.ndarray,
     '''
     new_particle_poses = np.zeros((N_resample,4))
     new_particle_beliefs = np.zeros((N_resample, particle_beliefs.shape[1]))
+    if particle_reservoirs is None:
+        new_particle_reservoirs = None
+    else:
+        new_particle_reservoirs = np.zeros((N_resample, particle_reservoirs.shape[1]))
     
     idx = 0
     c = weights[0]
@@ -35,8 +40,10 @@ def low_variance_sampler(weights : np.ndarray,
             c += weights[idx]
         new_particle_poses[i] = particle_poses[idx]
         new_particle_beliefs[i] = particle_beliefs[idx]
+        if particle_reservoirs is not None:
+            new_particle_reservoirs[i] = particle_reservoirs[idx]
     
-    return new_particle_poses, new_particle_beliefs
+    return new_particle_poses, new_particle_beliefs, new_particle_reservoirs
 
 @njit(cache = True)
 def should_resample(weights : np.ndarray, 

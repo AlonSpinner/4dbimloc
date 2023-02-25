@@ -9,13 +9,13 @@ import logging
 class RBPF(RBPF_FULL):
     def __init__(self,*args, **kwargs):
         super(RBPF, self).__init__(*args, **kwargs)
+        self._particle_reservoirs = None
 
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
         z - lidar scan, array of shape (N_lidar_beams)
         '''
-        self.decay_reservoirs()
 
         #compute weights and normalize
         sum_weights = 0.0
@@ -48,11 +48,11 @@ class RBPF(RBPF_FULL):
                 particle_z_values, particle_z_ids, _, \
                 particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
         
-            self.particle_beliefs[k], pz, self._particle_reservoirs[k] = existence_filter(self.particle_poses[k],
+            self.particle_beliefs[k], pz, _ = existence_filter(self.particle_poses[k],
                                             self._simulation_solids,
                                             self.particle_beliefs[k].copy(), 
                                             self.weights[k],
-                                            self._particle_reservoirs[k].copy(),
+                                            None,
                                             z, 
                                             particle_z_values, 
                                             particle_z_ids, 

@@ -134,15 +134,14 @@ def exact_robust(pose : np.ndarray,
             element_world_v = np.asarray(simulation_solids[i].geometry.vertices)
             element_uv = angle(np.ascontiguousarray(pose), element_world_v.T).T
             
-            nrm_intersection_uv = sensor_uv_angles[indicies]/np.array([np.pi, np.pi/2])
-            nrm_element_uv = element_uv/np.array([np.pi, np.pi/2])
+            intersection_uv = sensor_uv_angles[indicies]
             
             
             element_intersection_beliefs = element_new_beliefs[indicies]
             
-            dist_2_boundry = np.zeros(len(nrm_intersection_uv))
-            for j, bearing in enumerate(nrm_intersection_uv):
-                dist_2_boundry[j], _ = minimal_distance_from_projected_boundry(bearing, nrm_element_uv)
+            dist_2_boundry = np.zeros(len(intersection_uv))
+            for j, bearing in enumerate(intersection_uv):
+                dist_2_boundry[j], _ = minimal_distance_from_projected_boundry(bearing, element_uv)
             element_intersection_weights = intersection_weights[i, indicies] * dist_2_boundry
             
             sum_element_weights = np.sum(element_intersection_weights) + EPS

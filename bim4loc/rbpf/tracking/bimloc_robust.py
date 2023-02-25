@@ -71,10 +71,11 @@ class RBPF():
         self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
 
     def resample(self):
-        self.particle_poses, self.particle_beliefs = low_variance_sampler(self.weights, 
+        self.particle_poses, self.particle_beliefs, self._particle_reservoirs = low_variance_sampler(self.weights, 
                                                                     self.particle_poses, 
                                                                     self.particle_beliefs, 
-                                                                    self._N)
+                                                                    self._N,
+                                                                    self._particle_reservoirs)
         logging.info('resampled')
     def step(self, u, z):
         '''

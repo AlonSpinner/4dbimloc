@@ -31,38 +31,37 @@ def minimal_distance_from_projected_boundry(ray_point : np.ndarray,
     projected_verts - NX2 array [pitch,yaw] 
     ray_point - 1X2 [pitch,yaw]
     '''
-    #add dimension
-    hull_projected_verts = convex_hull(projected_verts)
-    hull_projected_rots = np.zeros(hull_projected_verts.shape,dtype=np.complex128)
 
-    #find rot_bar, mean approximation of the rotations
-    #better optimization can be computed with https://github.com/dellaert/ShonanAveraging
-    for i in prange(hull_projected_rots.shape[0]):
-        hull_projected_rots[i] = so1.exp(hull_projected_verts[i])
-    rot_query = so1.exp(ray_point)
+    q = so1.exp(ray_point)
+    p = np.zeros((projected_verts.shape[0],2), dtype = np.complex128)
+    for i in prange(projected_verts.shape[0]):
+        p[i] = so1.exp(projected_verts[i])
 
-    # rot_bar = so1.mu_rotations(hull_projected_rots)
-    rot_bar = rot_query.copy()
-
-    p = np.zeros_like(hull_projected_verts)
-    for i in prange(hull_projected_rots.shape[0]):
-        p[i] = so1.log(so1.minus(hull_projected_rots[i], rot_bar))
-    q = so1.log(so1.minus(rot_query,rot_bar))
-
-    p_plus = np.zeros((p.shape[0]+1,p.shape[1]))
-    p_plus[:-1,:] = p
-    p_plus[-1,:] = p[0]
-    if point_in_polygon(q, p_plus):
-        s, projected_point = distance_point_to_convex_hull(q, p_plus)
-    else:
-        s = 0.0
-        projected_point = q
+    pmq = np.zeros_like(p)
+    for i in prange(p.shape[0]):
+        pmq[i] = so1.minus(p[i],q)
 
     # plt.figure()
-    # plt.scatter(p_plus[:,0],p_plus[:,1])
-    # plt.scatter(q[0],q[1])
-    # plt.scatter(projected_point[0],projected_point[1])
+    # t = np.linspace(0,2*np.pi,100)
+    # plt.plot(np.cos(t),np.sin(t))
+    # plt.scatter(np.real(q[1]),np.imag(q[1]), color = 'r')
+    # plt.scatter(np.real(p[:,1]),np.imag(p[:,1]))
+    # plt.draw()
+    
+    dpmq = convex_hull(so1.log(pmq))
+
+    dpmq_plus = np.zeros((dpmq.shape[0]+1,dpmq.shape[1]))
+    dpmq_plus[:-1,:] = dpmq
+    dpmq_plus[-1,:] = dpmq[0]
+    if point_in_polygon(np.zeros(2), dpmq):
+        s, projected_point = distance_point_to_convex_hull(np.zeros(2), dpmq_plus)
+    else:
+        s = 0.0
+        projected_point = np.zeros(2)
+
+    # plt.figure()
+    # plt.scatter(projected_point[0],projected_point[1], color = 'r')
+    # plt.plot(dpmq[:,0],dpmq[:,1])
     # plt.draw()
 
-    dq = so1.log(so1.minus(so1.plus(rot_bar, so1.exp(projected_point)),rot_query))
-    return s, dq
+    return s, projected_point

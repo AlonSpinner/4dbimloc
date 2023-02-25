@@ -12,15 +12,13 @@ class RBPF(RBPF_FULL):
     def __init__(self,*args, **kwargs):
         super(RBPF, self).__init__(*args, **kwargs)
         self._logodds_inital_belief = p2logodds(args[3].copy())
+        self._particle_reservoirs = None
 
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
         z - lidar scan, array of shape (N_lidar_beams)
         '''
-        #initalize
-        self.decay_reservoirs()
-
         #compute weights and normalize
         sum_weights = 0.0
         noisy_u_array = sample_normal(u, self._U_COV, self._N)

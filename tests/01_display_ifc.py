@@ -11,8 +11,8 @@ solids = ifc_converter(IFC_PATH)
 visApp = VisApp()
 
 for i, s in enumerate(solids):
-    # visApp.add_solid(s,label = f"{i}")
-    visApp.add_solid(s,label = True)
+    visApp.add_solid(s,label = f"{i}")
+    # visApp.add_solid(s,label = True)
 visApp.redraw() #must be called after adding all solids
 
 visApp.setup_default_camera()

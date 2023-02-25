@@ -4,7 +4,7 @@ from bim4loc.geometry.utils import point_in_polygon
 import numpy as np
 import matplotlib.pyplot as plt
 
-base_element_angle = np.pi * 1
+base_element_angle = np.pi * -1
 d_base_element_angle = np.pi/6
 
 projected_verts = np.random.uniform(base_element_angle - d_base_element_angle,
