@@ -82,7 +82,7 @@ ax = fig.add_subplot(111)
 ax.axis('equal')
 ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
-ax.set_title("cos incident component")
+# ax.set_title("cos incident component")
 ax.plot(nrm_element_uv_hull_plus[:,0], nrm_element_uv_hull_plus[:,1], c = "k", lw = 3)
 sc = ax.scatter(nrm_hit_ray_uv[:,0], nrm_hit_ray_uv[:,1],
                 c=weight_cos_incident, s = 50)
