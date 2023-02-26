@@ -75,7 +75,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
         visApp.add_solid(dead_reck_vis_trail_est, "initial_condition")
 
     #measurements
-    measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}
+    measurements = {'U' : [], 'Z' : [], 'Z_perfect' : [], 'dead_reck' : [drone.pose]}
 
     #ground truth
     gt_traj = [drone.pose]
@@ -92,6 +92,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
         
         #produce measurement
         z, z_ids, _, z_p = drone.scan(world, project_scan = True, n_hits = 10, noisy = True)
+        z_perfect, _, _, _ = drone.scan(world, project_scan = True, n_hits = 10, noisy = False)
         for id in z_ids:
             if id != NO_HIT and world_solid_names[id] in electric_boxes_names:
                 electric_boxes_seen_counter[world_solid_names[id]] += 1
@@ -104,6 +105,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
         measurements['dead_reck'].append(compose_s(dead_reck_prev,u_noisy))
         measurements['U'].append(u_noisy)
         measurements['Z'].append(z)
+        measurements['Z_perfect'].append(z_perfect)
         
         #updating drawings
         if vis_on:

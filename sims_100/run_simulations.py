@@ -23,11 +23,11 @@ def run_simulation(seed_number, out_folder, vis_on = False):
 
     #SOME CONSTANTS
     pose0 = data['ground_truth']['trajectory'][0]
-    N_particles = 5
+    N_particles = 10
     initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
     simulated_sensor = data['sensor']
     simulated_sensor.piercing = True
-    simulated_sensor.std *= 1
+    simulated_sensor.std *= 2
     simulated_sensor.p0 = 0.4
     simulated_sensor.max_range_cutoff = False
 
@@ -111,19 +111,21 @@ def run_simulation(seed_number, out_folder, vis_on = False):
         
         #LOOP
         time.sleep(2)
-        for t, (u,z) in enumerate(zip(data['measurements']['U'],data['measurements']['Z'])):
+        for t, (u,z,z_perfect) in enumerate(zip(data['measurements']['U'],
+                                                data['measurements']['Z'],
+                                                data['measurements']['Z_perfect'])):
 
             #-----------------------------------estimate-------------------------------
             rbpf.step(u, z)
             pose_mu, pose_cov = rbpf.get_expect_pose()
             expected_belief_map = rbpf.get_expected_belief_map()
 
-            if t == 51 or t == 0:
+            if t == len(t) or t == 0:
                 rbpf.resample()
 
             #-----------------------------perfect trajectory---------------------------
             rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
-            rbpf_perfect.step(np.zeros(4), z)
+            rbpf_perfect.step(np.zeros(4), z_perfect)
 
             #-------------------------------store results------------------------------
             results_rbpf['pose_mu'].append(pose_mu)

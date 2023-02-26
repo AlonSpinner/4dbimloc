@@ -53,6 +53,7 @@ def minimal_distance_from_projected_boundry(ray_point : np.ndarray,
     dpmq_plus = np.zeros((dpmq.shape[0]+1,dpmq.shape[1]))
     dpmq_plus[:-1,:] = dpmq
     dpmq_plus[-1,:] = dpmq[0]
+    dpmq_plus[:,1] *= 2 #<------------------- make pitch distance twice as significant
     if point_in_polygon(np.zeros(2), dpmq):
         s, projected_point = distance_point_to_convex_hull(np.zeros(2), dpmq_plus)
     else:

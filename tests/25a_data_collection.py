@@ -83,10 +83,10 @@ if dead_reck_show == True:
                                          color = [0.0,0.0,1.0])
     visApp.add_solid(dead_reck_vis_trail_est, "world")
 
-U_COV = np.diag([0.2, 0.1, 1e-25, np.radians(1)])**2
+U_COV = np.diag(np.array([0.2, 0.1, 1e-25, np.radians(1)]))**2
 
 #measurements
-measurements = {'U' : [], 'Z' : [], 'dead_reck' : [drone.pose]}
+measurements = {'U' : [], 'Z' : [], 'Z_perfect' : [], 'dead_reck' : [drone.pose]}
 
 #ground truth
 gt_traj = [drone.pose]
@@ -111,6 +111,7 @@ for t, u in enumerate(actions):
     
     #produce measurement
     z, z_ids, _, z_p = drone.scan(world, project_scan = True, n_hits = 10, noisy = True)
+    z_perfect, _, _, _ = drone.scan(world, project_scan = True, n_hits = 10, noisy = False)
     for id in z_ids:
         if id != NO_HIT and world_solid_names[id] in electric_boxes_names:
             electric_boxes_seen_counter[world_solid_names[id]] += 1
@@ -124,6 +125,7 @@ for t, u in enumerate(actions):
     measurements['dead_reck'].append(compose_s(dead_reck_prev,u_noisy))
     measurements['U'].append(u_noisy)
     measurements['Z'].append(z)
+    measurements['Z_perfect'].append(z_perfect)
     
     #updating drawings
     vis_scan.update(drone.pose[:3], z_p.T)
