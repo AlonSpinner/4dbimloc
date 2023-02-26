@@ -33,7 +33,7 @@ N_particles = 5
 initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
-simulated_sensor.std *= 2
+simulated_sensor.std *= 1
 simulated_sensor.p0 = 0.4
 simulated_sensor.max_range_cutoff = False
 
@@ -70,7 +70,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_varaition_dependence,
                 data['U_COV'],
                 max_steps_to_resample = 10,
-                reservoir_decay_rate = 0.3)
+                reservoir_decay_rate = 0.5)
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
@@ -107,8 +107,11 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
 
     pose_mu, pose_cov = rbpf.get_expect_pose()
     expected_belief_map = rbpf.get_expected_belief_map()
+
     results_rbpf = {'pose_mu': [pose_mu],'pose_cov': [pose_cov],
                     'expected_belief_map': [expected_belief_map],
+                    'best_belief_map' : [rbpf.get_best_belief_map()],
+                    'best_pose' : [rbpf.get_best_pose()],
                     'particle_poses': [initial_particle_poses],
                     'particle_weights': [np.ones(N_particles)/N_particles],
                     'particle_beliefs': [initial_beliefs],
@@ -125,7 +128,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         pose_mu, pose_cov = rbpf.get_expect_pose()
         expected_belief_map = rbpf.get_expected_belief_map()
 
-        if t == 51 or t == 0:
+        if t == len(data['measurements']['U'])-1 or t == 0:
             rbpf.resample()
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
@@ -135,6 +138,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         results_rbpf['pose_mu'].append(pose_mu)
         results_rbpf['pose_cov'].append(pose_cov)
         results_rbpf['expected_belief_map'].append(expected_belief_map)
+        results_rbpf['best_belief_map'].append(rbpf.get_best_belief_map())
+        results_rbpf['best_pose'].append(rbpf.get_best_pose())
         results_rbpf['particle_poses'].append(rbpf.particle_poses.copy())
         results_rbpf['particle_weights'].append(rbpf.weights.copy())
         results_rbpf['particle_beliefs'].append(rbpf.particle_beliefs.copy())
@@ -167,6 +172,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
     results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])
     results_rbpf["pose_cov"] = np.array(results_rbpf["pose_cov"])
+    results_rbpf['best_pose'] = np.array(results_rbpf['best_pose'])
+    results_rbpf["best_belief_map"] = np.array(results_rbpf["best_belief_map"])
     results_rbpf['perfect_traj_belief_map'] = np.array(results_rbpf['perfect_traj_belief_map'])
 
     results[rbpf_enum] = results_rbpf

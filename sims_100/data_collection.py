@@ -12,7 +12,7 @@ import time
 import pickle
 import os
 
-def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
+def create_data(seed_number, out_folder,  vis_on = False):
     np.random.seed(seed_number)
 
     #BUILD WORLD
@@ -27,7 +27,6 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
         if s.completion_time < current_time:
                 constructed_solids.append(s.clone())
     constructed_solids = remove_constructed_solids_that_cant_exist(constructed_solids)
-    # del constructed_solids[2]
 
 
     initial_beliefs = np.zeros(len(solids))
@@ -43,6 +42,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
     drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
     sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(200)), angles_v = np.array([0.0])); 
     sensor.std = 0.05; sensor.piercing = False; sensor.max_range = 10.0
+    U_COV = np.diag([0.2, 0.1, 1e-25, np.radians(1)])**2
     drone.mount_sensor(sensor)
 
     #BUILDING ACTION SET
@@ -50,7 +50,6 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
     straight = np.array([0.5,0.0 ,0.0 ,0.0]) * DT
     turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8]) * DT
     turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8]) * DT
-    stay = np.zeros(4) * DT
     actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4 + [straight] * 4
 
     #DRAW

@@ -61,14 +61,17 @@ class RBPF():
         return np.sum(self.weights.reshape(-1,1) * self.particle_beliefs, axis = 0)
 
     def get_best_belief_map(self):
-        return self.particle_beliefs[np.argmax(self.weights)]
+        return self.particle_beliefs[np.argmax(self.weights)].copy()
+    
+    def get_best_pose(self):
+        return self.particle_poses[np.argmax(self.weights)].copy()
 
     def get_expect_pose(self):
         mu, cov = gauss_fit(self.particle_poses.T, self.weights)
         return mu, cov
 
     def decay_reservoirs(self):
-        self._particle_reservoirs = self._particle_reservoirs * np.exp(-self._reservoir_decay_rate)
+        self._particle_reservoirs = self._particle_reservoirs * self._reservoir_decay_rate
 
     def resample(self):
         self.particle_poses, self.particle_beliefs, self._particle_reservoirs = low_variance_sampler(self.weights, 

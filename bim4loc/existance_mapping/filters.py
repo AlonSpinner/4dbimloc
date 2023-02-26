@@ -150,9 +150,8 @@ def exact_robust(pose : np.ndarray,
             if semi_robust:
                 beliefs[i] = new_element_belief
             else:
-                a = particle_weight
                 beliefs[i] = (new_element_belief * sum_element_weights + \
-                            beliefs[i] * a*particle_reservoir[i]) / (sum_element_weights + a*particle_reservoir[i] + EPS)
+                            beliefs[i] * particle_reservoir[i]) / (sum_element_weights + particle_reservoir[i] + EPS)
                 particle_reservoir[i] += sum_element_weights
 
     return beliefs, p_z, particle_reservoir

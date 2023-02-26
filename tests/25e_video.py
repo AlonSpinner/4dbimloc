@@ -11,7 +11,7 @@ from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid,
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 
-save_images = True
+save_images = False
 variation_names = {0 : "Simulation", 1 : "BPFS", 2 : "BPFS-t", 3 : "BPFS-tg", 4 : "logodds"}
 
 #get data and results
@@ -73,12 +73,14 @@ def add_method2_visApp(N : int, window_name):
 
 def update_method_drawings(t : int, N : int, simulation, vis_particles, vis_trail_est):
     scene_name = variation_names[N]
-    simulation.update_solids_beliefs(results[N]['expected_belief_map'][t+1])
+    # simulation.update_solids_beliefs(results[N]['expected_belief_map'][t+1])
+    simulation.update_solids_beliefs(results[N]['best_belief_map'][t+1])
     [visApp.update_solid(s,scene_name) for s in simulation.solids]
     vis_particles.update(results[N]['particle_poses'][t+1], results[N]['particle_weights'][t+1])
     visApp.update_solid(vis_particles.lines, scene_name)
     visApp.update_solid(vis_particles.tails, scene_name)
-    vis_trail_est.update(results[N]['pose_mu'][t+1][:3].reshape(1,3))
+    vis_trail_est.update(results[N]['best_pose'][t+1][:3].reshape(1,3))
+    # vis_trail_est.update(results[N]['pose_mu'][t+1][:3].reshape(1,3))
     visApp.update_solid(vis_trail_est,scene_name)
     visApp.redraw(scene_name)
 
@@ -139,13 +141,9 @@ visApp_4 = add_method2_visApp(4,"bottom")
 visApp.add_scene("spaceholder", "bottom")
 
 if save_images:
-    import time
-    time.sleep(0.1)
-    visApp.redraw_all_scenes()
     scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
-    scene_images = list(scene_images.values())
-    imageio.imwrite(os.path.join(output_image_path,"z_simulation0.png"), scene_images[0])
-    imageio.imwrite(os.path.join(output_image_path,"z_estimation0.png"), scene_images[1])
+    imageio.imwrite(os.path.join(output_image_path,"z_simulation0.png"), scene_images["world"])
+    imageio.imwrite(os.path.join(output_image_path,"z_estimation0.png"), scene_images["BPFS"])
 
 video_canvases = []
 for t, z in enumerate(data['measurements']['Z']):
