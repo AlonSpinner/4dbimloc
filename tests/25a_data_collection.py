@@ -46,7 +46,7 @@ solids_completion_times = np.array([s.completion_time for s in solids])
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(200)), angles_v = np.array([0.0])); 
 sensor.std = 0.05; sensor.piercing = False; sensor.max_range = 10.0
 drone.mount_sensor(sensor)
 
@@ -103,7 +103,7 @@ electric_boxes_seen_counter = {name:0 for name in electric_boxes_names}
 world_solid_names = [s.name for s in world.solids]
 
 #LOOP
-np.random.seed(3) #noise seed
+np.random.seed(4) #noise seed
 for t, u in enumerate(actions):
 
     #move drone

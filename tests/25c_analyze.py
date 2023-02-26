@@ -41,7 +41,7 @@ fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Belief Map Cross Entropy Error, bits')
-ax.set_ylim(0,100)
+# ax.set_ylim(0,100)
 ax.grid(True)
 for i, res in enumerate(results.values()):
     cross_entropy, cross_entropy_perfect_traj = cross_entropy_error(ground_truth_beliefs,

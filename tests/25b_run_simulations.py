@@ -16,7 +16,7 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
-np.random.seed(2) #5 too good?
+np.random.seed(3) #5 too good?
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
@@ -34,7 +34,7 @@ initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_p
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
 simulated_sensor.std *= 1
-simulated_sensor.p0 = 0.1
+simulated_sensor.p0 = 0.4
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]

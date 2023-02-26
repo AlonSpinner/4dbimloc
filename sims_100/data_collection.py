@@ -41,7 +41,7 @@ def create_data(seed_number, U_COV ,out_folder,  vis_on = False):
 
     #INITALIZE DRONE AND SENSOR
     drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
-    sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(300)), angles_v = np.array([0.0])); 
+    sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(200)), angles_v = np.array([0.0])); 
     sensor.std = 0.05; sensor.piercing = False; sensor.max_range = 10.0
     drone.mount_sensor(sensor)
 
