@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 x = 1
-rate = 0.2
+rate = 0.5
 
 t = np.arange(5)
 history = np.zeros_like(t,dtype = float)

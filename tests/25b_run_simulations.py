@@ -13,10 +13,9 @@ import os
 from bim4loc.rbpf.tracking.bimloc_robust import RBPF as robust
 from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
 from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
-# from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
-np.random.seed(3) #5 too good?
+np.random.seed(2) #5 too good?
 
 logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
@@ -29,12 +28,12 @@ data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]
-N_particles = 5
+N_particles = 10
 initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
-simulated_sensor.std *= 1
-simulated_sensor.p0 = 0.4
+simulated_sensor.std *= 2
+simulated_sensor.p0 = 0.9
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
@@ -123,7 +122,9 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     
     #LOOP
     time.sleep(2)
-    for t, (u,z) in enumerate(zip(data['measurements']['U'],data['measurements']['Z'])):
+    for t, (u,z,z_perfect) in enumerate(zip(data['measurements']['U'],
+                                            data['measurements']['Z'],
+                                            data['measurements']['Z_perfect'])):
 
         #-----------------------------------estimate-------------------------------
         rbpf.step(u, z)
@@ -134,7 +135,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
             rbpf.resample()
         #-----------------------------perfect trajectory---------------------------
         rbpf_perfect.particle_poses = np.array([data['ground_truth']['trajectory'][t+1]])
-        rbpf_perfect.step(np.zeros(4), z)
+        rbpf_perfect.step(np.zeros(4), z_perfect)
 
         #-------------------------------store results------------------------------
         results_rbpf['pose_mu'].append(pose_mu)

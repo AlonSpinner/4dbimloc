@@ -11,7 +11,7 @@ from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid,
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 
-save_images = True
+save_images = False
 A = 1; B = 2; C = 3; D = 4
 variation_names = {0 : "Simulation", A : "BPFS", B : "BPFS-t", C : "BPFS-tg", D : "logodds"}
 
