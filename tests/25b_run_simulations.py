@@ -21,8 +21,9 @@ logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.INFO)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
-data_file = os.path.join(dir_path, "25a_data.p")
+bin_dir = os.path.join(dir_path, "25_bin")
+yaml_file = os.path.join(bin_dir, "complementry_IFC_data.yaml")
+data_file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
@@ -113,13 +114,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                     'particle_beliefs': [initial_beliefs],
                     'perfect_traj_belief_map': [expected_belief_map]}
 
-    def crop_image(image, crop_ratio_w, crop_ratio_h):
-        h,w = image.shape[:2]
-        crop_h = int(h * crop_ratio_h/2)
-        crop_w = int(w * crop_ratio_w/2)
-        return image[crop_h:-crop_h, crop_w:-crop_w,:]
-    images_output_path = os.path.join(dir_path, "25_images")
-    
     #LOOP
     time.sleep(2)
     for t, (u,z,z_perfect) in enumerate(zip(data['measurements']['U'],
@@ -169,10 +163,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
         visApp.update_solid(sim_vis_trail_est,"simulation")
         visApp.redraw_all_scenes()
 
-        if t % 3 == 0:
-            images = visApp.get_images(images_output_path,prefix = f"t{t}M{rbpf_enum}_",
-                            transform = lambda x: crop_image(x,0.3,0.55), save_scenes = ["simulation"])
-
     #--------------------SAVE RESULTS--------------------
     results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
     results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])
@@ -183,6 +173,6 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     visApp.quit()
     print(f"finished rbpf {rbpf_enum}")
 
-file = os.path.join(dir_path, f"25b_results.p")
+file = os.path.join(bin_dir, f"results.p")
 pickle.dump(results, open(file, "wb"))
 print('pickle dumped')

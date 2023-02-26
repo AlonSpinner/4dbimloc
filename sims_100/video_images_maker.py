@@ -60,13 +60,17 @@ def tile_images(images):
         canvas[y:y+image_shape[0], x:x+image_shape[1], :] = images[i].astype(np.uint8)
     return canvas
 
-def make_video(seed_number, out_folder, save_images):
+def make_video(seed_number, data_folder, results_folder, media_folder, save_images = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
-    file = os.path.join(dir_path, "25a_data.p")
+    file = os.path.join(dir_path, data_folder, f"data_{seed_number}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
-    file = os.path.join(dir_path, "25b_results.p")
+    file = os.path.join(dir_path, results_folder ,f"results_{seed_number}.p")
     results = pickle.Unpickler(open(file, "rb")).load()
+
+    if save_images:
+        images_folder = os.path.join(dir_path,media_folder,f"images_{seed_number}")
+        os.mkdir(images_folder)
 
     A = 1; B = 2; C = 3; D = 4
     variation_names = {0 : "Simulation", A : "BPFS", B : "BPFS-t", C : "BPFS-tg", D : "logodds"}
@@ -162,7 +166,7 @@ def make_video(seed_number, out_folder, save_images):
 
         if save_images and t % 3 == 0:
             for i, img in enumerate(scene_images.values()):
-                imageio.imwrite(os.path.join(output_image_path,f"t{t}_{variation_names[i]}.png"), img)
+                imageio.imwrite(os.path.join(images_folder,f"t{t}_{variation_names[i]}.png"), img)
 
         video_images = []
         for i, img in enumerate(scene_images.values()):
@@ -171,7 +175,8 @@ def make_video(seed_number, out_folder, save_images):
         canvas = tile_images(video_images)
         video_canvases.append(canvas) #drop last scene
 
-    imageio.mimsave(os.path.join(dir_path,"25_result_video.mp4"), video_canvases, 'mp4', fps = 10)
+    imageio.mimsave(os.path.join(dir_path,media_folder,f"video_{seed_number}.mp4"),
+                    video_canvases, 'mp4', fps = 10)
     visApp.quit()
     print("finished")
 

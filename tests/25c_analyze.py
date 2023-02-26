@@ -7,9 +7,10 @@ from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
                         cross_entropy_error, belief_map_accuracy
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path, "25a_data.p")
+bin_dir = os.path.join(dir_path, "25_bin")
+file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(file, "rb")).load()
-file = os.path.join(dir_path, "25b_results.p")
+file = os.path.join(bin_dir, "results.p")
 results = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k', 'm']

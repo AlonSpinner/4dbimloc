@@ -15,10 +15,10 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 # from bim4loc.rbpf.tracking.bimloc_logodds_semi_robust import RBPF as logodds_semi_robust
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 
-def run_simulation(seed_number, out_folder, vis_on = False):
+def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
-    data_file = os.path.join(dir_path, out_folder , f"data_{seed_number}.p")
+    data_file = os.path.join(dir_path, data_folder , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
 
     #SOME CONSTANTS
@@ -105,6 +105,9 @@ def run_simulation(seed_number, out_folder, vis_on = False):
         expected_belief_map = rbpf.get_expected_belief_map()
         results_rbpf = {'pose_mu': [pose_mu],'pose_cov': [pose_cov],
                         'expected_belief_map': [expected_belief_map],
+                        'particle_poses': [initial_particle_poses],
+                        'particle_weights': [np.ones(N_particles)/N_particles],
+                        'particle_beliefs': [initial_beliefs],
                         'perfect_traj_belief_map': [expected_belief_map]}
 
         np.random.seed(seed_number)
@@ -120,7 +123,7 @@ def run_simulation(seed_number, out_folder, vis_on = False):
             pose_mu, pose_cov = rbpf.get_expect_pose()
             expected_belief_map = rbpf.get_expected_belief_map()
 
-            if t == len(t) or t == 0:
+            if t == len(data['measurements']['U']) or t == 0:
                 rbpf.resample()
 
             #-----------------------------perfect trajectory---------------------------
@@ -132,6 +135,9 @@ def run_simulation(seed_number, out_folder, vis_on = False):
             results_rbpf['pose_cov'].append(pose_cov)
             results_rbpf['expected_belief_map'].append(expected_belief_map)
             results_rbpf['perfect_traj_belief_map'].append(rbpf_perfect.particle_beliefs[0].copy())
+            results_rbpf['particle_poses'].append(rbpf.particle_poses.copy())
+            results_rbpf['particle_weights'].append(rbpf.weights.copy())
+            results_rbpf['particle_beliefs'].append(rbpf.particle_beliefs.copy())
 
             #-----------------------------------draw-----------------------------------
             if vis_on:

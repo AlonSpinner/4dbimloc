@@ -24,7 +24,8 @@ logger = logging.getLogger().setLevel(logging.WARNING)
 current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 dir_path = os.path.dirname(os.path.realpath(__file__))
-yaml_file = os.path.join(dir_path, "25_complementry_IFC_data.yaml")
+bin_dir = os.path.join(dir_path, "25_bin")
+yaml_file = os.path.join(bin_dir, "complementry_IFC_data.yaml")
 update_existence_dependence_from_yaml(solids, yaml_file)
 constructed_solids = []
 for i, s in enumerate(solids):
@@ -91,13 +92,6 @@ measurements = {'U' : [], 'Z' : [], 'Z_perfect' : [], 'dead_reck' : [drone.pose]
 #ground truth
 gt_traj = [drone.pose]
 
-def crop_image(image, crop_ratio_w, crop_ratio_h):
-    h,w = image.shape[:2]
-    crop_h = int(h * crop_ratio_h/2)
-    crop_w = int(w * crop_ratio_w/2)
-    return image[crop_h:-crop_h, crop_w:-crop_w,:]
-images_output_path = os.path.join(dir_path, "25_images")
-
 electric_boxes_names = [s.name for s in simulation.solids if s.ifc_type == 'IfcElectricDistributionBoard']
 electric_boxes_seen_counter = {name:0 for name in electric_boxes_names}
 world_solid_names = [s.name for s in world.solids]
@@ -140,13 +134,9 @@ for t, u in enumerate(actions):
         dead_reck_vis_trail_est.update(measurements['dead_reck'][-1][:3].reshape(1,-1))
         visApp.update_solid(dead_reck_vis_arrow, "world")
         visApp.update_solid(dead_reck_vis_trail_est, "world")
-
-    if t % 3 == 0:
-        images = visApp.get_images(images_output_path,prefix = f"t{t}_",
-                            transform = lambda x: crop_image(x,0.3,0.55),
-                            save_scenes = "world")
     
     # time.sleep(0.1)
+
 measurements['dead_reck'] = np.array(measurements['dead_reck'])
 measurements['electric_boxes_seen_counter'] = electric_boxes_seen_counter
 
@@ -160,6 +150,6 @@ data['ground_truth'] = {'constructed_solids_names': [s.name for s in constructed
 data['U_COV'] = U_COV
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path, "25a_data.p")
+file = os.path.join(bin_dir, "data.p")
 pickle.dump(data, open(file, "wb"))
 print('pickle dumped')
