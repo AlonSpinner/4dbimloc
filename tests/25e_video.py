@@ -15,9 +15,12 @@ from bim4loc.geometry import pose2z
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, \
                             update_existence_dependence_from_yaml, add_variations_from_yaml
 import time
+import imageio
 
 A = 1
-B = 4
+B = 2
+C = 3
+D = 4
 
 #get data and results
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -46,13 +49,13 @@ visApp.add_solid(vis_scan, "world")
 trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
 visApp.add_solid(trail_ground_truth, "world")
 #METHODS
-def add_method2_visApp(N : int):
+def add_method2_visApp(N : int, window_name):
     simulation = [s.clone() for s in solids]
     add_variations_from_yaml(simulation, yaml_file)
     update_existence_dependence_from_yaml(simulation, yaml_file)
     simulation = RayCastingMap(simulation)
 
-    visApp.add_scene(f"method{N}","world")
+    visApp.add_scene(f"method{N}", window_name)
     [visApp.add_solid(s,f"method{N}") for s in simulation.solids]
     visApp.redraw(f"method{N}")
     visApp.setup_default_camera(f"method{N}")
@@ -73,9 +76,42 @@ def update_method_drawings(N : int, simulation, vis_particles, vis_trail_est):
     visApp.update_solid(vis_trail_est, f"method{N}")
     visApp.redraw(f"method{N}")
 
-visApp_A = add_method2_visApp(A)
-visApp_B = add_method2_visApp(B)
+def crop_image(image, crop_ratio_w, crop_ratio_h):
+        h,w = image.shape[:2]
+        crop_h = int(h * crop_ratio_h/2)
+        crop_w = int(w * crop_ratio_w/2)
+        return image[crop_h:-crop_h, crop_w:-crop_w,:]
 
+def tile_images(images):
+    # Get image shape
+    image_shape = images[0].shape
+    # Create empty canvas to put images
+    canvas_shape = (image_shape[0]*2, image_shape[1]*3, image_shape[2])
+    canvas = np.ones(canvas_shape,dtype = np.uint8) * 255
+    # Tile images onto canvas
+    for i in range(5):
+        row = i // 3
+        col = i % 3
+        x = col * image_shape[1]
+        y = row * image_shape[0]
+        if i == 0:
+             y_offset = image_shape[0]//2
+             y += y_offset
+        if row == 1:
+            # Center the images on the bottom row
+            x_offset = image_shape[1]
+            x += x_offset
+        canvas[y:y+image_shape[0], x:x+image_shape[1], :] = images[i].astype(np.uint8)
+    return canvas
+
+visApp_A = add_method2_visApp(A,"world")
+visApp_B = add_method2_visApp(B,"world")
+visApp.add_window("bottom")
+visApp_C = add_method2_visApp(C,"bottom")
+visApp_D = add_method2_visApp(D,"bottom")
+visApp.add_scene("spaceholder", "bottom")
+
+video_images = []
 for t, z in enumerate(data['measurements']['Z']):
     drone.update_pose(data['ground_truth']['trajectory'][t+1])
     z_p = pose2z.transform_from(drone.pose, drone.sensor.scan_to_points(z))
@@ -92,7 +128,17 @@ for t, z in enumerate(data['measurements']['Z']):
     #METHOD DRAWNGS
     update_method_drawings(A, *visApp_A)
     update_method_drawings(B, *visApp_B)
+    update_method_drawings(C, *visApp_C)
+    update_method_drawings(D, *visApp_D)
 
-    visApp.redraw_all_scenes()
+    images = visApp.get_images(transform = lambda x: crop_image(x,0.05,0.45))
+    images.pop('spaceholder')
+    canvas = tile_images(list(images.values()))
+    video_images.append(canvas) #drop last scene
+
     # time.sleep(0.1)
+
+imageio.mimsave("video_images.mp4", video_images, 'mp4', fps = 10)
+visApp.quit()
+print("finished")
 
