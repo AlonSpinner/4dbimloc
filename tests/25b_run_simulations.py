@@ -29,12 +29,12 @@ data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]
-N_particles = 10
+N_particles = 5
 initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
 simulated_sensor.std *= 2
-simulated_sensor.p0 = 0.9
+simulated_sensor.p0 = 0.4
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]

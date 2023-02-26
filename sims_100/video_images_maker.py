@@ -70,12 +70,10 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
 
     if save_images:
         images_folder = os.path.join(dir_path,media_folder,f"images_{seed_number}")
-        os.mkdir(images_folder)
+        if not os.path.exists(images_folder):
+            os.mkdir(images_folder)
 
-    A = 1; B = 2; C = 3; D = 4
-    variation_names = {0 : "Simulation", A : "BPFS", B : "BPFS-t", C : "BPFS-tg", D : "logodds"}
-
-    output_image_path = os.path.join(dir_path, "25_images")
+    variation_names = {0 : "Simulation", 1 : "BPFS", 2 : "BPFS-t", 3 : "BPFS-tg", 4 : "logodds"}
 
     #BUILD GROUND TRUTH
     solids = ifc_converter(data['IFC_PATH'])
@@ -102,8 +100,9 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         update_existence_dependence_from_yaml(simulation, yaml_file)
         simulation = RayCastingMap(simulation)
 
-        scene_name = f"method{N}"
+        scene_name = variation_names[N]
         visApp.add_scene(scene_name, window_name)
+        simulation.update_solids_beliefs(results[N]['expected_belief_map'][0])
         [visApp.add_solid(s,scene_name) for s in simulation.solids]
         visApp.redraw(scene_name)
         visApp.setup_default_camera(scene_name)
@@ -113,6 +112,7 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         vis_trail_est = TrailSolid("trail_est", results[N]['pose_mu'][0][:3].reshape(1,3))
         visApp.add_solid(vis_trail_est,scene_name)
         # visApp.show_axes(True, scene_name)
+        visApp.redraw(scene_name)
 
         #This isnt saved with images. only for "runtime"
         bmin, bmax, bextent = simulation.bounds()
@@ -122,8 +122,8 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         visApp.add_text(Label3D(variation_names[N], np.array([locx, locy, locz])), scene_name)
         return simulation, vis_particles, vis_trail_est
 
-    def update_method_drawings(N : int, simulation, vis_particles, vis_trail_est):
-        scene_name = f"method{N}"
+    def update_method_drawings(t : int, N : int, simulation, vis_particles, vis_trail_est):
+        scene_name = variation_names[N]
         simulation.update_solids_beliefs(results[N]['expected_belief_map'][t+1])
         [visApp.update_solid(s,scene_name) for s in simulation.solids]
         vis_particles.update(results[N]['particle_poses'][t+1], results[N]['particle_weights'][t+1])
@@ -133,13 +133,17 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         visApp.update_solid(vis_trail_est,scene_name)
         visApp.redraw(scene_name)
 
-
-    visApp_A = add_method2_visApp(A,"world")
-    visApp_B = add_method2_visApp(B,"world")
+    visApp_1 = add_method2_visApp(1,"world")
+    visApp_2 = add_method2_visApp(2,"world")
     visApp.add_window("bottom")
-    visApp_C = add_method2_visApp(C,"bottom")
-    visApp_D = add_method2_visApp(D,"bottom")
+    visApp_3 = add_method2_visApp(3,"bottom")
+    visApp_4 = add_method2_visApp(4,"bottom")
     visApp.add_scene("spaceholder", "bottom")
+
+    if save_images:
+        scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
+        imageio.imwrite(os.path.join(images_folder,"z_simulation0.png"), scene_images["world"])
+        imageio.imwrite(os.path.join(images_folder,"z_estimation0.png"), scene_images["BPFS"]) 
 
     video_canvases = []
     for t, z in enumerate(data['measurements']['Z']):
@@ -156,10 +160,10 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         visApp.redraw("world")
         
         #METHOD DRAWNGS
-        update_method_drawings(A, *visApp_A)
-        update_method_drawings(B, *visApp_B)
-        update_method_drawings(C, *visApp_C)
-        update_method_drawings(D, *visApp_D)
+        update_method_drawings(t, 1, *visApp_1)
+        update_method_drawings(t, 2, *visApp_2)
+        update_method_drawings(t, 3, *visApp_3)
+        update_method_drawings(t, 4, *visApp_4)
 
         scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
         scene_images.pop('spaceholder')
