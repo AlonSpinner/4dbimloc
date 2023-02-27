@@ -14,6 +14,7 @@ from bim4loc.rbpf.tracking.bimloc_robust import RBPF as robust
 from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
 from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
+from bim4loc.utils.load_yaml import load_parameters
 
 np.random.seed(2) #5 too good?
 
@@ -22,19 +23,20 @@ logger = logging.getLogger().setLevel(logging.INFO)
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
-yaml_file = os.path.join(bin_dir, "complementry_IFC_data.yaml")
+yaml_file = os.path.join(bin_dir, "parameters.yaml")
+parameters_dict = load_parameters(yaml_file)
 data_file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]
-N_particles = 5
-initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], N_particles)
+initial_particle_poses = np.random.multivariate_normal(pose0, data['U_COV'], 
+                                                       parameters_dict['rbpf_N_particles'])
 simulated_sensor = data['sensor']
 simulated_sensor.piercing = True
-simulated_sensor.std *= 1
-simulated_sensor.p0 = 0.4
+simulated_sensor.std *= parameters_dict['sensor_std_factor']
+simulated_sensor.p0 = parameters_dict['sensor_p0']
 simulated_sensor.max_range_cutoff = False
 
 rbpf_methods = [robust, semi_robust, simple, logodds]
@@ -43,8 +45,8 @@ results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
 for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
-    add_variations_from_yaml(simulation_solids, yaml_file)
-    update_existence_dependence_from_yaml(simulation_solids, yaml_file)
+    add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
+    update_existence_dependence_from_yaml(simulation_solids, parameters_dict['existence_dependence'])
 
     #compute existence and variation dependence structures for rbpf
     solids_varaition_dependence = compute_variation_dependence_for_rbpf(simulation_solids)
@@ -69,8 +71,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_existence_dependence,
                 solids_varaition_dependence,
                 data['U_COV'],
-                max_steps_to_resample = 10,
-                reservoir_decay_rate = 0.5)
+                max_steps_to_resample = parameters_dict['rbpf_max_steps_to_resample'],
+                reservoir_decay_rate = parameters_dict['rbpf_reservoir_decay_rate'])
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
@@ -113,7 +115,7 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                     'best_belief_map' : [rbpf.get_best_belief_map()],
                     'best_pose' : [rbpf.get_best_pose()],
                     'particle_poses': [initial_particle_poses],
-                    'particle_weights': [np.ones(N_particles)/N_particles],
+                    'particle_weights': [np.ones(parameters_dict['rbpf_N_particles'])/parameters_dict['rbpf_N_particles']],
                     'particle_beliefs': [initial_beliefs],
                     'perfect_traj_belief_map': [expected_belief_map]}
 

@@ -12,6 +12,8 @@ import time
 import logging
 import pickle
 import os
+from bim4loc.utils.load_yaml import load_parameters
+
 dead_reck_show = True
 np.random.seed(55) #map seed
 #8 is simple
@@ -21,19 +23,19 @@ logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 #BUILD WORLD
-current_time = 5.0 #[s]
 solids = ifc_converter(IFC_PATH)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
-yaml_file = os.path.join(bin_dir, "complementry_IFC_data.yaml")
-update_existence_dependence_from_yaml(solids, yaml_file)
+yaml_file = os.path.join(bin_dir, "parameters.yaml")
+parameters_dict = load_parameters(yaml_file)
+update_existence_dependence_from_yaml(solids, parameters_dict['existence_dependence'])
+current_time = parameters_dict['current_time']
 constructed_solids = []
 for i, s in enumerate(solids):
     s.set_random_completion_time()
     if s.completion_time < current_time:
             constructed_solids.append(s.clone())
 constructed_solids = remove_constructed_solids_that_cant_exist(constructed_solids)
-# del constructed_solids[2]
 
 initial_beliefs = np.zeros(len(solids))
 for i, s in enumerate(solids):
@@ -47,8 +49,12 @@ solids_completion_times = np.array([s.completion_time for s in solids])
 
 #INITALIZE DRONE AND SENSOR
 drone = Drone(pose = np.array([3.0, 3.0, 2.0, 0.0]))
-sensor = Lidar(angles_u = np.linspace(-np.pi,np.pi, int(200)), angles_v = np.array([0.0])); 
-sensor.std = 0.05; sensor.piercing = False; sensor.max_range = 10.0
+sensor = Lidar(angles_u = eval(parameters_dict['sensor_u']),
+                angles_v = eval(parameters_dict['sensor_v'])); 
+sensor.std = parameters_dict['sensor_std']; 
+sensor.piercing = False; 
+sensor.max_range = parameters_dict['sensor_max_range']
+U_COV = eval(parameters_dict['U_COV'])
 drone.mount_sensor(sensor)
 
 #BUILDING ACTION SET

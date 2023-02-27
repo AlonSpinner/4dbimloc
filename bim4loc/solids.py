@@ -419,24 +419,12 @@ def weights2rgb(weights):
     # weights = polyutils.mapdomain(weights, (0.0 ,1.0) , (0.0, 100.0))
     # return CM_MAP(weights)[:,:3]
 
-def update_existence_dependence_from_yaml(solids : list[IfcSolid], yaml_filename : str):
-    with open(yaml_filename, "r") as stream:
-        try:
-            data_dict = yaml.safe_load(stream)
-            existence_dependence = data_dict['existence_dependence']
-        except yaml.YAMLError as exc:
-            return (exc)
+def update_existence_dependence_from_yaml(solids : list[IfcSolid], existence_dependence):
     solids_hash = {s.name: s for s in solids}
     for key, val in existence_dependence.items():
         solids_hash[key].existence_dependence.append(solids_hash[val].name)
 
-def add_variations_from_yaml(solids : list[IfcSolid], yaml_filename : str):
-    with open(yaml_filename, "r") as stream:
-        try:
-            data_dict = yaml.safe_load(stream)
-            variations = data_dict['variations']
-        except yaml.YAMLError as exc:
-            return (exc)
+def add_variations_from_yaml(solids : list[IfcSolid], variations):
     solids_hash = {s.name: s for s in solids}
     for key, val in variations.items():
         base_solid = solids_hash[key]

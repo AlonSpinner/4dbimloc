@@ -6,6 +6,10 @@ import numpy as np
 for i in range(0,1):
     create_data(i, "data", vis_on = False)
     run_simulation(i, "data" ,"results", vis_on = False)
+    print(f'finished {i}')
+print('done')
+
+for i in range(0,1):
     make_video(i, "data", "results", "media", save_images = False)
     print(f'finished {i}')
 print('done')

@@ -8,3 +8,19 @@ variations:
   '1A2qVk78PCQRC$rtMC4SDY' : [[0.0,0.2,0.0],[[-0.0,-0.2,0.0]]]
   '3f0mhqOMzDdxWLQ6t25_Qw' : [[0.2,0.0,0.0],[[-0.2,-0.0,0.0]]]
   '1s61g5XiL70eShhiNX3DwP' : [[0.2,0.0,0.0],[[-0.2,-0.0,0.0]]]
+
+current_time: 5.0
+
+sensor_u : np.linspace(-np.pi,np.pi, 200)
+sensor_v : np.array([0.0])
+sensor_max_range : 10
+sensor_std : 0.05
+sensor_p0: 0.4
+
+U_COV: np.diag([0.2, 0.1, 1e-25, np.radians(1)])**2
+
+rbpf_N_particles: 10
+rbpf_max_steps_to_resample: 10
+rbpf_reservoir_decay_rate : 0.5
+
+
