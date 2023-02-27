@@ -31,21 +31,13 @@ class RBPF(RBPF_FULL):
 
             #sense
             particle_z_values, particle_z_ids, _, \
-            particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
+            _, _ = self._sense_fcn(self.particle_poses[k])
 
-            R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
-                self.particle_beliefs[k],
-                self._sensor.std, self._sensor.max_range,
-                self._scan_to_points_fcn,
-                self._scan_to_points_fcn,
-                downsample_voxelsize = 0.5,
-                icp_distance_threshold = 10.0,
-                probability_filter_threshold = 0.3)
-            pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),self._U_COV)
-            if rmse < 0.5 and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
-                self.particle_poses[k] = compose_s(self.particle_poses[k], s_from_Rt(R,t))
+            registered, dpose = self.register2map(z, self.particle_beliefs[k], particle_z_values, particle_z_ids)
+            if registered:
+                self.particle_poses[k] = compose_s(self.particle_poses[k], dpose)
                 particle_z_values, particle_z_ids, _, \
-                particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
+                _, _ = self._sense_fcn(self.particle_poses[k])
         
             self.particle_beliefs[k], pz = existence_filter(
                                             self.particle_beliefs[k].copy(), 
@@ -68,10 +60,7 @@ class RBPF(RBPF_FULL):
                 value = self._solids_existence_dependence[key]
                 self.particle_beliefs[k][value] = max(self.particle_beliefs[k][key],self.particle_beliefs[k][value])
 
-            # pz = pz[z < self._sensor.max_range]
-            # self.weights[k] *= 1.0 + np.sum(pz)
-            self.weights[k] *= 1.0 + np.sum(np.power(pz,3))
-            sum_weights += self.weights[k]
+            self.weights[k] = self.compute_weight(pz, z, self.weights[k])
 
         #normalize weights
         if sum_weights < 1e-16: #prevent divide by zero

@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, \
-                            update_existence_dependence_from_yaml, add_variations_from_yaml, \
+                            update_existence_dependence_from_yaml, add_common_mistakes_from_yaml, \
                             compute_variation_dependence_for_rbpf, compute_existence_dependece_for_rbpf
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
@@ -17,7 +17,7 @@ from bim4loc.utils.load_yaml import load_parameters
 
 def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
+    yaml_file = os.path.join(dir_path, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
     data_file = os.path.join(dir_path, data_folder , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
@@ -38,8 +38,8 @@ def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
 
         #BUILD SIMULATION ENVIORMENT
         simulation_solids = ifc_converter(data['IFC_PATH'])
-        add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
         update_existence_dependence_from_yaml(simulation_solids, parameters_dict['existence_dependence'])
+        add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
 
         #compute existence and variation dependence structures for rbpf
         solids_varaition_dependence = compute_variation_dependence_for_rbpf(simulation_solids)
@@ -66,7 +66,8 @@ def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
                     solids_varaition_dependence,
                     data['U_COV'],
                     max_steps_to_resample = parameters_dict['rbpf_max_steps_to_resample'],
-                    reservoir_decay_rate = parameters_dict['rbpf_reservoir_decay_rate'])
+                    reservoir_decay_rate = parameters_dict['rbpf_reservoir_decay_rate'],
+                    weight_calculation_method = parameters_dict['rbpf_weight_calculation_method'])
 
         rbpf_perfect = RBPF(perfect_traj_simulation, 
                 simulated_sensor,

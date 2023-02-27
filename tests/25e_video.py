@@ -7,7 +7,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry import pose2z
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, Label3D, \
-                            add_variations_from_yaml
+                            add_common_mistakes_from_yaml
 from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
@@ -47,7 +47,7 @@ visApp.add_solid(trail_ground_truth, "world")
 #METHODS
 def add_method2_visApp(N : int, window_name):
     simulation_solids = [s.clone() for s in solids]
-    add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
+    add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
     simulation = RayCastingMap(simulation_solids)
 
     scene_name = parameters_dict['method_variation_names'][N]

@@ -7,7 +7,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry import pose2z
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, Label3D, \
-                            update_existence_dependence_from_yaml, add_variations_from_yaml
+                            add_common_mistakes_from_yaml
 from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
@@ -63,7 +63,7 @@ def tile_images(images):
 
 def make_video(seed_number, data_folder, results_folder, media_folder, save_images = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
+    yaml_file = os.path.join(dir_path, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
     file = os.path.join(dir_path, data_folder, f"data_{seed_number}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
@@ -96,7 +96,7 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
     #METHODS
     def add_method2_visApp(N : int, window_name):
         simulation_solids = [s.clone() for s in solids]
-        add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
+        add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
         simulation = RayCastingMap(simulation_solids)
 
         scene_name = parameters_dict['method_variation_names'][N]

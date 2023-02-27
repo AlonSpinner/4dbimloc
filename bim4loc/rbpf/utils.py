@@ -44,27 +44,3 @@ def low_variance_sampler(weights : np.ndarray,
             new_particle_reservoirs[i] = particle_reservoirs[idx]
     
     return new_particle_poses, new_particle_beliefs, new_particle_reservoirs
-
-@njit(cache = True)
-def should_resample(weights : np.ndarray, 
-                    steps_from_resample : int,
-                    resample_steps_thresholds : np.ndarray) -> bool:
-    '''
-    input:
-        weights - array of shape (N_particles)
-        steps_from_resample - amount of particle filter steps since last resample
-        resample_steps_thresholds - array of two elements.
-            first element: minimum steps before resample can occur
-            second element: amount of steps after which resample must occur
-
-    output:
-        True if we should resample, False otherwise
-    '''
-    N_particles = weights.shape[0]
-    n_eff = weights.dot(weights)
-    eta_threshold = 2.0/N_particles
-    if n_eff < eta_threshold and steps_from_resample > resample_steps_thresholds[0] \
-        or steps_from_resample >= resample_steps_thresholds[1]:
-         return True
-    else:
-        return False

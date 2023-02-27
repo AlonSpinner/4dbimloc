@@ -424,7 +424,7 @@ def update_existence_dependence_from_yaml(solids : list[IfcSolid], existence_dep
     for key, val in existence_dependence.items():
         solids_hash[key].existence_dependence.append(solids_hash[val].name)
 
-def add_variations_from_yaml(solids : list[IfcSolid], variations):
+def add_common_mistakes_from_yaml(solids : list[IfcSolid], variations):
     solids_hash = {s.name: s for s in solids}
     for key, val in variations.items():
         base_solid = solids_hash[key]

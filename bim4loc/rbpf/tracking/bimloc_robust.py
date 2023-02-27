@@ -20,7 +20,8 @@ class RBPF():
                 solids_varaition_dependence : np.ndarray,
                 U_COV : np.ndarray,
                 max_steps_to_resample : int = 5,
-                reservoir_decay_rate : float = 0.3):
+                reservoir_decay_rate : float = 0.3,
+                weight_calculation_method : str = "default"):
         '''
         PARAMTERS
         sense_fcn - NUMBA JITED NO PYTHON FUNCTION 
@@ -54,6 +55,8 @@ class RBPF():
         self._reservoir_decay_rate = reservoir_decay_rate
         self._step_counter = 0
 
+        self.weight_calculation_method = weight_calculation_method
+
     def N_eff(self):
         return 1.0 / np.sum(self.weights**2)
 
@@ -80,6 +83,32 @@ class RBPF():
                                                                     self._N,
                                                                     self._particle_reservoirs)
         logging.info('resampled')
+
+    def compute_weight(self, pz : np.ndarray, z : np.ndarray, w : float):
+        if self.weight_calculation_method == 'subdue_max_range':
+            w_hat = np.power(w,0.2)
+            q_max_range = z == self._sensor.max_range
+            factor = 1.0 + ((1- w_hat) * np.sum(pz[q_max_range]) \
+                                + w * np.sum(pz[np.logical_not(q_max_range)]))
+        else:
+            factor = 1.0 + np.sum(np.power(pz,3))
+        return w * factor
+
+    def register2map(self, z, particle_k_beliefs, particle_z_values, particle_z_ids):
+        R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
+                                particle_k_beliefs,
+                                self._sensor.std, self._sensor.max_range,
+                                self._scan_to_points_fcn,
+                                self._scan_to_points_fcn,
+                                downsample_voxelsize = 0.5,
+                                icp_distance_threshold = 10.0,
+                                probability_filter_threshold = 0.3)
+        pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),self._U_COV)
+        if rmse < 0.5 and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
+            return True, s_from_Rt(R,t)
+        else:
+            return False, s_from_Rt(R,t)
+
     def step(self, u, z):
         '''
         u - delta pose, array of shape (4)
@@ -102,21 +131,13 @@ class RBPF():
 
             #sense
             particle_z_values, particle_z_ids, _, \
-            particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
+            particle_z_cos_incident, _ = self._sense_fcn(self.particle_poses[k])
 
-            R,t, rmse = scan_match(z, particle_z_values, particle_z_ids,
-                self.particle_beliefs[k],
-                self._sensor.std, self._sensor.max_range,
-                self._scan_to_points_fcn,
-                self._scan_to_points_fcn,
-                downsample_voxelsize = 0.5,
-                icp_distance_threshold = 10.0,
-                probability_filter_threshold = 0.3)
-            pdf_scan_match = gauss_likelihood(s_from_Rt(R,t),np.zeros(4),self._U_COV)
-            if rmse < 0.5 and pdf_scan_match > 0.05: #downsample_voxelsize = 0.5
-                self.particle_poses[k] = compose_s(self.particle_poses[k], s_from_Rt(R,t))
+            registered, dpose = self.register2map(z, self.particle_beliefs[k], particle_z_values, particle_z_ids)
+            if registered:
+                self.particle_poses[k] = compose_s(self.particle_poses[k], dpose)
                 particle_z_values, particle_z_ids, _, \
-                particle_z_cos_incident, particle_z_d = self._sense_fcn(self.particle_poses[k])
+                particle_z_cos_incident, _ = self._sense_fcn(self.particle_poses[k])
         
             self.particle_beliefs[k], pz, self._particle_reservoirs[k] = existence_filter(self.particle_poses[k],
                                             self._simulation_solids,
@@ -145,9 +166,7 @@ class RBPF():
                 self.particle_beliefs[k][value] = max(self.particle_beliefs[k][key],self.particle_beliefs[k][value])
             
 
-            # pz = pz[z < self._sensor.max_range]
-            # self.weights[k] *= 1.0 + np.sum(pz)
-            self.weights[k] *= 1.0 + np.sum(np.power(pz,3))
+            self.weights[k] = self.compute_weight(pz, z, self.weights[k])
             sum_weights += self.weights[k]
 
         #normalize weights

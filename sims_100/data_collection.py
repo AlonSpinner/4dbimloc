@@ -8,7 +8,7 @@ from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.sensors.sensors import Lidar
 from bim4loc.geometry.pose2z import compose_s
-from bim4loc.utils.load_yaml import load_parameters
+from bim4loc.utils.load_yaml import load_parameters, get_actions, get_U_COV
 import time
 import pickle
 import os
@@ -46,15 +46,11 @@ def create_data(seed_number, out_folder,  vis_on = False):
     sensor.std = parameters_dict['sensor_std']; 
     sensor.piercing = False; 
     sensor.max_range = parameters_dict['sensor_max_range']
-    U_COV = eval(parameters_dict['U_COV'])
+    U_COV = get_U_COV(parameters_dict)
     drone.mount_sensor(sensor)
 
     #BUILDING ACTION SET
-    DT = 1.0
-    straight = np.array([0.5,0.0 ,0.0 ,0.0]) * DT
-    turn_left = np.array([0.0 ,0.0 ,0.0, np.pi/8]) * DT
-    turn_right = np.array([0.0, 0.0, 0.0, -np.pi/8]) * DT
-    actions = [straight] * 9 + [turn_left] * 4 + [straight] * 8 + [turn_right] * 4 + [straight] * 20 + [turn_right] * 4 + [straight] * 4
+    actions = get_actions(parameters_dict)
 
     #DRAW
     if vis_on:
@@ -86,6 +82,8 @@ def create_data(seed_number, out_folder,  vis_on = False):
     electric_boxes_names = [s.name for s in simulation.solids if s.ifc_type == 'IfcElectricDistributionBoard']
     electric_boxes_seen_counter = {name:0 for name in electric_boxes_names}
     world_solid_names = [s.name for s in world.solids]
+    
+    
     #LOOP
     time.sleep(2)
     for t, u in enumerate(actions):

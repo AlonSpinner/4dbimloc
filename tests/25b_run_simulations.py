@@ -1,7 +1,7 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, \
-                            update_existence_dependence_from_yaml, add_variations_from_yaml, \
+                            update_existence_dependence_from_yaml, add_common_mistakes_from_yaml, \
                             compute_variation_dependence_for_rbpf, compute_existence_dependece_for_rbpf
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
@@ -45,8 +45,8 @@ results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
 for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     #BUILD SIMULATION ENVIORMENT
     simulation_solids = ifc_converter(data['IFC_PATH'])
-    add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
     update_existence_dependence_from_yaml(simulation_solids, parameters_dict['existence_dependence'])
+    add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
 
     #compute existence and variation dependence structures for rbpf
     solids_varaition_dependence = compute_variation_dependence_for_rbpf(simulation_solids)
@@ -72,7 +72,8 @@ for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
                 solids_varaition_dependence,
                 data['U_COV'],
                 max_steps_to_resample = parameters_dict['rbpf_max_steps_to_resample'],
-                reservoir_decay_rate = parameters_dict['rbpf_reservoir_decay_rate'])
+                reservoir_decay_rate = parameters_dict['rbpf_reservoir_decay_rate'],
+                weight_calculation_method = parameters_dict['rbpf_weight_calculation_method'])
 
     rbpf_perfect = RBPF(perfect_traj_simulation, 
             simulated_sensor,
