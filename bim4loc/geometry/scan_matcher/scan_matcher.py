@@ -55,7 +55,8 @@ def scan_match(world_z, simulated_z, simulated_z_ids,
     fw_ids = world_z < sensor_max_range
     pzi_j = compute_weights(simulated_z_ids, beliefs)
     qs_weight = pzi_j.flatten()
-    fs_ids = qs_weight > probability_filter_threshold
+    fs_ids = np.bitwise_and(qs_weight > probability_filter_threshold,
+                            simulated_z.flatten() < sensor_max_range)
 
     src = qw[:, fw_ids] #from world
     dst = qs[:, fs_ids] #from simulated

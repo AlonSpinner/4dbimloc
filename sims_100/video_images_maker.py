@@ -8,6 +8,7 @@ from bim4loc.maps import RayCastingMap
 from bim4loc.geometry import pose2z
 from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, Label3D, \
                             update_existence_dependence_from_yaml, add_variations_from_yaml
+from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 
@@ -63,6 +64,7 @@ def tile_images(images):
 def make_video(seed_number, data_folder, results_folder, media_folder, save_images = False):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
+    parameters_dict = load_parameters(yaml_file)
     file = os.path.join(dir_path, data_folder, f"data_{seed_number}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
     file = os.path.join(dir_path, results_folder ,f"results_{seed_number}.p")
@@ -72,8 +74,6 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         images_folder = os.path.join(dir_path,media_folder,f"images_{seed_number}")
         if not os.path.exists(images_folder):
             os.mkdir(images_folder)
-
-    variation_names = {0 : "Simulation", 1 : "BPFS", 2 : "BPFS-t", 3 : "BPFS-tg", 4 : "logodds"}
 
     #BUILD GROUND TRUTH
     solids = ifc_converter(data['IFC_PATH'])
@@ -95,12 +95,11 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
     visApp.add_solid(trail_ground_truth, "world")
     #METHODS
     def add_method2_visApp(N : int, window_name):
-        simulation = [s.clone() for s in solids]
-        add_variations_from_yaml(simulation, yaml_file)
-        update_existence_dependence_from_yaml(simulation, yaml_file)
-        simulation = RayCastingMap(simulation)
+        simulation_solids = [s.clone() for s in solids]
+        add_variations_from_yaml(simulation_solids, parameters_dict['variations'])
+        simulation = RayCastingMap(simulation_solids)
 
-        scene_name = variation_names[N]
+        scene_name = parameters_dict['method_variation_names'][N]
         visApp.add_scene(scene_name, window_name)
         simulation.update_solids_beliefs(results[N]['expected_belief_map'][0])
         [visApp.add_solid(s,scene_name) for s in simulation.solids]
@@ -119,17 +118,24 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         locx = (bmin[0]+bmax[0])/2
         locy = bmax[1] + 1.0
         locz = bmax[2]
-        visApp.add_text(Label3D(variation_names[N], np.array([locx, locy, locz])), scene_name)
+        visApp.add_text(Label3D(parameters_dict['method_variation_names'][N], np.array([locx, locy, locz])), scene_name)
         return simulation, vis_particles, vis_trail_est
 
     def update_method_drawings(t : int, N : int, simulation, vis_particles, vis_trail_est):
-        scene_name = variation_names[N]
-        simulation.update_solids_beliefs(results[N]['expected_belief_map'][t+1])
+        scene_name = parameters_dict['method_variation_names'][N]
+        
+        if parameters_dict['movie'] == "best_particle":
+            vis_trail_est.update(results[N]['best_pose'][t+1][:3].reshape(1,3))
+            simulation.update_solids_beliefs(results[N]['best_belief_map'][t+1])
+        else:
+            simulation.update_solids_beliefs(results[N]['expected_belief_map'][t+1])
+            vis_trail_est.update(results[N]['pose_mu'][t+1][:3].reshape(1,3))
+        
         [visApp.update_solid(s,scene_name) for s in simulation.solids]
         vis_particles.update(results[N]['particle_poses'][t+1], results[N]['particle_weights'][t+1])
         visApp.update_solid(vis_particles.lines, scene_name)
         visApp.update_solid(vis_particles.tails, scene_name)
-        vis_trail_est.update(results[N]['pose_mu'][t+1][:3].reshape(1,3))
+        
         visApp.update_solid(vis_trail_est,scene_name)
         visApp.redraw(scene_name)
 
@@ -170,11 +176,11 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
 
         if save_images and t % 3 == 0:
             for i, img in enumerate(scene_images.values()):
-                imageio.imwrite(os.path.join(images_folder,f"t{t}_{variation_names[i]}.png"), img)
+                imageio.imwrite(os.path.join(images_folder,f"t{t}_{parameters_dict['method_variation_names'][i]}.png"), img)
 
         video_images = []
         for i, img in enumerate(scene_images.values()):
-            img = add_text_to_image(img, variation_names[i])
+            img = add_text_to_image(img, parameters_dict['method_variation_names'][i])
             video_images.append(img)
         canvas = tile_images(video_images)
         video_canvases.append(canvas) #drop last scene

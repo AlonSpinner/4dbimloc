@@ -68,9 +68,8 @@ class RBPF(RBPF_FULL):
                                         self._logodds_inital_belief)
             self.particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
             
-            # self.weights[k] *= 1.0 + np.sum(pz[z != self._sensor.max_range])
-            # self.weights[k] *= np.product(pz[z != self._sensor.max_range])
-            # weights[k] *= np.product(pz) #or multiply?
+            # pz = pz[z < self._sensor.max_range]
+            # self.weights[k] *= 1.0 + np.sum(pz)
             self.weights[k] *= 1.0 + np.sum(np.power(pz,3))
             sum_weights += self.weights[k]
 

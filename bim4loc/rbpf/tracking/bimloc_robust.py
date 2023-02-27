@@ -145,8 +145,8 @@ class RBPF():
                 self.particle_beliefs[k][value] = max(self.particle_beliefs[k][key],self.particle_beliefs[k][value])
             
 
-            #remove max range measurements
             # pz = pz[z < self._sensor.max_range]
+            # self.weights[k] *= 1.0 + np.sum(pz)
             self.weights[k] *= 1.0 + np.sum(np.power(pz,3))
             sum_weights += self.weights[k]
 
