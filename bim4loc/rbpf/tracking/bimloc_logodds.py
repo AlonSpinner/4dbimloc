@@ -61,6 +61,7 @@ class RBPF(RBPF_FULL):
             self.particle_beliefs[k] = logodds2p(logodds_particle_beliefs)
             
             self.weights[k] = self.compute_weight(pz, z, self.weights[k])
+            sum_weights += self.weights[k]
 
         #normalize weights
         if sum_weights < 1e-16: #prevent divide by zero

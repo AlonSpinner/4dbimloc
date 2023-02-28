@@ -6,7 +6,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 plt.rcParams['font.size'] = '24'
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path ,"analyzed_data.p")
+file = os.path.join(dir_path, "statistical_analysis" ,"statistical_data.p")
 d = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k']

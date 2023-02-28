@@ -1,9 +1,10 @@
 import numpy as np
 import pickle
 import os
-from bim4loc.solids import ifc_converter, add_variations_from_yaml
+from bim4loc.solids import ifc_converter, add_common_mistakes_from_yaml
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
     cross_entropy_error, percentile_boxes_right, belief_map_accuracy, maps_average_distance
+from bim4loc.utils.load_yaml import load_parameters
 
 data_by_seed = []
 results_by_seed = []
@@ -12,11 +13,11 @@ ground_truth_maps = []
 max_seed = 100
 for seednumber in range(max_seed):
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    file = os.path.join(dir_path, out_folder ,f"data_{seednumber}.p")
+    file = os.path.join(dir_path, "data" ,f"data_{seednumber}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
     data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
-    file = os.path.join(dir_path, out_folder , f"results_{seednumber}.p")
+    file = os.path.join(dir_path, "results" , f"results_{seednumber}.p")
     results = pickle.Unpickler(open(file, "rb")).load()
 
     solids = ifc_converter(data['IFC_PATH'])
@@ -29,9 +30,10 @@ for seednumber in range(max_seed):
     gt_electric_boxes_names = [s.vis_name for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
     gt_electric_boxes_indicies = [i for i,s in enumerate(solids) if s.ifc_type == 'IfcElectricDistributionBoard']
 
-    yaml_file = os.path.join(dir_path, "complementry_IFC_data.yaml")
+    yaml_file = os.path.join(dir_path, "parameters.yaml")
+    parameters_dict = load_parameters(yaml_file)
     simulation_solids = ifc_converter(data['IFC_PATH'])
-    add_variations_from_yaml(simulation_solids, yaml_file)
+    add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
     sim_electric_boxes_indicies = [i for i,s in enumerate(simulation_solids) if s.ifc_type == 'IfcElectricDistributionBoard']
     sim_electric_boxes_names = [s.vis_name for s in simulation_solids if s.ifc_type == 'IfcElectricDistributionBoard']
 
@@ -174,6 +176,6 @@ analyzed_data = {'analyzed_by_method': analyzed_by_method,
                                     'min_dist_by_map': jaccard_min_dist_by_map}
                 }
 
-file = os.path.join(dir_path, "analyzed_data.p")
+file = os.path.join(dir_path, "statistical_analysis", "statistical_data.p")
 pickle.dump(analyzed_data, open(file, "wb"))
 print('pickle dumped')
