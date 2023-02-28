@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, \
                          update_existence_dependence_from_yaml, remove_constructed_solids_that_cant_exist
@@ -17,10 +16,9 @@ def create_data(seed_number, out_folder,  vis_on = False):
     np.random.seed(seed_number)
 
     #BUILD WORLD
-    solids = ifc_converter(IFC_PATH)
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_file = os.path.join(dir_path, "parameters.yaml")
+    yaml_file = os.path.join(out_folder, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
+    solids = ifc_converter(parameters_dict['IFC_PATH'])
     update_existence_dependence_from_yaml(solids, parameters_dict['existence_dependence'])
     current_time =  parameters_dict['current_time']#[s]
     constructed_solids = []
@@ -128,13 +126,13 @@ def create_data(seed_number, out_folder,  vis_on = False):
 
     data = {}
     data['current_time'] = current_time
-    data['IFC_PATH'] = IFC_PATH
+    data['IFC_PATH'] = parameters_dict['IFC_PATH']
     data['sensor'] = sensor
     data['measurements'] = measurements
     data['ground_truth'] = {'constructed_solids_names': [s.name for s in constructed_solids],
                             'trajectory': np.array(gt_traj)}
     data['U_COV'] = U_COV
 
-    file = os.path.join(dir_path, out_folder, f"data_{seed_number}.p")
+    file = os.path.join(out_folder, "data", f"data_{seed_number}.p")
     pickle.dump(data, open(file, "wb"))
     print('pickle dumped')

@@ -1,5 +1,4 @@
 import numpy as np
-from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.geometry.raycaster import NO_HIT
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, \
@@ -23,11 +22,11 @@ logging.basicConfig(format = '%(levelname)s %(lineno)d %(message)s')
 logger = logging.getLogger().setLevel(logging.WARNING)
 
 #BUILD WORLD
-solids = ifc_converter(IFC_PATH)
 dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
 yaml_file = os.path.join(bin_dir, "parameters.yaml")
 parameters_dict = load_parameters(yaml_file)
+solids = ifc_converter(parameters_dict['IFC_PATH'])
 update_existence_dependence_from_yaml(solids, parameters_dict['existence_dependence'])
 current_time = parameters_dict['current_time']
 constructed_solids = []
@@ -140,7 +139,7 @@ measurements['electric_boxes_seen_counter'] = electric_boxes_seen_counter
 
 data = {}
 data['current_time'] = current_time
-data['IFC_PATH'] = IFC_PATH
+data['IFC_PATH'] = parameters_dict['IFC_PATH']
 data['sensor'] = sensor
 data['measurements'] = measurements
 data['ground_truth'] = {'constructed_solids_names': [s.name for s in constructed_solids],

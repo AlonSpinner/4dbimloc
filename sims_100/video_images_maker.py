@@ -61,17 +61,16 @@ def tile_images(images):
         canvas[y:y+image_shape[0], x:x+image_shape[1], :] = images[i].astype(np.uint8)
     return canvas
 
-def make_video(seed_number, data_folder, results_folder, media_folder, save_images = False):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_file = os.path.join(dir_path, "parameters.yaml")
+def make_video(seed_number, out_folder, save_images = False):
+    yaml_file = os.path.join(out_folder, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
-    file = os.path.join(dir_path, data_folder, f"data_{seed_number}.p")
+    file = os.path.join(out_folder, "data", f"data_{seed_number}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
-    file = os.path.join(dir_path, results_folder ,f"results_{seed_number}.p")
+    file = os.path.join(out_folder, "results" ,f"results_{seed_number}.p")
     results = pickle.Unpickler(open(file, "rb")).load()
 
     if save_images:
-        images_folder = os.path.join(dir_path,media_folder,f"images_{seed_number}")
+        images_folder = os.path.join(out_folder, "media",f"images_{seed_number}")
         if not os.path.exists(images_folder):
             os.mkdir(images_folder)
 
@@ -185,8 +184,25 @@ def make_video(seed_number, data_folder, results_folder, media_folder, save_imag
         canvas = tile_images(video_images)
         video_canvases.append(canvas) #drop last scene
 
-    imageio.mimsave(os.path.join(dir_path,media_folder,f"video_{seed_number}.mp4"),
+    imageio.mimsave(os.path.join(out_folder, "media",f"video_{seed_number}.mp4"),
                     video_canvases, 'mp4', fps = 10)
     visApp.quit()
     print("finished")
+
+def save_map(seed_number, out_folder):
+    data_file = os.path.join(out_folder, "data" , f"data_{seed_number}.p")
+    data = pickle.Unpickler(open(data_file, "rb")).load()
+    solids = ifc_converter(data['IFC_PATH'])
+    visApp = VisApp()
+    for i, s in enumerate(solids):
+        if s.name in data['ground_truth']['constructed_solids_names']:
+            visApp.add_solid(s)
+    visApp.redraw() #must be called after adding all solids
+    visApp.setup_default_camera()
+    visApp.show_axes(False)
+
+    images_output_path = os.path.join(out_folder, "media", "maps")
+    images = visApp.get_images(images_output_path,prefix = f"M{seed_number}_",
+                    transform = lambda x: transform_image(x,0.6,0.55), save_scenes = ["world"])
+    visApp.quit()
 

@@ -27,7 +27,6 @@ yaml_file = os.path.join(bin_dir, "parameters.yaml")
 parameters_dict = load_parameters(yaml_file)
 data_file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
-data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #SOME CONSTANTS
 pose0 = data['ground_truth']['trajectory'][0]

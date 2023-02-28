@@ -15,11 +15,10 @@ from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 from bim4loc.utils.load_yaml import load_parameters
 
-def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    yaml_file = os.path.join(dir_path, "parameters.yaml")
+def run_simulation(seed_number, out_folder, vis_on = False):
+    yaml_file = os.path.join(out_folder, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
-    data_file = os.path.join(dir_path, data_folder , f"data_{seed_number}.p")
+    data_file = os.path.join(out_folder, "data" , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
 
     #SOME CONSTANTS
@@ -178,6 +177,6 @@ def run_simulation(seed_number, data_folder ,out_folder, vis_on = False):
         if vis_on:
             visApp.quit()
 
-    file = os.path.join(dir_path, out_folder, f"results_{seed_number}.p")
+    file = os.path.join(out_folder,"results", f"results_{seed_number}.p")
     pickle.dump(results, open(file, "wb"))
     print('pickle dumped')

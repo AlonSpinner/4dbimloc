@@ -10,18 +10,6 @@ file = os.path.join(dir_path, "statistical_analysis" ,"statistical_data.p")
 d = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k']
-#-----------------------------------Failures --------------------------------------------
-# fig = plt.figure(figsize = (10,8))
-# ax = fig.add_subplot(111)
-# ax_f = ax.bar(np.array(list(d['N_traj_failures'].keys())),
-#        d['N_failures'].values(),
-#        edgecolor = 'black',
-#        align='center', alpha=0.5,
-#        color = colors)
-# ax.set_xticks(np.array(list(d['N_failures'].keys())))
-# ax.set_ylabel('Failures')
-# ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
-# plt.show()
 
 #----------------------------------- Mean Trajectory Error ------------------------------------
 fig = plt.figure(figsize = (10,8))

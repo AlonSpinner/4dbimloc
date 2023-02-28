@@ -1,14 +1,20 @@
 from data_collection import create_data
 from run_simulations import run_simulation
 from video_images_maker import make_video
+from do_statistical_analysis import statistical_analysis
+import os
 
-for i in range(94,100):
-    create_data(i, "data", vis_on = False)
-    run_simulation(i, "data" ,"results", vis_on = False)
+dir_path = os.path.dirname(os.path.realpath(__file__))
+out_folder  = os.path.join(dir_path,"out1")
+
+for i in range(1,30):
+    create_data(i, out_folder, vis_on = False)
+    run_simulation(i, out_folder, vis_on = False)
     print(f'finished {i}')
-print('done')
+statistical_analysis(out_folder)
+
 
 for i in range(0,100):
-    make_video(i, "data", "results", "media", save_images = False)
+    make_video(i, out_folder, save_images = False)
     print(f'finished {i}')
 print('done')
