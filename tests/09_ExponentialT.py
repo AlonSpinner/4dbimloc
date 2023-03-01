@@ -1,8 +1,12 @@
 from bim4loc.random import one_dim as r_1d
 import matplotlib.pyplot as plt
 
-p = r_1d.ExponentialT(0.4, 10)
-print(p.pdf(10))
+max_range = 20
+p = r_1d.ExponentialT(0.4, max_range)
+p.plot()
+
+max_range = 6
+p = r_1d.ExponentialT(0.4, max_range)
 p.plot()
 plt.show()
 

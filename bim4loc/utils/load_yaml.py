@@ -14,6 +14,7 @@ def get_actions(parameters):
     eval is evil. we use variables implictly
     '''
     DT = parameters['DT']
+    velocity_factor = parameters['velocity_factor']
     straight = [eval(parameters['straight'])]
     turn_left = [eval(parameters['turn_left'])]
     turn_right = [eval(parameters['turn_right'])]
@@ -24,6 +25,6 @@ def get_U_COV(parameters):
     '''
     eval is evil. we use variables implictly
     '''
-    DT = parameters['DT']
+    velocity_factor = parameters['velocity_factor']
     U_COV = eval(parameters['U_COV'])
     return U_COV

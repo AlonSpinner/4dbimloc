@@ -83,3 +83,11 @@ def angle(s: np.ndarray, p : np.ndarray) -> np.ndarray:
         phi[i] = np.arcsin(p_robot[2,i]/r)
     return np.vstack((theta, phi)) #yaw, pitch
 
+def adjoint(s):
+    adj = np.eye(4)
+    R = R_from_theta(s[3])
+    adj[:3,:3] = R
+    adj[0,3] = s[1]
+    adj[1,3] = -s[0]
+    return adj
+
