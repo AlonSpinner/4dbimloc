@@ -6,14 +6,13 @@ from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
     cross_entropy_error, percentile_boxes_right, belief_map_accuracy, maps_average_distance
 from bim4loc.utils.load_yaml import load_parameters
 
-def statistical_analysis(out_folder : str):
+def statistical_analysis(out_folder : str, seeds : list[int]):
 
     data_by_seed = []
     results_by_seed = []
     analyzed_by_seed = []
     ground_truth_maps = []
-    max_seed = 100
-    for seednumber in range(max_seed):
+    for seednumber in seeds:
         file = os.path.join(out_folder, "data" ,f"data_{seednumber}.p")
         data = pickle.Unpickler(open(file, "rb")).load()
 

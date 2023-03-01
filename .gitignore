@@ -7,5 +7,6 @@ _configtest
 _configtest.c
 
 _configtest.o
-tests/25_bin
+tests/25_bin/images
 sims_100/out1
+sims_100/out2
