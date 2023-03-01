@@ -21,7 +21,7 @@ sensor_p0: 0.4
 sensor_std_factor: 1.0
 
 DT: 1.0
-velocity_factor: 2.0 #1.0 for slow, 2.0 for mid, 4.0 for fast. Use these so actions numbers are divisible
+velocity_factor: 1.0 #1.0 for slow, 2.0 for mid, 4.0 for fast. Use these so actions numbers are divisible
 U_COV: velocity_factor * np.diag([0.1, 0.02, 1e-25, np.radians(0.5)])**2
 
 #trajectory
@@ -40,7 +40,7 @@ actions : straight * int(18//velocity_factor)
 rbpf_N_particles: 10
 rbpf_max_steps_to_resample: 10
 rbpf_reservoir_decay_rate : 0.5
-rbpf_weight_calculation_method : "default" #"subdue_max_range" or "default"
+rbpf_weight_calculation_method : "subdue_max_range" #"subdue_max_range" or "default"
 
 #evaluation
 method_variation_names:

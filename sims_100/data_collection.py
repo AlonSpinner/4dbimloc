@@ -1,7 +1,8 @@
 import numpy as np
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter, ScanSolid, TrailSolid, ArrowSolid, \
-                         update_existence_dependence_from_yaml, remove_constructed_solids_that_cant_exist
+                         update_existence_dependence_from_yaml, \
+                         remove_constructed_solids_that_cant_exist
 from bim4loc.geometry.raycaster import NO_HIT
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
@@ -11,6 +12,8 @@ from bim4loc.utils.load_yaml import load_parameters, get_actions, get_U_COV
 import time
 import pickle
 import os
+from importlib import import_module
+import bim4loc.binaries.paths as ifc_paths
 
 def create_data(seed_number, out_folder,  vis_on = False):
     np.random.seed(seed_number)
@@ -18,7 +21,7 @@ def create_data(seed_number, out_folder,  vis_on = False):
     #BUILD WORLD
     yaml_file = os.path.join(out_folder, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
-    solids = ifc_converter(parameters_dict['IFC_PATH'])
+    solids = ifc_converter(getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH']))
     update_existence_dependence_from_yaml(solids, parameters_dict['existence_dependence'])
     current_time =  parameters_dict['current_time']#[s]
     constructed_solids = []

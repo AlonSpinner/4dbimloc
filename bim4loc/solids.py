@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 import ifcopenshell, ifcopenshell.geom
 import numpy as np
-from numpy.polynomial import polyutils
 import open3d as o3d
 from open3d.visualization import rendering
 import bim4loc.random.one_dim as r_1d
@@ -9,8 +8,6 @@ from bim4loc.geometry.pose2z import compose_s_array, T_from_s
 from importlib import import_module
 from copy import deepcopy
 from typing import Literal
-import yaml
-import matplotlib.colors as colors
 from matplotlib import cm
 
 

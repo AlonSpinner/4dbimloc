@@ -5,11 +5,11 @@ from do_statistical_analysis import statistical_analysis
 import os
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-out_folder  = os.path.join(dir_path,"out1")
-# for i in range(4,30):
-#     create_data(i, out_folder, vis_on = False)
-#     run_simulation(i, out_folder, vis_on = False)
-#     print(f'finished {i}')
+out_folder  = os.path.join(dir_path,"out3")
+for i in range(30):
+    create_data(i, out_folder, vis_on = False)
+    run_simulation(i, out_folder, vis_on = False)
+    print(f'finished {i}')
 statistical_analysis(out_folder, range(30))
 
 # print('finished out1')

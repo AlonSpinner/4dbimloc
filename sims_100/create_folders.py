@@ -1,6 +1,8 @@
 import os
+import sys
 
-def create_folders(folder_path):
+if __name__ == "__main__":
+    folder_path = sys.argv[1]
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     os.mkdir(os.path.join(folder_path, "data"))

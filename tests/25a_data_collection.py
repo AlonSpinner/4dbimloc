@@ -12,6 +12,8 @@ import logging
 import pickle
 import os
 from bim4loc.utils.load_yaml import load_parameters, get_actions, get_U_COV
+from importlib import import_module
+import bim4loc.binaries.paths as ifc_paths
 
 dead_reck_show = True
 np.random.seed(55) #map seed
@@ -26,7 +28,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
 yaml_file = os.path.join(bin_dir, "parameters.yaml")
 parameters_dict = load_parameters(yaml_file)
-solids = ifc_converter(parameters_dict['IFC_PATH'])
+solids = ifc_converter(getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH']))
 update_existence_dependence_from_yaml(solids, parameters_dict['existence_dependence'])
 current_time = parameters_dict['current_time']
 constructed_solids = []
