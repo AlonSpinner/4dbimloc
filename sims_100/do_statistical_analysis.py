@@ -5,8 +5,13 @@ from bim4loc.solids import ifc_converter, add_common_mistakes_from_yaml
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
     cross_entropy_error, percentile_boxes_right, belief_map_accuracy, maps_average_distance
 from bim4loc.utils.load_yaml import load_parameters
+from importlib import import_module
+import bim4loc.binaries.paths as ifc_paths
 
 def statistical_analysis(out_folder : str, seeds : list[int]):
+    yaml_file = os.path.join(out_folder, "parameters.yaml")
+    parameters_dict = load_parameters(yaml_file)
+    ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
 
     data_by_seed = []
     results_by_seed = []
@@ -19,7 +24,7 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
         file = os.path.join(out_folder, "results" , f"results_{seednumber}.p")
         results = pickle.Unpickler(open(file, "rb")).load()
 
-        solids = ifc_converter(data['IFC_PATH'])
+        solids = ifc_converter(ifc_file_path)
         ground_truth_beliefs = np.zeros(len(solids),dtype = float)
         for i, s in enumerate(solids):
             if s.name in data['ground_truth']['constructed_solids_names']:

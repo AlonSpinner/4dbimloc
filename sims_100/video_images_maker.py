@@ -11,6 +11,8 @@ from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid,
 from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
+from importlib import import_module
+import bim4loc.binaries.paths as ifc_paths
 
 def transform_image(image, crop_ratio_w, crop_ratio_h):
         #crop image
@@ -64,6 +66,7 @@ def tile_images(images):
 def make_video(seed_number, out_folder, save_images = False):
     yaml_file = os.path.join(out_folder, "parameters.yaml")
     parameters_dict = load_parameters(yaml_file)
+    ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
     file = os.path.join(out_folder, "data", f"data_{seed_number}.p")
     data = pickle.Unpickler(open(file, "rb")).load()
     file = os.path.join(out_folder, "results" ,f"results_{seed_number}.p")
@@ -75,7 +78,7 @@ def make_video(seed_number, out_folder, save_images = False):
             os.mkdir(images_folder)
 
     #BUILD GROUND TRUTH
-    solids = ifc_converter(data['IFC_PATH'])
+    solids = ifc_converter(ifc_file_path)
     world_solids = [s.clone() for s in solids if s.name in data['ground_truth']['constructed_solids_names']]
     sensor = data['sensor']
     drone = Drone(pose = data['ground_truth']['trajectory'][0])
@@ -190,9 +193,12 @@ def make_video(seed_number, out_folder, save_images = False):
     print("finished")
 
 def save_map(seed_number, out_folder):
+    yaml_file = os.path.join(out_folder, "parameters.yaml")
+    parameters_dict = load_parameters(yaml_file)
+    ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
     data_file = os.path.join(out_folder, "data" , f"data_{seed_number}.p")
     data = pickle.Unpickler(open(data_file, "rb")).load()
-    solids = ifc_converter(data['IFC_PATH'])
+    solids = ifc_converter(ifc_file_path)
     visApp = VisApp()
     for i, s in enumerate(solids):
         if s.name in data['ground_truth']['constructed_solids_names']:

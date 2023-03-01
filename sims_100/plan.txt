@@ -1,5 +1,23 @@
         max_range   velocity_factor   weight_calc
-out1:       10             1              default
-out2:        6             1              subdue
-out3:       10             1              subdue
-out4:        6             1              default
+out1:       10             1              default      
+out2:       10             1              subdue    
+out3:        6             1              default
+out4:        6             1              subdue
+
+out5:       10             2              default
+out6:       10             2              subdue
+out7:        6             2              default
+out8:        6             2              subdue
+
+out9:       10             2              default
+out10:      10             2              subdue
+out11:       6             2              default
+out12:       6             2              subdue
+
+share data:
+1,2
+3,4
+5,6
+7,8
+9,10
+11,12

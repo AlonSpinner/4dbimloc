@@ -1,5 +1,5 @@
 #construction (BIM complement)
-IFC_PATH: IFC_ARENA_PATH
+IFC_PATH: '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 existence_dependence:
   '23iz_$XTT7Qh5EJtFtqs2X' : '0_LLnb76j0dvprA5TO6l_m'
   '1A2qVk78PCQRC$rtMC4SDY' : '1UH7XjeubFPe8ud33kpdAD'
@@ -15,7 +15,7 @@ current_time: 5.0
 #sensor and odom
 sensor_u : np.linspace(-np.pi,np.pi, 300)
 sensor_v : np.array([0.0])
-sensor_max_range : 10.0
+sensor_max_range : 6.0
 sensor_std : 0.05
 sensor_p0: 0.4
 sensor_std_factor: 1.0
@@ -40,7 +40,7 @@ actions : straight * int(18//velocity_factor)
 rbpf_N_particles: 10
 rbpf_max_steps_to_resample: 10
 rbpf_reservoir_decay_rate : 0.5
-rbpf_weight_calculation_method : "subdue_max_range" #"subdue_max_range" or "default"
+rbpf_weight_calculation_method : "default" #"subdue_max_range" or "default"
 
 #evaluation
 method_variation_names:

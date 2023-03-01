@@ -10,3 +10,5 @@ _configtest.o
 tests/25_bin/images
 sims_100/out1
 sims_100/out2
+sims_100/out3
+sims_100/out4

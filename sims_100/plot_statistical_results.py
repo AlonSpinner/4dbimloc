@@ -87,9 +87,9 @@ print(f"jaccard average map dist {d['gt_maps_jaccard']['avg_dist']}")
 # print(f"jaccard min dist by map {d['gt_maps_jaccard']['min_dist_by_map']}")
 
 #--------------------------------------------------------------------------------------------------
-from pingouin import ttest
-import numpy as np
-#https://ethanweed.github.io/pythonbook/05.02-ttest.html
-results_12 = ttest(d['final_acc'][1], d['final_acc'][2], paired=True, alternative = 'greater')
-results_13 = ttest(d['final_acc'][1], d['final_acc'][3], paired=True, alternative = 'greater')
-results_14 = ttest(d['final_acc'][1], d['final_acc'][4], paired=True, alternative = 'greater')
+# from pingouin import ttest
+# import numpy as np
+# #https://ethanweed.github.io/pythonbook/05.02-ttest.html
+# results_12 = ttest(d['final_acc'][1], d['final_acc'][2], paired=True, alternative = 'greater')
+# results_13 = ttest(d['final_acc'][1], d['final_acc'][3], paired=True, alternative = 'greater')
+# results_14 = ttest(d['final_acc'][1], d['final_acc'][4], paired=True, alternative = 'greater')
