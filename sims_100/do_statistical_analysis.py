@@ -78,20 +78,6 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
                 by_method[method_i].append(analyzed[method_i])
         return by_method
 
-    def failure_by_traj_error(analyzed_method):
-        fail_seeds = []
-        for seed in range(len(analyzed_method)):
-            if np.any(analyzed_method[seed]['traj_err'] > 1.0):
-                fail_seeds.append(seed)
-        return fail_seeds
-
-    def failure_by_cross_entropy(analyzed_method):
-        fail_seeds = []
-        for seed in range(len(analyzed_method)):
-            if analyzed_method[seed]['cross_entropy'][-1] > analyzed_method[seed]['cross_entropy'][0]:
-                fail_seeds.append(seed)
-        return fail_seeds
-
     def average_traj_err(analyzed_method):
         #return mean and std
         mu = np.mean(analyzed_method['traj_err'])
@@ -109,33 +95,15 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
         
     analyzed_by_method = by_seed_to_by_method(analyzed_by_seed)
 
-    traj_failures = {}
-    N_traj_failures = {}
-    cross_entropy_failures = {}
-    N_cross_entropy_failures = {}
-    failures = {}
-    N_failures = {}
-    for method_i in analyzed_by_method.keys():
-        traj_failures[method_i] = failure_by_traj_error(analyzed_by_method[method_i])
-        N_traj_failures[method_i] = len(traj_failures[method_i])
-        cross_entropy_failures[method_i] = failure_by_cross_entropy(analyzed_by_method[method_i])
-        N_cross_entropy_failures[method_i] = len(cross_entropy_failures[method_i])
-
-        failures[method_i] = list(set(traj_failures[method_i] + cross_entropy_failures[method_i]))
-        N_failures[method_i] = len(failures[method_i])
-
-    sucesses = {} ; N_sucesses = {}
     mean_traj_err = {}
     final_mean_ce_err = {}
     final_acc = {}
     for method_i in analyzed_by_method.keys():
-        sucesses[method_i] = list(set(range(max_seed)) - set(failures[method_i]))
-        N_sucesses[method_i] = len(sucesses[method_i])
         
         traj_mu_seeds = []
         final_ce_mu_seeds = []
         final_acc_seeds = []
-        for seed in range(max_seed):
+        for seed in seeds:
             final_ce_mu_seed, _ = average_cross_entropy(analyzed_by_method[method_i][seed])
             final_ce_mu_seeds.append(final_ce_mu_seed)
 
@@ -158,14 +126,6 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
     jaccard_map_avg_dist, jaccard_min_dist_by_map = maps_average_distance(ground_truth_maps, "jaccard")
 
     analyzed_data = {'analyzed_by_method': analyzed_by_method,
-                    'traj_failures': traj_failures,
-                    'N_traj_failures': N_traj_failures,
-                    'cross_entropy_failures': cross_entropy_failures,
-                    'N_cross_entropy_failures': N_cross_entropy_failures,
-                    'failures': failures,
-                    'N_failures': N_failures,
-                    'sucesses': sucesses,
-                    'N_sucesses': N_sucesses,
                     'mean_traj_err': mean_traj_err,
                     'final_mean_ce_err': final_mean_ce_err,
                     'final_acc': final_acc,

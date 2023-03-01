@@ -6,7 +6,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 plt.rcParams['font.size'] = '24'
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path, "statistical_analysis" ,"statistical_data.p")
+file = os.path.join(dir_path,"out1", "statistical_analysis" ,"statistical_data.p")
 d = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k']
@@ -58,7 +58,7 @@ ax.bar(np.array(list(method_boxes.keys())),
        edgecolor = 'black',
        align='center', alpha=0.5,
        color = colors)
-ax.set_xticks(np.array(list(d['N_failures'].keys())))
+ax.set_xticks(np.array(list(d['analyzed_by_method'].keys())))
 ax.set_ylabel('Correct Electrical Boxes Detection Accuracy at Terminal, %', fontdict={'fontsize': 18})
 ax.set_xticklabels(['BPFS', 'BPFS-t', 'BPFS-tg', 'log-odds'])
 plt.show()
