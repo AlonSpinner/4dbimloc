@@ -4,9 +4,11 @@ import pickle
 import os
 from matplotlib.ticker import FormatStrFormatter
 
+out_file = "out7"
+
 plt.rcParams['font.size'] = '24'
 dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path,"out1", "statistical_analysis" ,"statistical_data.p")
+file = os.path.join(dir_path,out_file, "statistical_analysis" ,"statistical_data.p")
 d = pickle.Unpickler(open(file, "rb")).load()
 
 colors = ['b', 'g', 'r', 'k']
