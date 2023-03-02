@@ -9,10 +9,10 @@ out6:       10             2              subdue
 out7:        6             2              default
 out8:        6             2              subdue
 
-out9:       10             2              default
-out10:      10             2              subdue
-out11:       6             2              default
-out12:       6             2              subdue
+out9:       10             4              default
+out10:      10             4              subdue
+out11:       6             4              default
+out12:       6             4              subdue
 
 share data:
 1,2
