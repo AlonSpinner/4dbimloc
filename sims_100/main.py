@@ -3,18 +3,23 @@ from run_simulations import run_simulation
 from video_images_maker import make_video
 from do_statistical_analysis import statistical_analysis
 import os
+import shutil
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-# out_folder  = os.path.join(dir_path,"out5")
-# for i in range(30):
-#     create_data(i, out_folder, vis_on = False)
-#     run_simulation(i, out_folder, vis_on = False)
-#     print(f'finished {i}')
-# statistical_analysis(out_folder, range(30))
+out_folder  = os.path.join(dir_path,"out9")
+for i in range(30):
+    create_data(i, out_folder, vis_on = False)
+    run_simulation(i, out_folder, vis_on = False)
+    print(f'finished {i}')
+statistical_analysis(out_folder, range(30))
 
-# print('finished out')
-out_folder  = os.path.join(dir_path,"out3")
+if os.path.exists(os.path.join(dir_path,"out10","data")):
+    shutil.rmtree(os.path.join(dir_path,"out10","data"))
+shutil.copytree(os.path.join(dir_path,"out9","data"),
+            os.path.join(dir_path,"out10","data"))
+
+out_folder  = os.path.join(dir_path,"out10")
 for i in range(0,30):
     # create_data(i, out_folder, vis_on = False)
     run_simulation(i, out_folder, vis_on = False)
