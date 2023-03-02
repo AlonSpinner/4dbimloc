@@ -34,9 +34,7 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
         gt_electric_boxes_names = [s.vis_name for s in solids if s.ifc_type == 'IfcElectricDistributionBoard']
         gt_electric_boxes_indicies = [i for i,s in enumerate(solids) if s.ifc_type == 'IfcElectricDistributionBoard']
 
-        yaml_file = os.path.join(out_folder, "parameters.yaml")
-        parameters_dict = load_parameters(yaml_file)
-        simulation_solids = ifc_converter(data['IFC_PATH'])
+        simulation_solids = ifc_converter(ifc_file_path)
         add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
         sim_electric_boxes_indicies = [i for i,s in enumerate(simulation_solids) if s.ifc_type == 'IfcElectricDistributionBoard']
         sim_electric_boxes_names = [s.vis_name for s in simulation_solids if s.ifc_type == 'IfcElectricDistributionBoard']
