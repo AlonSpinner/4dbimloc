@@ -1,10 +1,13 @@
-import plotly.express as px
-import seaborn as sns
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
 from matplotlib.ticker import FormatStrFormatter
+
+def find_key_by_index(d : dict, value : int):
+    for key, val in d.items():
+        if val == value:
+            return key
+    raise ValueError(f'Value {value} not found in dict')
 
 def min_jerk(x0,x1,y0,y1, N = 100):
     dx = x1-x0
@@ -15,23 +18,35 @@ def min_jerk(x0,x1,y0,y1, N = 100):
 
 def parallel_coordinate(df : pd.DataFrame,
                         color_variable : str,
-                        linewidth = 2.0):
-    #normalize data and put it in a parallel df
-    ndf = df.copy()
-    #check which variables are numeric - thank gpt chat for this stupidness
+                        linewidth = 2.0,
+                        colors = None):
     are_numeric = {}
     for variable, values in df.items():
         are_numeric[variable] = np.issubdtype(values,np.number)
+    if colors is not None:
+        assert len(colors) == len(np.unique(df[color_variable].values))
+        assert are_numeric[color_variable] is False
+        color_map = dict(zip(np.unique(df[color_variable].values), colors))
+    else:
+        cmap = plt.get_cmap('viridis')
+
+    #normalize data and put it in a parallel df
+    ndf = df.copy()
 
     non_numeric_variables_maps = {}
     for variable, is_numeric in are_numeric.items():
         if is_numeric is False: #need to enumerate
-            unqiue_set = np.unique(df[variable].values)
-            assigned_values = np.linspace(0.0,1.0,len(unqiue_set))
-            non_numeric_variables_maps[variable] = dict(zip(unqiue_set,assigned_values))
-            for float_value, string_value in zip(assigned_values, unqiue_set):
+            unquie_set = np.unique(df[variable].values)
+            if len(unquie_set) == 0:
+                assigned_values = np.array([0.5])
+            elif len(unquie_set) == 2:
+                assigned_values = np.array([0.25, 0.75])
+            else:
+                assigned_values = np.linspace(0.0,1.0,len(unquie_set))
+            non_numeric_variables_maps[variable] = dict(zip(unquie_set,assigned_values))
+            for float_value, string_value in zip(assigned_values, unquie_set):
                 ndf[variable].replace(string_value, float_value, inplace=True)
-        else:
+        else: #if it is numeric
             max_val = max(df[variable])
             min_val = min(df[variable])
             if min_val == max_val:
@@ -47,6 +62,7 @@ def parallel_coordinate(df : pd.DataFrame,
     ax.set_xticks(xticks)
     ax.set_xticklabels(variables)
     ax.set_xlim(0.0,1.0)
+    ax.set_ylim(0.0,1.0) #important as twinx will be set for the same
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -54,13 +70,17 @@ def parallel_coordinate(df : pd.DataFrame,
     ax.tick_params(axis = 'x', labelrotation = 45)
 
     color_variable_index = df.columns.get_loc(color_variable)
-    cmap = plt.get_cmap('viridis')
-    
     for row in ndf.values:
         for i in range(len(variables)-1):
             x,y = min_jerk(xticks[i], xticks[i+1], row[i], row[i+1])
-            color = cmap(row[color_variable_index])
-            ax.plot(x,y, linewidth = linewidth, color = color)
+            if colors is None:
+                color = cmap(row[color_variable_index])
+            else:
+                #inefficient but whatever
+                key = find_key_by_index(non_numeric_variables_maps[variables[color_variable_index]],
+                                        row[color_variable_index])
+                color = color_map[key]
+            ax.plot(x,y, linewidth = linewidth, color = color,alpha = 0.5)
 
     #add ylims
     for i in range(len(variables)):
@@ -71,6 +91,7 @@ def parallel_coordinate(df : pd.DataFrame,
         twinx.spines['left'].set_visible(False)
         yticks = twinx.get_yticks()
         twinx.yaxis.set_major_locator(plt.FixedLocator(yticks))
+        twinx.set_ylim(0,1)
         if are_numeric[variables[i]]:
             max_val = df[variables[i]].max()
             min_val = df[variables[i]].min()
@@ -108,7 +129,7 @@ out3_dict = {
              "med_traj_error": [0.15, 0.25, 0.35, 0.45]}
 df3 = pd.DataFrame(out3_dict)
 df = pd.concat([df1,df2,df3])
-parallel_coordinate(df, "variation")
+parallel_coordinate(df, "variation",colors = ['b', 'g', 'r', 'k'])
 plt.show()
 
 
