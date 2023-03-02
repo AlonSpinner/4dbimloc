@@ -25,7 +25,7 @@ dq2 = 1
 
 plt.plot(t, ferguson(t,q1,dq1,q2,dq2))
 plt.plot(t, q_ferguson(t,q1,dq1,q2,dq2,0.8))
-plt.plot(t, np.power(t,0.2))
+plt.plot(t, np.power(t,0.2)) #<------------------------GAMMMA
 plt.show()
 plt.axis('equal')
 plt.grid(True)
