@@ -5,18 +5,25 @@ import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
                         cross_entropy_error, belief_map_accuracy
-seed_number = 0
+from bim4loc.utils.load_yaml import load_parameters
+from importlib import import_module
+import bim4loc.binaries.paths as ifc_paths
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-file = os.path.join(dir_path,"data",f"data_{seed_number}.p")
+out = "out8"
+seed_number = 5
+
+out_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), out) 
+file = os.path.join(out_folder,"data",f"data_{seed_number}.p")
 data = pickle.Unpickler(open(file, "rb")).load()
-file = os.path.join(dir_path,"results",f"results_{seed_number}.p")
+file = os.path.join(out_folder,"results",f"results_{seed_number}.p")
 results = pickle.Unpickler(open(file, "rb")).load()
+yaml_file = os.path.join(out_folder, "parameters.yaml")
+parameters_dict = load_parameters(yaml_file)
+ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
 
 colors = ['b', 'g', 'r', 'k', 'm']
 
 plt.rcParams['font.size'] = '24'
-data['IFC_PATH'] = '/home/alon18/repos/4dbimloc/bim4loc/binaries/arena.ifc'
 
 #------------------------------------TRAJECTRY PLOTS--------------------------
 fig = plt.figure(figsize = (16,8))
@@ -26,13 +33,14 @@ ax.set_ylabel('Trajectory Error, m')
 ax.grid(True)
 for i, res in enumerate(results.values()):
     traj_err, _ = localiztion_error(data['ground_truth']['trajectory'], \
-                res['pose_mu'])
+                np.array(res['best_pose']))
+                # res['pose_mu'])
     ax.plot(traj_err, label = f'method {i}', color = colors[i], lw = 2)
 # ax.legend()
 plt.show()
 
 #------------------------------------CROSS ENTROPY PLOTS--------------------------
-solids = ifc_converter(data['IFC_PATH'])
+solids = ifc_converter(ifc_file_path)
 ground_truth_beliefs = np.zeros(len(solids),dtype = float)
 for i, s in enumerate(solids):
     if s.name in data['ground_truth']['constructed_solids_names']:
@@ -46,7 +54,8 @@ ax.set_ylabel('Belief Map Cross Entropy Error, bits')
 ax.grid(True)
 for i, res in enumerate(results.values()):
     cross_entropy, cross_entropy_perfect_traj = cross_entropy_error(ground_truth_beliefs,
-                                           res['expected_belief_map'],
+                                            np.array(res["best_belief_map"]),
+                                        #    res['expected_belief_map'],
                                            res['perfect_traj_belief_map'])
     ax.plot(cross_entropy, label = f'method {i}', color = colors[i], lw = 2)
     ax.plot(cross_entropy_perfect_traj, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')
@@ -54,12 +63,6 @@ for i, res in enumerate(results.values()):
 plt.show()
 
 #------------------------------------SELF ENTROPY PLOTS--------------------------
-solids = ifc_converter(data['IFC_PATH'])
-ground_truth_beliefs = np.zeros(len(solids),dtype = float)
-for i, s in enumerate(solids):
-    if s.name in data['ground_truth']['constructed_solids_names']:
-        ground_truth_beliefs[i] = 1.0
-
 fig = plt.figure(figsize = (16,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel('Time [s]')
@@ -68,7 +71,8 @@ ax.set_ylabel('Belief Map Self Entropy Error, bits')
 ax.grid(True)
 for i, res in enumerate(results.values()):
     self_entropy, self_entropy_perfect_traj = map_entropy(
-                                    res['expected_belief_map'],
+                                    np.array(res["best_belief_map"]),
+                                    # res['expected_belief_map'],
                                     res['perfect_traj_belief_map'])
     ax.plot(self_entropy, label = f'method {i}', color = colors[i], lw = 2)
     ax.plot(self_entropy_perfect_traj, label = f'method {i} - perfect trajectory', color = colors[i], lw = 2, ls = '--')

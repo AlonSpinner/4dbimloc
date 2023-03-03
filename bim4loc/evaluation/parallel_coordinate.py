@@ -71,7 +71,7 @@ def parallel_coordinate(df : pd.DataFrame,
     ax.set_xticks(xticks)
     ax.set_xticklabels(variables)
     ax.set_xlim(0.0,1.0)
-    ax.set_ylim(0.0,1.0) #important as twinx will be set for the same
+    ax.set_ylim(-0.1,1.1) #important as twinx will be set for the same
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -102,7 +102,7 @@ def parallel_coordinate(df : pd.DataFrame,
         twinx.spines['left'].set_visible(False)
         yticks = twinx.get_yticks()
         twinx.yaxis.set_major_locator(plt.FixedLocator(yticks))
-        twinx.set_ylim(0,1)
+        twinx.set_ylim(-0.1,1.1)
         #set y ticks and their labels
         twinx.tick_params(axis = 'y',labelsize = y_label_size)
         if are_numeric[variables[i]]:

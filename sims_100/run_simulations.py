@@ -174,6 +174,8 @@ def run_simulation(seed_number, out_folder, vis_on = False):
         results_rbpf["expected_belief_map"] = np.array(results_rbpf["expected_belief_map"])
         results_rbpf["pose_mu"] = np.array(results_rbpf["pose_mu"])
         results_rbpf["pose_cov"] = np.array(results_rbpf["pose_cov"])
+        results_rbpf['best_pose'] = np.array(results_rbpf['best_pose']) #ADDED ATER OUT1-12
+        results_rbpf["best_belief_map"] = np.array(results_rbpf["best_belief_map"]) #ADDED AFTER OUT1-12
         results_rbpf['perfect_traj_belief_map'] = np.array(results_rbpf['perfect_traj_belief_map'])
 
         results[rbpf_enum] = results_rbpf

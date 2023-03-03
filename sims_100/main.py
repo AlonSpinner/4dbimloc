@@ -7,25 +7,25 @@ import shutil
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-out_folder  = os.path.join(dir_path,"out9")
-for i in range(30):
-    create_data(i, out_folder, vis_on = False)
-    run_simulation(i, out_folder, vis_on = False)
-    print(f'finished {i}')
-statistical_analysis(out_folder, range(30))
+# out_folder  = os.path.join(dir_path,"out9")
+# for i in range(30):
+#     create_data(i, out_folder, vis_on = False)
+#     run_simulation(i, out_folder, vis_on = False)
+#     print(f'finished {i}')
+# statistical_analysis(out_folder, range(30))
 
-if os.path.exists(os.path.join(dir_path,"out10","data")):
-    shutil.rmtree(os.path.join(dir_path,"out10","data"))
-shutil.copytree(os.path.join(dir_path,"out9","data"),
-            os.path.join(dir_path,"out10","data"))
+# if os.path.exists(os.path.join(dir_path,"out10","data")):
+#     shutil.rmtree(os.path.join(dir_path,"out10","data"))
+# shutil.copytree(os.path.join(dir_path,"out9","data"),
+#             os.path.join(dir_path,"out10","data"))
 
-out_folder  = os.path.join(dir_path,"out10")
-for i in range(0,30):
+# for i in range(0,30):
     # create_data(i, out_folder, vis_on = False)
-    run_simulation(i, out_folder, vis_on = False)
-    print(f'finished {i}')
-statistical_analysis(out_folder, range(30))
+#     run_simulation(i, out_folder, vis_on = False)
+#     print(f'finished {i}')
 
+out_folder  = os.path.join(dir_path,"out8")
+make_video(5, out_folder, save_images = True)
 # for i in range(0,30):
 #     make_video(i, out_folder, save_images = False)
 #     print(f'finished {i}')

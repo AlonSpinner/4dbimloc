@@ -45,13 +45,16 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
                         res['pose_mu'])
             cross_entropy, cross_entropy_perfect_traj = cross_entropy_error(ground_truth_beliefs,
                                             res['expected_belief_map'],
+                                            # np.array(res["best_belief_map"]),
                                             res['perfect_traj_belief_map'])
             self_entropy, self_entropy_perfect_traj = map_entropy(
                                         res['expected_belief_map'],
+                                        # np.array(res["best_belief_map"]),
                                         res['perfect_traj_belief_map'])
 
             accuracy, accuracy_perfect_traj = belief_map_accuracy(ground_truth_beliefs,
                                         res['expected_belief_map'],
+                                        # np.array(res["best_belief_map"]),
                                         res['perfect_traj_belief_map'])
 
             N_boxes_right, N_seen_boxes = percentile_boxes_right(res['expected_belief_map'],ground_truth_beliefs,
