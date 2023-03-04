@@ -39,29 +39,32 @@ def get_df(medians = False, variations = [1,2,3,4], outs = None):
             if key not in outs:
                 continue
         tuned_params = get_tuned_params(value["parameters"])
-        if tuned_params['rbpf_weight_calculation_method'] == "default":
-           tuned_params['rbpf_weight_calculation_method'] = "[14]" 
-        else:
-            tuned_params['rbpf_weight_calculation_method'] = "ours"
         for i in variations:
             mean_traj_errors = value["stats"]["mean_traj_err"][i]
             terminal_cross_entropy_errors = value["stats"]["final_mean_ce_err"][i]
             termnial_accuries = value["stats"]["final_acc"][i]
+            terminal_box_detection_accuries = value["stats"]["final_acc_boxes"][i]
             if medians is False:
-                for m_l_err, t_c_e, t_acc in zip(mean_traj_errors, terminal_cross_entropy_errors, termnial_accuries):
+                for m_l_err, t_c_e, t_acc, t_box_acc in zip(mean_traj_errors,
+                                                            terminal_cross_entropy_errors,
+                                                            termnial_accuries,
+                                                            terminal_box_detection_accuries):
                     row_dict = {"variation" : variation_enumeration[i]} \
                             | tuned_params \
                             | {"mean localization error" : m_l_err} \
                             | {"terminal cross entropy error" : t_c_e} \
-                            | {"terminal accuracy" : t_acc}
+                            | {"terminal accuracy" : t_acc} \
+                            | {"terminal box detection accuracy" : t_box_acc}
                     df = pd.concat([df,pd.DataFrame(row_dict, index = [row_index])])
                     row_index += 1
             else:
+                np_tbda = np.array(terminal_box_detection_accuries)
                 row_dict = {"variation" : variation_enumeration[i]} \
                     | tuned_params \
                     | {"mean localization error" : np.median(mean_traj_errors)} \
                     | {"terminal cross entropy error" : np.median(terminal_cross_entropy_errors)} \
-                    | {"terminal accuracy" : np.median(termnial_accuries)}
+                    | {"terminal accuracy" : np.median(termnial_accuries)} \
+                    | {"terminal box detection accuracy" : np.median(np_tbda[~np.isnan(np_tbda)])}
                 df = pd.concat([df,pd.DataFrame(row_dict, index = [row_index])])
                 row_index += 1
 
@@ -70,7 +73,7 @@ def get_df(medians = False, variations = [1,2,3,4], outs = None):
     df.rename(columns = {"velocity_factor": "velocity factor"},inplace=True) 
     return df
 
-def mega_table(only14 = False):
+def mega_table(only_default_weight_calc = False):
     '''
     we concluded that the new reweighting scheme does not help.
 
@@ -78,8 +81,8 @@ def mega_table(only14 = False):
     and not expected value
 
     mega_table STRUCTURE
-                BPFS      BPFS-t   BPFS-tg   logodds
-               ours,14   ours,14   ours,14   ours,14
+                BPFS            BPFS-t          BPFS-tg       logodds
+               ours,default   ours,default   ours,default   ours,default
        mr = 10
     VF = 1.0 
        mr =  6
@@ -96,7 +99,7 @@ def mega_table(only14 = False):
     variations = ['BPFS', 'BPFS-t', 'BPFS-tg', 'logodds']
     velocity_factor_super_rows = [1.0, 1.0, 2.0, 2.0, 4.0, 4.0]
     sensor_max_range_sub_rows = [6.0, 10.0, 6.0, 10.0, 6.0, 10.0]
-    weight_calc_sub_cols = ["ours", "[14]"]
+    weight_calc_sub_cols = ["subdue_max_range", "default"]
     N_rows = 6
     le_rows = []; ce_rows = []; acc_rows = []
     for i in range(N_rows): 
@@ -117,7 +120,7 @@ def mega_table(only14 = False):
 
     le_rows = np.array(le_rows); ce_rows = np.array(ce_rows); acc_rows = np.array(acc_rows)                
     
-    if only14:
+    if only_default_weight_calc:
         le_rows = le_rows[:,1::2]
         ce_rows = ce_rows[:,1::2]
         acc_rows = acc_rows[:, 1::2]
@@ -129,16 +132,73 @@ def mega_table(only14 = False):
     print("terminal accuracy")
     print(acc_rows)
 
-# def box_plots():
+def box_plots(y_value : str = "mean localization error",
+              y_units : str = 'm',
+              sensor_range : float = 6.0,
+              boxwidth = 0.1,
+              save_fig_folder = None):
+    colors = ['b', 'g', 'r' ,'k']
+    outs = [f"out{i}" for i in range(1,13,2)] #get rid of nondefault weight calc outs
+    velocity_factors = [1.0, 2.0, 4.0]
+    variations = ['BPFS', 'BPFS-t', 'BPFS-tg', 'logodds']
+    df = get_df(medians = False, outs = outs)
+
+    fig = plt.figure(figsize = (10,8))
+    ax = fig.add_subplot(111)
+    for i, v in enumerate(variations):
+        q = (df["variation"] == v) & (df["sensor max range"] == sensor_range)
+        df_variation = df[q]
+        for j, vf in enumerate(velocity_factors):
+            q = (df_variation["velocity factor"] == vf)
+            df_variation_velocity = df_variation[q]
+            vals = df_variation_velocity[y_value].values
+
+            if y_value == "terminal box detection accuracy":
+                vals = vals[~np.isnan(vals)]
+                
+            ax.boxplot(vals, positions = [j + (i-1.5)*boxwidth*1.2],
+            widths = boxwidth,
+            showfliers = True, 
+            medianprops=dict(linewidth=3.0, color='k'),
+            patch_artist = True, boxprops = dict(facecolor = colors[i], alpha = 0.5, linewidth = 2.0),
+            flierprops = dict(markerfacecolor = colors[i], marker = 'o', markersize = 7.0, markeredgecolor = 'k', alpha = 0.5))
+
+    ax.set_xticks(range(len(velocity_factors)))
+    ax.set_xticklabels([str(vf * 0.25) for vf in velocity_factors], fontsize = 20)
+    ax.set_xlabel("velocity, m/s", fontsize = 20)
+    ax.tick_params(axis = 'y', labelsize = 20)
+    ax.set_ylabel(f"{y_value}, {y_units}", fontsize = 20)
+    ax.grid(True)
+
+    if save_fig_folder is not None:
+        full_folder = os.path.join(save_fig_folder,f"sensor_range_{sensor_range}")
+        full_file = os.path.join(full_folder, f"{y_value}.png")
+        fig.savefig(full_file, dpi = 300, bbox_inches = 'tight')
 
 if __name__ == "__main__":
-    df = get_df(medians = False)
-    parallel_coordinate(df, "variation", colors = ['b', 'g', 'r', 'k'],
-                         linewidth = 1.3, alpha = 0.05)
-    
+    # df = get_df(medians = False)
+    # parallel_coordinate(df, "variation", colors = ['b', 'g', 'r', 'k'],
+    #                      linewidth = 1.3, alpha = 0.05)
+    # plt.show()
+
     # df = get_df(medians = False, variations = [1])
     # parallel_coordinate(df, "weight calculation method", 
-    #                      linewidth = 1.3, alpha = 0.05)
+    #                      linewidth = 1.3, alpha = 0.3)
+    # plt.show()
 
-    # mega_table(only14 = True)
-    plt.show()
+    # mega_table()
+
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    save_fig_folder = os.path.join(dir_path, "out_multi_stats_plots")
+    y_values = ["mean localization error",
+               "terminal cross entropy error",
+               "terminal accuracy",
+               "terminal box detection accuracy"]
+    y_units = ['m', 'bits', '%', '%']
+    sensor_ranges = [6.0, 10.0]
+    for i, y_value in enumerate(y_values):
+        for sensor_range in sensor_ranges:
+            box_plots(y_value = y_value,
+                      y_units = y_units[i],
+                      sensor_range = sensor_range,
+                      save_fig_folder = save_fig_folder)

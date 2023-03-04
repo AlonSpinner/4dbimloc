@@ -24,8 +24,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 #     run_simulation(i, out_folder, vis_on = False)
 #     print(f'finished {i}')
 
-out_folder  = os.path.join(dir_path,"out8")
-make_video(5, out_folder, save_images = True)
+out_folder  = os.path.join(dir_path,"out4")
+make_video(5, out_folder, save_images = False)
 # for i in range(0,30):
 #     make_video(i, out_folder, save_images = False)
 #     print(f'finished {i}')
