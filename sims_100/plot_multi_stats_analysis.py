@@ -43,28 +43,29 @@ def get_df(medians = False, variations = [1,2,3,4], outs = None):
             mean_traj_errors = value["stats"]["mean_traj_err"][i]
             terminal_cross_entropy_errors = value["stats"]["final_mean_ce_err"][i]
             termnial_accuries = value["stats"]["final_acc"][i]
-            terminal_box_detection_accuries = value["stats"]["final_acc_boxes"][i]
+            terminal_boxes = np.array(value["stats"]["final_boxes"][i])
+            terminal_box_detection_accuries = terminal_boxes[:,0] / terminal_boxes[:,1]
             if medians is False:
-                for m_l_err, t_c_e, t_acc, t_box_acc in zip(mean_traj_errors,
-                                                            terminal_cross_entropy_errors,
-                                                            termnial_accuries,
-                                                            terminal_box_detection_accuries):
+                for j in range(len(mean_traj_errors)):
                     row_dict = {"variation" : variation_enumeration[i]} \
                             | tuned_params \
-                            | {"mean localization error" : m_l_err} \
-                            | {"terminal cross entropy error" : t_c_e} \
-                            | {"terminal accuracy" : t_acc} \
-                            | {"terminal box detection accuracy" : t_box_acc}
+                            | {"mean localization error" : mean_traj_errors[j]} \
+                            | {"terminal cross entropy error" : terminal_cross_entropy_errors[j]} \
+                            | {"terminal accuracy" : termnial_accuries[j]} \
+                            | {"terminal box detection accuracy" : terminal_box_detection_accuries[j]} \
+                            | {"terminal seen boxes" : terminal_boxes[j,1]} \
+                            | {"terminal correctly detected boxes" : terminal_boxes[j,0]}
                     df = pd.concat([df,pd.DataFrame(row_dict, index = [row_index])])
                     row_index += 1
             else:
-                np_tbda = np.array(terminal_box_detection_accuries)
                 row_dict = {"variation" : variation_enumeration[i]} \
                     | tuned_params \
                     | {"mean localization error" : np.median(mean_traj_errors)} \
                     | {"terminal cross entropy error" : np.median(terminal_cross_entropy_errors)} \
                     | {"terminal accuracy" : np.median(termnial_accuries)} \
-                    | {"terminal box detection accuracy" : np.median(np_tbda[~np.isnan(np_tbda)])}
+                    | {"terminal box detection accuracy" : np.median(terminal_box_detection_accuries[~np.isnan(terminal_box_detection_accuries)])} \
+                    | {"terminal seen boxes" : terminal_boxes[:,1]} \
+                    | {"terminal correctly detected right boxes" : terminal_boxes[:,0]}
                 df = pd.concat([df,pd.DataFrame(row_dict, index = [row_index])])
                 row_index += 1
 
@@ -151,24 +152,40 @@ def box_plots(y_value : str = "mean localization error",
         for j, vf in enumerate(velocity_factors):
             q = (df_variation["velocity factor"] == vf)
             df_variation_velocity = df_variation[q]
-            vals = df_variation_velocity[y_value].values
 
             if y_value == "terminal box detection accuracy":
-                vals = vals[~np.isnan(vals)]
-                
-            ax.boxplot(vals, positions = [j + (i-1.5)*boxwidth*1.2],
-            widths = boxwidth,
-            showfliers = True, 
-            medianprops=dict(linewidth=3.0, color='k'),
-            patch_artist = True, boxprops = dict(facecolor = colors[i], alpha = 0.5, linewidth = 2.0),
-            flierprops = dict(markerfacecolor = colors[i], marker = 'o', markersize = 7.0, markeredgecolor = 'k', alpha = 0.5))
+                seen = df_variation_velocity['terminal seen boxes']
+                detected = df_variation_velocity['terminal correctly detected boxes']
+                ax.bar(j + (i-1.5)*boxwidth*1.2,
+                np.sum(detected)/np.sum(seen),
+                edgecolor = 'black',
+                align='center', alpha=0.5,
+                color = colors[i],
+                width = boxwidth)
+            else:
+                vals = df_variation_velocity[y_value].values
+                ax.boxplot(vals, positions = [j + (i-1.5)*boxwidth*1.2],
+                widths = boxwidth,
+                showfliers = True, 
+                medianprops=dict(linewidth=3.0, color='k'),
+                patch_artist = True, boxprops = dict(facecolor = colors[i], alpha = 0.5, linewidth = 2.0),
+                flierprops = dict(markerfacecolor = colors[i], marker = 'o', markersize = 7.0, markeredgecolor = 'k', alpha = 0.5))
 
     ax.set_xticks(range(len(velocity_factors)))
     ax.set_xticklabels([str(vf * 0.25) for vf in velocity_factors], fontsize = 20)
     ax.set_xlabel("velocity, m/s", fontsize = 20)
     ax.tick_params(axis = 'y', labelsize = 20)
-    ax.set_ylabel(f"{y_value}, {y_units}", fontsize = 20)
     ax.grid(True)
+
+    if y_value == "mean localization error":
+        y_value = "Mean Localization Error"
+    elif y_value == "terminal cross entropy error":
+        y_value = "Mean Cross Entropy Error at Terminal"
+    elif y_value == "terminal accuracy":
+        y_value = "Accuracy at Terminal"
+    elif y_value == "terminal box detection accuracy":
+        y_value = "Box Detection Accuracy over all simulations at Terminal"
+    ax.set_ylabel(f"{y_value}, {y_units}", fontsize = 20)
 
     if save_fig_folder is not None:
         full_folder = os.path.join(save_fig_folder,f"sensor_range_{sensor_range}")
@@ -184,7 +201,7 @@ if __name__ == "__main__":
     # df = get_df(medians = False, variations = [1])
     # parallel_coordinate(df, "weight calculation method", 
     #                      linewidth = 1.3, alpha = 0.3)
-    # plt.show()
+    plt.show()
 
     # mega_table()
 

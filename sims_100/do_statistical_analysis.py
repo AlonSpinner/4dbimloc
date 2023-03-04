@@ -104,13 +104,13 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
     mean_traj_err = {}
     final_mean_ce_err = {}
     final_acc = {}
-    final_acc_boxes = {}
+    final_boxes = {}
     for method_i in analyzed_by_method.keys():
         
         traj_mu_seeds = []
         final_ce_mu_seeds = []
         final_acc_seeds = []
-        final_acc_boxes_seeds = []
+        final_boxes_seeds = []
         for seed in seeds:
             final_ce_mu_seed, _ = average_cross_entropy(analyzed_by_method[method_i][seed])
             final_ce_mu_seeds.append(final_ce_mu_seed)
@@ -119,17 +119,13 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
             traj_mu_seeds.append(traj_mu_seed)
 
             final_acc_seeds.append(final_accuracy(analyzed_by_method[method_i][seed]))
-            
-            boxes = analyzed_by_method[method_i][seed]['boxes']
-            if boxes[1] == 0:
-                final_acc_boxes_seeds.append(np.nan)
-            else:
-                final_acc_boxes_seeds.append(boxes[0]/boxes[1])
+
+            final_boxes_seeds.append(analyzed_by_method[method_i][seed]['boxes'])
 
         final_mean_ce_err[method_i] = final_ce_mu_seeds
         mean_traj_err[method_i] = traj_mu_seeds
         final_acc[method_i] = final_acc_seeds
-        final_acc_boxes[method_i] = final_acc_boxes_seeds
+        final_boxes[method_i] = final_boxes_seeds
 
     ground_truth_maps = np.array(ground_truth_maps)
     hamming_map_avg_dist, hamming_min_dist_by_map = maps_average_distance(ground_truth_maps, "hamming")
@@ -143,7 +139,7 @@ def statistical_analysis(out_folder : str, seeds : list[int]):
                     'mean_traj_err': mean_traj_err,
                     'final_mean_ce_err': final_mean_ce_err,
                     'final_acc': final_acc,
-                    'final_acc_boxes': final_acc_boxes,
+                    'final_boxes': final_boxes,
                     'gt_maps_hamming': {'norm_avg_dist': normalized_hamming_map_avg_dist,
                                         'norm_min_dist_by_map': normalized_hamming_min_dist_by_map},
                     'gt_maps_jaccard': {'avg_dist': jaccard_map_avg_dist,
