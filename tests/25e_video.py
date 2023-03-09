@@ -11,7 +11,8 @@ from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid,
 from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
-
+import bim4loc.binaries.paths as ifc_paths
+from importlib import import_module
 
 save_images = False
 
@@ -24,10 +25,11 @@ file = os.path.join(bin_dir, "results.p")
 results = pickle.Unpickler(open(file, "rb")).load()
 yaml_file = os.path.join(bin_dir, "parameters.yaml")
 parameters_dict = load_parameters(yaml_file)
+ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
 output_image_path = os.path.join(bin_dir, "images")
 
 #BUILD GROUND TRUTH
-solids = ifc_converter(data['IFC_PATH'])
+solids = ifc_converter(ifc_file_path)
 world_solids = [s.clone() for s in solids if s.name in data['ground_truth']['constructed_solids_names']]
 sensor = data['sensor']
 drone = Drone(pose = data['ground_truth']['trajectory'][0])

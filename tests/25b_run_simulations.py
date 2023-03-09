@@ -15,6 +15,8 @@ from bim4loc.rbpf.tracking.bimloc_semi_robust import RBPF as semi_robust
 from bim4loc.rbpf.tracking.bimloc_simple import RBPF as simple
 from bim4loc.rbpf.tracking.bimloc_logodds import RBPF as logodds
 from bim4loc.utils.load_yaml import load_parameters
+import bim4loc.binaries.paths as ifc_paths
+from importlib import import_module
 
 np.random.seed(2) #5 too good?
 
@@ -25,6 +27,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
 yaml_file = os.path.join(bin_dir, "parameters.yaml")
 parameters_dict = load_parameters(yaml_file)
+ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
 data_file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(data_file, "rb")).load()
 
@@ -43,7 +46,7 @@ results = {i : {} for i in range(1,len(rbpf_methods) + 1)}
 
 for (rbpf_enum, RBPF) in zip(results.keys(),rbpf_methods):
     #BUILD SIMULATION ENVIORMENT
-    simulation_solids = ifc_converter(data['IFC_PATH'])
+    simulation_solids = ifc_converter(ifc_file_path)
     update_existence_dependence_from_yaml(simulation_solids, parameters_dict['existence_dependence'])
     add_common_mistakes_from_yaml(simulation_solids, parameters_dict['common_mistakes'])
 

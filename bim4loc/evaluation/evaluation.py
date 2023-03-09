@@ -103,17 +103,18 @@ def belief_map_accuracy(ground_truth, estimated_beliefs, perfect_beliefs = None,
     ground_truth - np.array of shape (n_elements)
     '''
     Ngt = len(ground_truth)
-    binary_estimated_beleifs = estimated_beliefs > 0.9
+    exist_binary_estimated_beliefs = estimated_beliefs > 0.8
+    non_exist_binary_estimated_beliefs = estimated_beliefs < 0.2
     True_Positives = np.zeros(estimated_beliefs.shape[0])
     True_Negatives = np.zeros(estimated_beliefs.shape[0])
     for i in range(estimated_beliefs.shape[0]):
-        True_Positives[i] = np.sum(binary_estimated_beleifs[i][:Ngt] * ground_truth)
-        True_Negatives[i] = np.sum((1-binary_estimated_beleifs[i][:Ngt]) * (1-ground_truth))
+        True_Positives[i] = np.sum(exist_binary_estimated_beliefs[i][:Ngt] * ground_truth)
+        True_Negatives[i] = np.sum((non_exist_binary_estimated_beliefs[i][:Ngt]) * (1-ground_truth))
     estimated = (True_Positives + True_Negatives)/ len(ground_truth)
 
     perfect = np.zeros_like(estimated)
     if perfect_beliefs is not None:
-        binary_perfect_beliefs = perfect_beliefs > 0.9
+        binary_perfect_beliefs = perfect_beliefs > 0.5
         True_Positives = np.zeros(perfect_beliefs.shape[0])
         True_Negatives = np.zeros(perfect_beliefs.shape[0])
         for i in range(binary_perfect_beliefs.shape[0]):
@@ -163,10 +164,10 @@ def percentile_boxes_right(expected_belief_map, ground_truth_beliefs,
         is_accurate = True
         for index in relevant_boxes_indicies:
             if index != best_box_index: #index points to false variation, should be low belief
-                if expected_belief_map[-1][index] > 0.6:
+                if expected_belief_map[-1][index] > 0.2:
                     is_accurate = False
             if index == best_box_index: #index points to high best variation, should be high belief
-                if expected_belief_map[-1][index] < 0.6:
+                if expected_belief_map[-1][index] < 0.8:
                     is_accurate = False
         if is_accurate:
             N_boxes_got_right += 1

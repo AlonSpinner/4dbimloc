@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 from bim4loc.solids import ifc_converter
 from bim4loc.evaluation.evaluation import localiztion_error, map_entropy, \
                         cross_entropy_error, belief_map_accuracy
+from bim4loc.utils.load_yaml import load_parameters
+import bim4loc.binaries.paths as ifc_paths
+from importlib import import_module
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 bin_dir = os.path.join(dir_path, "25_bin")
@@ -12,6 +15,9 @@ file = os.path.join(bin_dir, "data.p")
 data = pickle.Unpickler(open(file, "rb")).load()
 file = os.path.join(bin_dir, "results.p")
 results = pickle.Unpickler(open(file, "rb")).load()
+yaml_file = os.path.join(bin_dir, "parameters.yaml")
+parameters_dict = load_parameters(yaml_file)
+ifc_file_path = getattr(import_module(ifc_paths.__name__),parameters_dict['IFC_PATH'])
 
 colors = ['b', 'g', 'r', 'k', 'm']
 
@@ -31,7 +37,7 @@ for i, res in enumerate(results.values()):
 plt.show()
 
 #------------------------------------CROSS ENTROPY PLOTS--------------------------
-solids = ifc_converter(data['IFC_PATH'])
+solids = ifc_converter(ifc_file_path)
 ground_truth_beliefs = np.zeros(len(solids),dtype = float)
 for i, s in enumerate(solids):
     if s.name in data['ground_truth']['constructed_solids_names']:

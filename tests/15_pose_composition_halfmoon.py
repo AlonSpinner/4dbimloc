@@ -5,6 +5,7 @@ from bim4loc.solids import ParticlesSolid
 from bim4loc.geometry.pose2z import compose_s
 from bim4loc.random.multi_dim import sample_normal
 import time
+import os 
 
 drone = Drone(pose = np.array([0.0, 0.0, 0.5, 0.0]))
 
@@ -36,6 +37,8 @@ for t in range(10):
     visApp.update_solid(vis_particles.lines)
     visApp.update_solid(vis_particles.tails)
     visApp.redraw()
+
+    visApp.get_images(dir_path =  os.path.dirname(os.path.realpath(__file__)), sufix = f"{t}")
     time.sleep(0.5)
 
 

@@ -20,8 +20,12 @@ for s in solids:
         #         visApp.add_solid(s)
         
 visApp.redraw()
-visApp.show_axes()
+# visApp.show_axes()
 visApp.setup_default_camera()
+
+imgs = visApp.get_images()
+import matplotlib.pyplot as plt
+plt.imshow(imgs['world'])
 # visApp.redraw()
 
 

@@ -153,7 +153,8 @@ if __name__ == "__main__":
     parallel_coordinate(df, "med_traj_error",
                         #colors = ['b', 'g', 'r', 'k'],
                         linewidth = 4.0,
-                        alpha = 0.3)
+                        alpha = 0.3,
+                        x_label_size = 10)
     plt.show()
 
 
