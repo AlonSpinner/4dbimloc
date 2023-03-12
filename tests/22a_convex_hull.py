@@ -28,6 +28,8 @@ if point_in_polygon(ray_point, hull_plus):
 else:
     plt.title('Point is outside the convex hull')
 plt.axis('equal')
+plt.xlabel('rad')
+plt.ylabel('rad')
 print(s)
 plt.show()
 

@@ -14,12 +14,16 @@ from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 from importlib import import_module
 import bim4loc.binaries.paths as ifc_paths
 
+def crop_image(image, crop_ratio_w, crop_ratio_h):
+    #crop image
+    h,w = image.shape[:2]
+    crop_h = int(h * crop_ratio_h/2)
+    crop_w = int(w * crop_ratio_w/2)
+    image  = image[crop_h:-(crop_h+1), crop_w:-(crop_w+1),:]
+    return image
+
 def transform_image(image, crop_ratio_w, crop_ratio_h):
-        #crop image
-        h,w = image.shape[:2]
-        crop_h = int(h * crop_ratio_h/2)
-        crop_w = int(w * crop_ratio_w/2)
-        image  = image[crop_h:-crop_h, crop_w:-crop_w,:]
+        image  = crop_image(image, crop_ratio_w, crop_ratio_h)
 
         #brightness and contrast
         image = Image.fromarray(image)
@@ -95,6 +99,7 @@ def make_video(seed_number, out_folder, save_images = False):
     visApp.add_solid(vis_scan, "world")
     trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
     visApp.add_solid(trail_ground_truth, "world")
+    visApp.redraw("world")
     #METHODS
     def add_method2_visApp(N : int, window_name):
         simulation_solids = [s.clone() for s in solids]
@@ -150,8 +155,9 @@ def make_video(seed_number, out_folder, save_images = False):
 
     if save_images:
         scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
-        imageio.imwrite(os.path.join(images_folder,"z_simulation0.png"), scene_images["world"])
-        imageio.imwrite(os.path.join(images_folder,"z_estimation0.png"), scene_images["BPFS"]) 
+        
+        imageio.imwrite(os.path.join(images_folder,"z_simulation0.png"), crop_image(scene_images["world"], 0.0, 0.3))
+        imageio.imwrite(os.path.join(images_folder,"z_estimation0.png"), crop_image(scene_images["BPFS"], 0.0, 0.3)) 
 
     video_canvases = []
     for t, z in enumerate(data['measurements']['Z']):
@@ -178,7 +184,8 @@ def make_video(seed_number, out_folder, save_images = False):
 
         if save_images and t % 3 == 0:
             for i, img in enumerate(scene_images.values()):
-                imageio.imwrite(os.path.join(images_folder,f"t{t}_{parameters_dict['method_variation_names'][i]}.png"), img)
+                nimg = crop_image(img, 0.0, 0.3)
+                imageio.imwrite(os.path.join(images_folder,f"t{t}_{parameters_dict['method_variation_names'][i]}.png"), nimg)
 
         video_images = []
         for i, img in enumerate(scene_images.values()):

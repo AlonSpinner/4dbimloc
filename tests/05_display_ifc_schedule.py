@@ -1,4 +1,4 @@
-from bim4loc.binaries.paths import IFC_ONLY_WALLS_PATH
+from bim4loc.binaries.paths import IFC_ARENA_PATH as IFC_PATH
 from bim4loc.visualizer import VisApp
 from bim4loc.solids import ifc_converter
 from bim4loc.random.one_dim import Gaussian
@@ -6,7 +6,7 @@ from bim4loc.random.one_dim import Gaussian
 # import open3d as o3d
 # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
 
-solids = ifc_converter(IFC_ONLY_WALLS_PATH)
+solids = ifc_converter(IFC_PATH)
 visApp = VisApp()
 current_time = 5.0
 

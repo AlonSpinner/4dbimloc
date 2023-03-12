@@ -59,7 +59,6 @@ element_uv_hull_plus = np.vstack((element_uv_hull,element_uv_hull[0]))
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
-ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("distance from boundry component")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
@@ -69,6 +68,7 @@ cbar = fig.colorbar(sc)
 ax.grid(True)
 ax.set_xlim(-0.33,0.33)
 ax.set_aspect(1.0)
+ax.invert_xaxis()
 plt.show()
 
 #-----------------------cosine componenet-----------------------
@@ -76,8 +76,6 @@ weight_cos_incident = (z_cos_incident[z_ids != NO_HIT])**2
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
-ax.axis('equal')
-ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("cos incident component")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
@@ -87,12 +85,12 @@ fig.colorbar(sc)
 ax.grid(True)
 # ax.set_xlim(-0.33,0.33)
 ax.set_aspect(1.0)
+ax.invert_xaxis()
 plt.show()
 
 # #-----------------------combined-----------------------
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
-ax.invert_xaxis()
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("full weight")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
@@ -102,6 +100,7 @@ cbar = fig.colorbar(sc)
 ax.grid(True)
 ax.set_xlim(-0.33,0.33)
 ax.set_aspect(1.0)
+ax.invert_xaxis()
 plt.show()
 
 
