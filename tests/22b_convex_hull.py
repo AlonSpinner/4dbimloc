@@ -51,7 +51,7 @@ element_world_v = np.asarray(solids[0].geometry.vertices)
 element_uv = pose2z.angle(drone.pose, element_world_v.T).T
 weight_dist_2_boundry = np.zeros(hit_ray_uv.shape[0])
 
-for i, ray in enumerate(hit_ray_uv):
+for i, ray in enumerate(drone.sensor.uv):
     weight_dist_2_boundry[i], _ = minimal_distance_from_projected_boundry(ray, element_uv)
         
 element_uv_hull = convex_hull(element_uv)
@@ -62,7 +62,7 @@ ax = fig.add_subplot(111)
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("distance from boundry component")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
-sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
+sc = ax.scatter(drone.sensor.uv[:,0]/np.pi, drone.sensor.uv[:,1]/(np.pi/2),
                 c=weight_dist_2_boundry, s = 50)
 cbar = fig.colorbar(sc)
 ax.grid(True)
@@ -72,14 +72,14 @@ ax.invert_xaxis()
 plt.show()
 
 #-----------------------cosine componenet-----------------------
-weight_cos_incident = (z_cos_incident[z_ids != NO_HIT])**2
+weight_cos_incident = (z_cos_incident)**2
 
 fig = plt.figure(figsize = (7,8))
 ax = fig.add_subplot(111)
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("cos incident component")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
-sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
+sc = ax.scatter(drone.sensor.uv[:,0]/np.pi, drone.sensor.uv[:,1]/(np.pi/2),
                 c=weight_cos_incident, s = 50)
 fig.colorbar(sc)
 ax.grid(True)
@@ -94,7 +94,7 @@ ax = fig.add_subplot(111)
 ax.set_xlabel(r"yaw / $\pi$"); ax.set_ylabel(r"pitch / $\frac{1}{2}\pi$")
 # ax.set_title("full weight")
 ax.plot(element_uv_hull_plus[:,0]/np.pi, element_uv_hull_plus[:,1]/(np.pi/2), c = "k", lw = 3)
-sc = ax.scatter(hit_ray_uv[:,0]/np.pi, hit_ray_uv[:,1]/(np.pi/2),
+sc = ax.scatter(drone.sensor.uv[:,0]/np.pi, drone.sensor.uv[:,1]/(np.pi/2),
                 c=weight_cos_incident * weight_dist_2_boundry, s = 50)
 cbar = fig.colorbar(sc)
 ax.grid(True)
