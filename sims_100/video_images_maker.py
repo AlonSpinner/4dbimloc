@@ -6,13 +6,14 @@ from bim4loc.solids import ifc_converter
 from bim4loc.agents import Drone
 from bim4loc.maps import RayCastingMap
 from bim4loc.geometry import pose2z
-from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, Label3D, \
+from bim4loc.solids import ifc_converter, ParticlesSolid, TrailSolid, ScanSolid, Label3D, ArrowSolid, \
                             add_common_mistakes_from_yaml
 from bim4loc.utils.load_yaml import load_parameters
 import imageio
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 from importlib import import_module
 import bim4loc.binaries.paths as ifc_paths
+import time
 
 def crop_image(image, crop_ratio_w, crop_ratio_h):
     #crop image
@@ -52,18 +53,11 @@ def tile_images(images):
     canvas_shape = (image_shape[0]*2, image_shape[1]*3, image_shape[2])
     canvas = np.ones(canvas_shape,dtype = np.uint8) * 255
     # Tile images onto canvas
-    for i in range(5):
+    for i in range(6):
         row = i // 3
         col = i % 3
         x = col * image_shape[1]
         y = row * image_shape[0]
-        if i == 0:
-             y_offset = image_shape[0]//2
-             y += y_offset
-        if row == 1:
-            # Center the images on the bottom row
-            x_offset = image_shape[1]
-            x += x_offset
         canvas[y:y+image_shape[0], x:x+image_shape[1], :] = images[i].astype(np.uint8)
     return canvas
 
@@ -100,6 +94,20 @@ def make_video(seed_number, out_folder, save_images = False):
     trail_ground_truth = TrailSolid("trail_ground_truth", drone.pose[:3].reshape(1,3))
     visApp.add_solid(trail_ground_truth, "world")
     visApp.redraw("world")
+    #INIT
+    visApp.add_window("bottom")
+    visApp.add_scene("init", "bottom")
+    init_solids = [s.clone() for s in world_solids]
+    [visApp.add_solid(s, "init") for s in init_solids]
+    init_beliefs = results[1]['expected_belief_map'][0]
+    [s.set_existance_belief_and_shader(p) for (s,p) in zip(init_solids,init_beliefs)]
+    visApp.redraw("init")
+    visApp.setup_default_camera("init")
+    dead_reck = ArrowSolid("dead_reck", 1.0, data['measurements']['dead_reck'][0])
+    visApp.add_solid(dead_reck, "init")
+    trail_dead_reck = TrailSolid("trail_dead_reck", drone.pose[:3].reshape(1,3))
+    visApp.add_solid(trail_dead_reck, "init")
+    visApp.redraw("init")
     #METHODS
     def add_method2_visApp(N : int, window_name):
         simulation_solids = [s.clone() for s in solids]
@@ -148,10 +156,8 @@ def make_video(seed_number, out_folder, save_images = False):
 
     visApp_1 = add_method2_visApp(1,"world")
     visApp_2 = add_method2_visApp(2,"world")
-    visApp.add_window("bottom")
     visApp_3 = add_method2_visApp(3,"bottom")
     visApp_4 = add_method2_visApp(4,"bottom")
-    visApp.add_scene("spaceholder", "bottom")
 
     if save_images:
         scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
@@ -172,6 +178,12 @@ def make_video(seed_number, out_folder, save_images = False):
         trail_ground_truth.update(drone.pose[:3].reshape(1,-1))
         visApp.update_solid(trail_ground_truth, "world")
         visApp.redraw("world")
+
+        #INIT + DEAD RECKONING 
+        dead_reck.update_geometry(data['measurements']['dead_reck'][t+1])
+        visApp.update_solid(dead_reck, "init")
+        trail_dead_reck.update(dead_reck.pose[:3].reshape(1,-1))
+        visApp.update_solid(trail_dead_reck, "init")
         
         #METHOD DRAWNGS
         update_method_drawings(t, 1, *visApp_1)
@@ -180,7 +192,6 @@ def make_video(seed_number, out_folder, save_images = False):
         update_method_drawings(t, 4, *visApp_4)
 
         scene_images = visApp.get_images(transform = lambda x: transform_image(x,0.01,0.45))
-        scene_images.pop('spaceholder')
 
         if save_images and t % 3 == 0:
             for i, img in enumerate(scene_images.values()):
@@ -189,8 +200,16 @@ def make_video(seed_number, out_folder, save_images = False):
 
         video_images = []
         for i, img in enumerate(scene_images.values()):
-            img = add_text_to_image(img, parameters_dict['method_variation_names'][i])
+            if i == 0:
+                txt_2_add = "Simulation"
+            elif i == 1:
+                txt_2_add = "Dead Reck."
+            else:
+                txt_2_add = parameters_dict['method_variation_names'][i-1]
+            img = add_text_to_image(img, txt_2_add)
             video_images.append(img)
+        video_images[1], video_images[3] = video_images[3], video_images[1]
+        video_images[2], video_images[1] = video_images[1], video_images[2]
         canvas = tile_images(video_images)
         video_canvases.append(canvas) #drop last scene
 

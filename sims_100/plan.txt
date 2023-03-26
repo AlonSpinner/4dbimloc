@@ -1,3 +1,5 @@
+Presented in Paper: out7-20        
+        
         max_range   velocity_factor   weight_calc
 out1:       10             1              default      
 out2:       10             1              subdue    
